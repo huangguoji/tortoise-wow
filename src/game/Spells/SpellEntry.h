@@ -698,6 +698,10 @@ public:
     bool HasAttribute(SpellAttributesEx2 attribute) const { return AttributesEx2 & attribute; }
     bool HasAttribute(SpellAttributesEx3 attribute) const { return AttributesEx3 & attribute; }
     bool HasAttribute(SpellAttributesEx4 attribute) const { return AttributesEx4 & attribute; }
+    // Sprint 10 cmangos/playerbots port — bot passes raw int (cmangos has a unified enum;
+    // Penqle splits per word). Stub returns false for unknown ints (bot only uses these for
+    // attributes Penqle may not even have; behavior matches "no extended attribute set").
+    bool HasAttribute(int /*attribute*/) const { return false; }
 
     bool HasSpellInterruptFlag(SpellInterruptFlags flag) const { return InterruptFlags & flag; }
     bool HasAuraInterruptFlag(SpellAuraInterruptFlags flag) const { return AuraInterruptFlags & flag; }

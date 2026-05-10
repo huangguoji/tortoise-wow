@@ -24,6 +24,7 @@
 #include "CreatureAI.h"
 #include "Map.h"
 #include "Player.h"
+#include "Totem.h"
 #include "ObjectAccessor.h"
 #include "UnitEvents.h"
 #include "TargetedMovementGenerator.h"
@@ -48,6 +49,12 @@ float ThreatCalcHelper::CalcThreat(Unit* pHatedUnit, float threat, bool crit, Sp
 
         if (crit)
             threat *= pHatedUnit->GetTotalAuraMultiplierByMiscMask(SPELL_AURA_MOD_CRITICAL_THREAT, schoolMask);
+
+        // Holy Shield (Paladin patch9 talent 20925) — Sprint 5.8: 50% additional
+        // threat on the damage proc the shield generates. The shield triggers
+        // 20925 cast as the threat-generating spell.
+        if (pThreatSpell->Id == 20925)
+            threat *= 1.5f;
     }
 
     threat = pHatedUnit->ApplyTotalThreatModifier(threat, schoolMask);
@@ -417,6 +424,25 @@ void ThreatManager::addThreat(Unit* pVictim, float threat, bool crit, SpellSchoo
             threat = 0.0f;
     
     float totalThreat = ThreatCalcHelper::CalcThreat(pVictim, threat, crit, schoolMask, pThreatSpell);
+
+    // Totemic Alignment (Tortoise custom Shaman 51381 R1 30% / 51382 R2 60%):
+    // transfer % of totem-generated threat to the shaman owner.
+    if (pVictim->IsCreature() && static_cast<Creature*>(pVictim)->IsTotem())
+    {
+        if (Unit* pTotemOwner = static_cast<Totem*>(pVictim)->GetOwner())
+        {
+            int32 transferPct = 0;
+            if (pTotemOwner->HasAura(51382))      transferPct = 60;
+            else if (pTotemOwner->HasAura(51381)) transferPct = 30;
+            if (transferPct > 0 && pTotemOwner != pVictim && pTotemOwner->IsAlive() && !(pTotemOwner->GetTypeId() == TYPEID_PLAYER && ((Player*)pTotemOwner)->IsGameMaster()))
+            {
+                float xfer = totalThreat * transferPct / 100.0f;
+                totalThreat -= xfer;
+                addThreatDirectly(pTotemOwner, ThreatCalcHelper::CalcThreat(pTotemOwner, xfer, crit, schoolMask, pThreatSpell));
+            }
+        }
+    }
+
     addThreatDirectly(pVictim, totalThreat);
 }
 

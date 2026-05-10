@@ -1005,6 +1005,7 @@ enum CreatureFamily
     CREATURE_FAMILY_OWL            = 26,
     CREATURE_FAMILY_WIND_SERPENT   = 27,
     CREATURE_FAMILY_REMOTE_CONTROL = 28,
+    CREATURE_FAMILY_MOTH           = 39,  // patch9 Pet Moth scaffolding
 };
 
 enum CreatureTypeFlags
@@ -1232,6 +1233,7 @@ enum SkillType
     SKILL_PET_HYENA                = 654,
     SKILL_PET_OWL                  = 655,
     SKILL_PET_WIND_SERPENT         = 656,
+    SKILL_PET_MOTH                 = 1011,  // patch9 Pet Moth scaffolding
     SKILL_LANG_GUTTERSPEAK         = 673,
     SKILL_RIDING_KODO              = 713,
     SKILL_RACIAL_TROLL             = 733,
@@ -1896,19 +1898,34 @@ struct Position
     float y = 0.0f;
     float z = 0.0f;
     float o = 0.0f;
+
+    // cmangos/playerbots port - accessor methods that the bot module calls.
+    float GetPositionX() const { return x; }
+    float GetPositionY() const { return y; }
+    float GetPositionZ() const { return z; }
+    float GetPositionO() const { return o; }
+    float GetDistance(Position const& other) const {
+        float dx = x - other.x, dy = y - other.y, dz = z - other.z;
+        return dx*dx + dy*dy + dz*dz;
+    }
 };
 
 struct WorldLocation
 {
-    uint32 mapId = 0;
-    float x = 0.0f;
-    float y = 0.0f;
-    float z = 0.0f;
-    float o = 0.0f;
+    // cmangos/playerbots port - anonymous unions provide cmangos-style field name
+    // aliases (mapid, coord_x/y/z, orientation) sharing storage with Penqle's
+    // mapId, x, y, z, o. Both names refer to the same memory.
+    union { uint32 mapId = 0;  uint32 mapid; };
+    union { float  x = 0.0f;   float  coord_x; };
+    union { float  y = 0.0f;   float  coord_y; };
+    union { float  z = 0.0f;   float  coord_z; };
+    union { float  o = 0.0f;   float  orientation; };
     explicit WorldLocation(uint32 _mapid = 0, float _x = 0, float _y = 0, float _z = 0, float _o = 0)
         : mapId(_mapid), x(_x), y(_y), z(_z), o(_o) {}
     WorldLocation(WorldLocation const& loc)
         : mapId(loc.mapId), x(loc.x), y(loc.y), z(loc.z), o(loc.o) {}
+    WorldLocation(uint32 _mapid, Position const& pos)
+        : mapId(_mapid), x(pos.x), y(pos.y), z(pos.z), o(pos.o) {}
 
     /**
        * \brief Copies values from another WorldLocation.

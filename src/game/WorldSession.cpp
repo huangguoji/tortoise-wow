@@ -41,7 +41,7 @@
 #include "MapManager.h"
 #include "SocialMgr.h"
 
-#include "PlayerBotMgr.h"
+// PlayerBotMgr.h include removed — Penqle stub binned for Sprint 10 cmangos port.
 #include "Anticheat/Anticheat.h"
 #include "Anticheat/Movement/Movement.hpp"
 #include "Language.h"
@@ -86,7 +86,7 @@ WorldSession::WorldSession(uint32 id, WorldSocket *sock, AccountTypes sec, time_
     _accountFlags(0), m_idleTime(WorldTimer::getMSTime()), _player(nullptr), m_Socket(sock), _security(sec), _accountId(id), _logoutTime(0), m_inQueue(false),
     m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false), m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)),
     m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)), m_latency(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_cheatData(nullptr),
-    m_bot(nullptr), m_lastReceivedPacketTime(0), m_clientOS(CLIENT_OS_UNKNOWN), m_clientPlatform(CLIENT_PLATFORM_UNKNOWN), _gameBuild(0),
+    m_lastReceivedPacketTime(0), m_clientOS(CLIENT_OS_UNKNOWN), m_clientPlatform(CLIENT_PLATFORM_UNKNOWN), _gameBuild(0),
     _charactersCount(10), _characterMaxLevel(sAccountMgr.GetHighestCharLevel(id)), _clientHashComputeStep(HASH_NOT_COMPUTED),
     m_lastPubChannelMsgTime(0), m_moveRejectTime(0), m_masterPlayer(nullptr), m_BinaryAddress(binaryIp),
     _whisper_targets(id, sWorld.getConfig(CONFIG_UINT32_WHISPER_TARGETS_MAX), sWorld.getConfig(CONFIG_UINT32_WHISPER_TARGETS_BYPASS_LEVEL),
@@ -215,6 +215,16 @@ void WorldSession::SendPacket(WorldPacket const* packet)
     }
 #endif
 
+    // Sprint 10 cmangos/playerbots port — Wave 9: outgoing-packet interceptor for bots.
+    // cmangos's WorldSession::SendPacket calls the bot AI's HandleBotOutgoingPacket here so
+    // the AI can react to server-originated events: group invites (auto-accept), vendor errors,
+    // BG queue status, resurrect requests, etc. Real-player sessions have m_playerbotAI=null
+    // so this is a no-op for them; bot sessions have null m_Socket AND m_playerbotAI set, so
+    // we route the packet to the AI and skip the network send.
+    // Implementation in src/modules/PlayerBots/playerbot/HostHooks.cpp dispatches to the AI.
+    if (_player && Player_DispatchBotOutgoingPacket(_player, *packet))
+        return;
+
 	if (m_Socket == nullptr)
         return;
 
@@ -309,7 +319,11 @@ void WorldSession::LogUnprocessedTail(WorldPacket *packet)
 
 bool WorldSession::ForcePlayerLogoutDelay()
 {
-    if (!sWorld.IsStopped() && GetPlayer() && GetPlayer()->FindMap() && GetPlayer()->IsInWorld() && sPlayerBotMgr.ForceLogoutDelay())
+    // The bot-system gate (sPlayerBotMgr.ForceLogoutDelay()) was removed with the
+    // Penqle stub. The hardcore-protection delay logic below is non-bot-specific
+    // (it handles network-blip resilience) so we keep it active for any in-world
+    // player.
+    if (!sWorld.IsStopped() && GetPlayer() && GetPlayer()->FindMap() && GetPlayer()->IsInWorld())
     {
         sLog.out(LOG_CHAR, "[%s:%u@%s] Lost socket for character:[%s] (guid: %u)", GetUsername().c_str(), GetAccountId(), GetRemoteAddress().c_str(), _player->GetName() , _player->GetGUIDLow());
 
@@ -364,11 +378,8 @@ bool WorldSession::Update(PacketFilter& updater)
     //logout procedure should happen only in World::UpdateSessions() method!!!
     if (updater.ProcessLogout())
     {
-        if (m_bot != nullptr && m_bot->state == PB_STATE_OFFLINE)
-        {
-            LogoutPlayer(true);
-            return false;
-        }
+        // Penqle stub's m_bot/PB_STATE_OFFLINE early-logout removed. cmangos
+        // adds its own logout handling for offline bots in Phase 3.
 
         if (_clientHashComputeStep == HASH_COMPUTED && GetPlayer())
             _clientHashComputeStep = HASH_NOTIFIED;
@@ -390,13 +401,12 @@ bool WorldSession::Update(PacketFilter& updater)
 
         ///- If necessary, log the player out
         time_t currTime = time(nullptr);
-        bool forceConnection = sPlayerBotMgr.ForceAccountConnection(this);
-        if (sWorld.IsStopped())
-            forceConnection = false;
-        if ((!m_Socket || (ShouldLogOut(currTime) && !m_playerLoading)) && !forceConnection && m_bot == nullptr)
+        // Bot-driven forceConnection / m_bot guards removed (Penqle stub binned).
+        // cmangos's bot session handling re-introduces equivalent guards in Phase 3.
+        if ((!m_Socket || (ShouldLogOut(currTime) && !m_playerLoading)))
             LogoutPlayer(true);
 
-        if (!m_Socket && !forceConnection && this->m_bot == nullptr)
+        if (!m_Socket)
             return false;                                       //Will remove this session from the world session map
     }
     else // Async map based update
@@ -414,7 +424,9 @@ bool WorldSession::Update(PacketFilter& updater)
 
 bool WorldSession::CanProcessPackets() const
 {
-    return ((m_Socket && !m_Socket->IsClosed()) || (_player && sPlayerBotMgr.IsChatBot(_player->GetGUIDLow())));
+    // sPlayerBotMgr.IsChatBot() clause removed — Penqle stub binned. cmangos's
+    // bot system uses isRealPlayer() guards in Phase 3 instead.
+    return (m_Socket && !m_Socket->IsClosed());
 }
 
 void WorldSession::ProcessPackets(PacketFilter& updater)
@@ -593,6 +605,14 @@ void WorldSession::LogoutPlayer(bool Save)
     m_playerSave = Save;
     bool doBanPlayer = false;
     bool disabledSocials = false;
+
+    // Sprint 10 cmangos/playerbots port — Phase 3d Wave 3: detach bot AI/mgr before logout
+    // tears down the Player. Safe to call on real players / bots (no-op when ptr is null).
+    if (_player)
+    {
+        _player->RemovePlayerbotAI();
+        _player->RemovePlayerbotMgr();
+    }
 
     if (_player)
     {
@@ -820,6 +840,15 @@ void WorldSession::KickPlayer()
 }
 
 /// Cancel channeling handler
+
+// Sprint 10 cmangos/playerbots port — bot calls session->SendPlaySpellVisual(guid, kit).
+void WorldSession::SendPlaySpellVisual(ObjectGuid guid, uint32 spellArtKit)
+{
+    WorldPacket data(SMSG_PLAY_SPELL_VISUAL, 8 + 4);
+    data << guid;
+    data << uint32(spellArtKit);
+    SendPacket(&data);
+}
 
 void WorldSession::SendAreaTriggerMessage(const char* Text, ...)
 {

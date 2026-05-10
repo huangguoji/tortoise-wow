@@ -35,6 +35,9 @@ class MovementGenerator
 {
     public:
         virtual ~MovementGenerator();
+        // Sprint 10 cmangos/playerbots port — cmangos exposes GetCurrentTarget on movement generators.
+        // Stub returns nullptr; bot uses this to peek at chase/follow targets.
+        virtual Unit* GetCurrentTarget() const { return nullptr; }
 
         // called before adding movement generator to motion stack
         virtual void Initialize(Unit &) = 0;

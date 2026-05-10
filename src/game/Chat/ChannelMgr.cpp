@@ -20,6 +20,7 @@
  */
 
 #include "ChannelMgr.h"
+#include "MapNodes/AbstractPlayer.h"
 #include "Policies/SingletonImp.h"
 #include "World.h"
 #include "Util.h"
@@ -68,6 +69,12 @@ Channel *ChannelMgr::GetOrCreateChannel(std::string const& name, bool allowAreaD
     }
 
     return channels[wname];
+}
+
+// Sprint 10 cmangos/playerbots port — bot passes Player*; convert via PlayerWrapper.
+Channel* ChannelMgr::GetChannel(std::string const& name, Player* p, bool sendPacket)
+{
+    return GetChannel(name, PlayerPointer(p ? new PlayerWrapper<Player>(p) : nullptr), sendPacket);
 }
 
 Channel *ChannelMgr::GetChannel(std::string const& name, PlayerPointer p, bool sendPacket)

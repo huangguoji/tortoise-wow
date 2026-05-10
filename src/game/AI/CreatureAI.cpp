@@ -30,6 +30,11 @@ CreatureAI::~CreatureAI()
 {
 }
 
+// Sprint 10 cmangos/playerbots port — cmangos puts ReactState on AI; forward to Creature.
+ReactStates CreatureAI::GetReactState() const { return m_creature ? m_creature->GetReactState() : REACT_PASSIVE; }
+void CreatureAI::SetReactState(ReactStates st) { if (m_creature) m_creature->SetReactState(st); }
+bool CreatureAI::HasReactState(ReactStates st) const { return m_creature && m_creature->HasReactState(st); }
+
 void CreatureAI::JustRespawned()
 {
     // Reset spells template to default on respawn.

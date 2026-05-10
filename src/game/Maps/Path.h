@@ -38,6 +38,11 @@ class Path
     public:
         size_t size() const { return i_nodes.size(); }
         bool empty() const { return i_nodes.empty(); }
+        // Sprint 10 cmangos/playerbots port — bot uses front()/back()/begin()/end() on path.
+        PathElem const& front() const { return i_nodes.front(); }
+        PathElem const& back() const { return i_nodes.back(); }
+        auto begin() const { return i_nodes.begin(); }
+        auto end() const { return i_nodes.end(); }
         void resize(unsigned int sz) { i_nodes.resize(sz); }
         void crop(unsigned int start, unsigned int end)
         {

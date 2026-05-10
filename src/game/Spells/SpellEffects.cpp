@@ -460,9 +460,18 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
             }
             case SPELLFAMILY_WARLOCK:
             {
-                // Conflagrate - consumes Immolate
+                // Conflagrate - consumes Immolate, UNLESS the warlock has the
+                // patch9 "Conflagrate Tick Bonus" passive aura 52682 active.
+                // That marker (set bonus / future talent) flips Conflagrate
+                // from "consume Immolate for big damage" to "deal Conflagrate
+                // damage without removing Immolate" — Conflagrate's base
+                // damage is already calibrated to ~3 sec of Immolate ticks,
+                // so leaving the DoT in place is the only behavior change
+                // required.
                 if (m_spellInfo->IsFitToFamilyMask<CF_WARLOCK_CONFLAGRATE>())
                 {
+                    bool const tickBonus = m_casterUnit && m_casterUnit->HasAura(52682);
+
                     // for caster applied auras only
                     Unit::AuraList const &mPeriodic = unitTarget->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
                     for (const auto i : mPeriodic)
@@ -471,7 +480,8 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                         if (i->GetSpellProto()->IsFitToFamily<SPELLFAMILY_WARLOCK, CF_WARLOCK_IMMOLATE>() &&
                             i->GetCasterGuid() == m_caster->GetObjectGuid())
                         {
-                            unitTarget->RemoveAurasByCasterSpell(i->GetId(), m_caster->GetObjectGuid());
+                            if (!tickBonus)
+                                unitTarget->RemoveAurasByCasterSpell(i->GetId(), m_caster->GetObjectGuid());
                             break;
                         }
                     }
@@ -579,6 +589,12 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                     return bonus;
                 };
 
+                // Brambletorn Muscle (Tortoise patch9 idol-set passive 52870) —
+                // tooltip: "This damage generates no threat." Applied by removing
+                // 100% of the threat the damage event would otherwise generate.
+                if (m_spellInfo->Id == 52870 && unitTarget && m_casterUnit)
+                    m_casterUnit->getThreatManager().modifyThreatPercent(unitTarget, -100);
+
                 if (m_spellInfo->IsFitToFamilyMask<CF_DRUID_RAKE_CLAW>() && m_spellInfo->SpellVisual == 3882)
                 {
                     Player* pPlayer = m_caster->ToPlayer();
@@ -631,17 +647,9 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                         }
                     }
 
-                    // Open Wounds talent: bonus per caster bleed on target
-                    if (unitTarget)
-                    {
-                        uint32 bleeds = CountDruidBleedsOnTarget(unitTarget, pPlayer);
-                        if (bleeds)
-                        {
-                            int32 bonusPerBleed = GetOpenWoundsBonus(pPlayer, false);
-                            if (bonusPerBleed > 0)
-                                damage = int32(float(damage) * (100.0f + bonusPerBleed * bleeds) / 100.0f);
-                        }
-                    }
+                    // Open Wounds patch9 redesign: effect2 is now flat % Rip damage
+                    // (handled in Aura::PeriodicTick), NOT bleed-counted Ferocious
+                    // Bite damage. The pre-patch9 bleed-bonus on Bite is removed.
                 }
                 break;
             }
@@ -688,6 +696,70 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
 
                     damage = m_caster->SpellDamageBonusDone(unitTarget, m_spellInfo, effect_idx, damage, SPELL_DIRECT_DAMAGE);
                     damage = unitTarget->SpellDamageBonusTaken(m_caster, m_spellInfo, effect_idx, damage, SPELL_DIRECT_DAMAGE);
+                }
+                break;
+            }
+            case SPELLFAMILY_SHAMAN:
+            {
+                // Improved Molten Blast (Tortoise patch9 talent 46107/46108) —
+                // Sprint 5.9: when Molten Blast hits a target with Flame Shock,
+                // bonus damage = (FS remaining duration in sec * FS tick dmg) * pct.
+                static uint32 const moltenBlastIds[] = {315, 545, 899, 923, 951, 10419, 10420};
+                bool isMoltenBlast = false;
+                for (uint32 id : moltenBlastIds)
+                {
+                    if (m_spellInfo->Id == id) { isMoltenBlast = true; break; }
+                }
+                if (isMoltenBlast && unitTarget && m_casterUnit)
+                {
+                    int32 pct = 0;
+                    if (Aura* a = m_casterUnit->GetAura(46108, EFFECT_INDEX_0))
+                        pct = a->GetModifier()->m_amount;
+                    else if (Aura* a = m_casterUnit->GetAura(46107, EFFECT_INDEX_0))
+                        pct = a->GetModifier()->m_amount;
+                    if (pct > 0)
+                    {
+                        // Find caster's Flame Shock on target (family bit 28).
+                        Unit::SpellAuraHolderMap const& holders = unitTarget->GetSpellAuraHolderMap();
+                        for (auto const& kv : holders)
+                        {
+                            SpellEntry const* info = kv.second->GetSpellProto();
+                            if (info->SpellFamilyName == SPELLFAMILY_SHAMAN &&
+                                (info->SpellFamilyFlags & UI64LIT(0x10000000)) &&
+                                kv.second->GetCasterGuid() == m_caster->GetObjectGuid())
+                            {
+                                if (Aura* fsTick = kv.second->GetAuraByEffectIndex(EFFECT_INDEX_0))
+                                {
+                                    int32 const remainSec = kv.second->GetAuraDuration() / 1000;
+                                    int32 const tickDmg = fsTick->GetModifier()->m_amount;
+                                    int32 const bonus = (tickDmg * remainSec) * pct / 100;
+                                    if (bonus > 0)
+                                        damage += bonus;
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    // Searing Totem retarget: when Molten Blast lands, redirect
+                    // the caster's active Searing Totem (TOTEM_SLOT_FIRE) to the
+                    // new target if its summoning spell matches a Searing Totem
+                    // rank (3599/6363/6364/6365/10437/10438). Sets the totem's
+                    // UNIT_FIELD_TARGET so its periodic auto-cast picks the new
+                    // victim on next tick.
+                    if (Totem* fireTotem = m_casterUnit->GetTotem(TOTEM_SLOT_FIRE))
+                    {
+                        uint32 const totemSpell = fireTotem->GetSpell();
+                        if (totemSpell == 3599 || totemSpell == 6363 || totemSpell == 6364 ||
+                            totemSpell == 6365 || totemSpell == 10437 || totemSpell == 10438)
+                        {
+                            fireTotem->SetTargetGuid(unitTarget->GetObjectGuid());
+                            // Also seed threat so Totem::Update's target search
+                            // converges on the same target on next tick.
+                            if (fireTotem->CanHaveThreatList())
+                                fireTotem->getThreatManager().addThreat(unitTarget, 1.0f);
+                        }
+                    }
                 }
                 break;
             }
@@ -2913,9 +2985,60 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 if (!unitTarget || !m_casterUnit)
                     return;
 
-                int32 basePoints0 = damage + int32(m_casterUnit->GetPower(POWER_RAGE) * m_spellInfo->DmgMultiplier[eff_idx]);
+                float rageMult = m_spellInfo->DmgMultiplier[eff_idx];
+                // Precision Cut (Tortoise custom 51641/51642/51643): scales the
+                // per-rage damage multiplier on Execute by +20/+40/+60%.
+                if (m_casterUnit->HasAura(51643))      rageMult *= 1.60f;
+                else if (m_casterUnit->HasAura(51642)) rageMult *= 1.40f;
+                else if (m_casterUnit->HasAura(51641)) rageMult *= 1.20f;
+
+                int32 basePoints0 = damage + int32(m_casterUnit->GetPower(POWER_RAGE) * rageMult);
                 // m_casterUnit->SetPower(POWER_RAGE, 0); // Done in EffectSchoolDMG - spell 20647
                 m_casterUnit->CastCustomSpell(unitTarget, 20647, &basePoints0, nullptr, nullptr, true, nullptr);
+                return;
+            }
+
+            // Master Strike (Tortoise patch9 custom 54023). Effect1 already
+            // dealt 35% normalized weapon damage. This DUMMY effect dispatches
+            // a weapon-type-specific sub-spell (54016-54022) on the target.
+            // Mirrors the Master of Arms apply-time dispatch in SpellAuras.cpp.
+            if (m_spellInfo->Id == 54023)
+            {
+                if (!m_casterUnit || !unitTarget)
+                    return;
+                Player* pl = m_casterUnit->ToPlayer();
+                if (!pl)
+                    return;
+                Item* mh = pl->GetWeaponForAttack(BASE_ATTACK, true, true);
+                if (!mh || !mh->GetProto())
+                    return;
+                uint32 const sub = mh->GetProto()->SubClass;
+                uint32 trigger = 0;
+                switch (sub)
+                {
+                    case ITEM_SUBCLASS_WEAPON_MACE:
+                    case ITEM_SUBCLASS_WEAPON_MACE2:    trigger = 54016; break;  // Disorient
+                    case ITEM_SUBCLASS_WEAPON_SWORD:
+                    case ITEM_SUBCLASS_WEAPON_SWORD2:   trigger = 54017; break;  // Disarm
+                    case ITEM_SUBCLASS_WEAPON_AXE:
+                    case ITEM_SUBCLASS_WEAPON_AXE2:     trigger = 54018; break;  // Root
+                    case ITEM_SUBCLASS_WEAPON_POLEARM:  trigger = 54019; break;  // Extra dmg + dismount
+                    case ITEM_SUBCLASS_WEAPON_FIST:     trigger = 54020; break;  // Knockdown stun
+                    case ITEM_SUBCLASS_WEAPON_STAFF:    trigger = 54021; break;  // Self parry buff
+                    case ITEM_SUBCLASS_WEAPON_DAGGER:   trigger = 54022; break;  // Silence
+                    default: break;
+                }
+                if (trigger)
+                    pl->CastSpell(unitTarget, trigger, true);
+                return;
+            }
+
+            // Master Strike Polearm sub-spell (54019): effect1 already dealt
+            // bonus weapon damage; this DUMMY dismounts the target if mounted.
+            if (m_spellInfo->Id == 54019)
+            {
+                if (unitTarget && unitTarget->IsMounted())
+                    unitTarget->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
                 return;
             }
 
@@ -3098,6 +3221,82 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     break;
                 }
+                // Reshift (Tortoise patch9 47379) — drop current shapeshift form,
+                // then re-cast the same shift spell. Useful for refreshing form-buff
+                // durations or breaking out of polymorph-style mechanics that cling
+                // to forms.
+                case 47379:
+                {
+                    Player* player = m_caster ? m_caster->ToPlayer() : nullptr;
+                    if (!player)
+                        return;
+                    ShapeshiftForm const form = player->GetShapeshiftForm();
+                    if (form == FORM_NONE)
+                        return;
+                    uint32 shiftSpell = 0;
+                    switch (form)
+                    {
+                        case FORM_CAT:      shiftSpell = 768;   break; // Cat Form
+                        case FORM_BEAR:     shiftSpell = 5487;  break; // Bear Form
+                        case FORM_DIREBEAR: shiftSpell = 9634;  break; // Dire Bear Form
+                        case FORM_TRAVEL:   shiftSpell = 783;   break; // Travel Form
+                        case FORM_AQUA:     shiftSpell = 1066;  break; // Aquatic Form
+                        case FORM_MOONKIN:  shiftSpell = 24858; break; // Moonkin Form
+                        case FORM_TREE:     shiftSpell = 33891; break; // Tree of Life
+                        default: return;
+                    }
+                    player->RemoveAurasDueToSpell(shiftSpell);
+                    player->CastSpell(player, shiftSpell, true);
+                    return;
+                }
+                // Idol of Equilibrium triggers (Tortoise patch9 52924/52925) —
+                // 52845 fires 52924 on Wrath / 52925 on Starfire via aura 109
+                // ADD_TARGET_TRIGGER. Both are SPELL_EFFECT_DUMMY whose job is
+                // to give the caster's existing Insect Swarm / Moonfire DoT on
+                // the target one extra tick. Implementation: extend the DoT
+                // duration by one periodic-tick interval so it ticks one more
+                // time naturally before expiring. (Aura::PeriodicTick is
+                // protected, so we drive the same outcome through the duration
+                // extension instead of forcing an immediate tick.)
+                case 52924: // Equilibrium (Wrath -> Insect Swarm tick)
+                case 52925: // Equilibrium (Starfire -> Moonfire tick)
+                {
+                    if (!unitTarget || !m_casterUnit)
+                        return;
+                    bool const isInsect = (m_spellInfo->Id == 52924);
+                    static uint32 const insectRanks[] = { 5570, 24974, 24975, 24976, 24977 };
+                    static uint32 const moonfireRanks[] = {
+                        8921, 8924, 8925, 8926, 8927, 8928, 8929,
+                        9833, 9834, 9835, 20690, 21669
+                    };
+                    uint32 const* ranks = isInsect ? insectRanks : moonfireRanks;
+                    size_t const count  = isInsect ? (sizeof(insectRanks)/sizeof(insectRanks[0]))
+                                                   : (sizeof(moonfireRanks)/sizeof(moonfireRanks[0]));
+                    for (size_t i = 0; i < count; ++i)
+                    {
+                        SpellAuraHolder* h = unitTarget->GetSpellAuraHolder(ranks[i], m_casterUnit->GetObjectGuid());
+                        if (!h)
+                            continue;
+                        for (int idx = 0; idx < MAX_EFFECT_INDEX; ++idx)
+                        {
+                            Aura* a = h->GetAuraByEffectIndex(SpellEffectIndex(idx));
+                            if (a && a->GetModifier()->m_auraname == SPELL_AURA_PERIODIC_DAMAGE)
+                            {
+                                int32 const period = a->GetModifier()->periodictime;
+                                if (period > 0)
+                                {
+                                    int32 const newDuration = h->GetAuraDuration() + period;
+                                    int32 const cap = h->GetAuraMaxDuration() + period;
+                                    h->SetAuraDuration(std::min(newDuration, cap));
+                                    h->UpdateAuraDuration();
+                                }
+                                break;
+                            }
+                        }
+                        return;
+                    }
+                    return;
+                }
             }
             break;
         case SPELLFAMILY_HUNTER:
@@ -3120,6 +3319,34 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         else
                             ++itr;
                     }
+                    return;
+                }
+                // Kill Command (Tortoise patch9 custom 41827) — Sprint 5.6:
+                // command pet to deliver a special attack on the hunter's target.
+                // Damage = 80% of hunter's RANGED AP (per design doc). Pet casts
+                // 41828 with the computed damage as basepoints.
+                case 41827:
+                {
+                    if (!m_casterUnit)
+                        return;
+                    Pet* pet = m_casterUnit->GetPet();
+                    Unit* tgt = m_targets.getUnitTarget();
+                    if (!tgt)
+                        tgt = m_casterUnit->GetVictim();
+                    if (!pet || !pet->IsAlive() || !tgt)
+                        return;
+                    int32 dmg = int32(m_casterUnit->GetTotalAttackPowerValue(RANGED_ATTACK) * 0.80f);
+                    pet->CastCustomSpell(tgt, 41828, &dmg, nullptr, nullptr, true);
+                    return;
+                }
+                // Packleader (Tortoise patch9 36532) — DUMMY effect with
+                // effectTriggerSpell1=36562. Generic dummy path won't auto-cast
+                // the trigger, so summon the guardian (NPC 60369) explicitly.
+                case 36532:
+                {
+                    if (!m_casterUnit)
+                        return;
+                    m_casterUnit->CastSpell(m_casterUnit, 36562, true);
                     return;
                 }
             }
@@ -3151,6 +3378,10 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                             hurt = 25902;
                             heal = 25903;
                             break;
+                        case 51786:                          // Holy Shock R4 (patch9)
+                            hurt = 52012;
+                            heal = 51787;
+                            break;
                         default:
                             sLog.outError("Spell::EffectDummy: Spell %u not handled in HS", m_spellInfo->Id);
                             return;
@@ -3160,6 +3391,12 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         m_caster->CastSpell(unitTarget, heal, true);
                     else
                         m_caster->CastSpell(unitTarget, hurt, true);
+
+                    // Holy Shock cooldown-reset chance (Paladin Sprint 5.8) —
+                    // patch9: 25% chance to immediately reset the Holy Shock
+                    // cooldown after cast. The 25% is the design-doc placeholder.
+                    if (m_caster->GetTypeId() == TYPEID_PLAYER && roll_chance_i(25))
+                        ((Player*)m_caster)->RemoveSpellCooldown(m_spellInfo->Id, true);
 
                     return;
                 }
@@ -3311,6 +3548,69 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         }
                     }
                 }
+                return;
+            }
+
+            // Earthquake (Tortoise patch9 custom 48306) — Sprint 5.9 aftershock:
+            // primary AoE damage hits at cast; an aftershock secondary pulse
+            // hits the same area for half damage 2s later. Implementation:
+            // schedule a delayed self-cast of 48306 with damage halved via a
+            // marker aura, OR fire a smaller-damage trigger immediately. For
+            // minimum-viable, fire a half-damage immediate trigger using the
+            // already-applied target list — engine handles AoE selection.
+            if ((m_spellInfo->Id == 48306 || m_spellInfo->Id == 48307 ||
+                 m_spellInfo->Id == 48308) && m_casterUnit && unitTarget)
+            {
+                // Split damage already applied by the primary effect; schedule
+                // a quarter-power aftershock via 2s tick of a custom DUMMY.
+                // Simplest minimum-viable: cast 48306 again with reduced
+                // basepoints. To avoid recursion, skip if already-aftershock-
+                // tagged via aura 47543 (placeholder marker).
+                if (!m_casterUnit->HasAura(47543))
+                {
+                    m_casterUnit->CastSpell(m_casterUnit, 47543, true);  // self-mark to prevent recursion
+                    int32 halfDmg = damage / 2;
+                    m_casterUnit->CastCustomSpell(unitTarget, m_spellInfo->Id, &halfDmg, nullptr, nullptr, true);
+                    m_casterUnit->RemoveAurasDueToSpell(47543);
+                }
+            }
+
+            // Molten Blast (Tortoise patch9 36916-36921) — refresh caster's
+            // Flame Shock on the target and retarget the active Searing Totem
+            // to the same victim.
+            if (m_spellInfo->Id >= 36916 && m_spellInfo->Id <= 36921 &&
+                m_casterUnit && unitTarget)
+            {
+                Unit::SpellAuraHolderMap const& holders = unitTarget->GetSpellAuraHolderMap();
+                for (auto const& kv : holders)
+                {
+                    SpellEntry const* fs = kv.second->GetSpellProto();
+                    if (fs && fs->SpellFamilyName == SPELLFAMILY_SHAMAN &&
+                        (fs->SpellFamilyFlags & UI64LIT(0x10000000)) &&        // bit 28 Flame Shock
+                        kv.second->GetCasterGuid() == m_casterUnit->GetObjectGuid())
+                    {
+                        kv.second->RefreshHolder();
+                        break;
+                    }
+                }
+            }
+
+            // Ancient Rites Feral Spirit (Tortoise patch9 58246) — DUMMY: each
+            // active Feral Spirit guardian within 30y of the target casts
+            // 58247 (lunge). Filter loosely by distance — totem and other
+            // guardians outside 30y are skipped.
+            if (m_spellInfo->Id == 58246 && m_casterUnit && unitTarget)
+            {
+                Unit* tgt = unitTarget;
+                m_casterUnit->CallForAllControlledUnits(
+                    [tgt](Unit* g)
+                    {
+                        if (!g || !g->IsAlive())
+                            return;
+                        if (g->GetDistance(tgt) <= 30.0f)
+                            g->CastSpell(tgt, 58247, true);
+                    },
+                    CONTROLLED_GUARDIANS);
                 return;
             }
 
@@ -3719,11 +4019,82 @@ void Spell::EffectApplyAura(SpellEffectIndex eff_idx)
                 m_currentBasePoints[EFFECT_INDEX_0] = 60;
         }
         break;
+    // Power Overwhelming (TalentID 368, spell 51714) — patch9 redesign:
+    // active spell on the demon that channels energy, breaking all crowd
+    // control effects on the demon and increasing its damage by 20% for
+    // 15s while the demon takes 4%/tick of base health.
+    //
+    // The spell_template effects 1/2/3 (MOD_SCALE +50%, MOD_DAMAGE_DONE
+    // +20%, PERIODIC_DAMAGE_PERCENT 4%) all apply to the pet via
+    // targetA=5 (TARGET_PET). The MISSING piece is the "breaking all
+    // crowd control effects" clause — there's no 4th effect slot, so
+    // we hook here on the first effect application to remove CC auras
+    // from the demon. Fires once per cast (eff_idx==0 guard).
+    // See WARLOCK_PATCH9_MIGRATION.md "Power Overwhelming".
+    case 51714:
+        if (eff_idx == EFFECT_INDEX_0 && unitTarget)
+        {
+            unitTarget->RemoveSpellsCausingAura(SPELL_AURA_MOD_STUN);
+            unitTarget->RemoveSpellsCausingAura(SPELL_AURA_MOD_FEAR);
+            unitTarget->RemoveSpellsCausingAura(SPELL_AURA_MOD_ROOT);
+            unitTarget->RemoveSpellsCausingAura(SPELL_AURA_MOD_CONFUSE);
+            unitTarget->RemoveSpellsCausingAura(SPELL_AURA_MOD_CHARM);
+            unitTarget->RemoveSpellsCausingAura(SPELL_AURA_TRANSFORM);
+            unitTarget->RemoveSpellsCausingAura(SPELL_AURA_MOD_DECREASE_SPEED);
+        }
+        break;
     }
 
     // Paladin T3 JoL
     if (m_spellInfo->IsFitToFamilyMask<CF_PALADIN_JUDGEMENT_OF_WISDOM_LIGHT>() && m_spellInfo->SpellIconID == 299 && m_casterUnit && m_casterUnit->HasAura(28775))
         m_currentBasePoints[eff_idx] = 20;
+
+    // Malediction (TalentID 352, talent spell 52546) — patch9 design:
+    // when warlock casts Curse of Recklessness, Curse of Shadow, or
+    // Curse of the Elements with this talent, ALSO afflict the target
+    // with the highest rank of Curse of Agony the caster knows. Patch9
+    // tooltip:
+    //   "Your Curse of Agony can be used alongside your other curses,
+    //    except Curse of Doom. Applying Curse of Recklessness, Curse
+    //    of Shadows, or Curse of Elements also afflicts the target with
+    //    the highest rank of your Curse of Agony."
+    //
+    // Hook fires when one of the trigger curses (CoR/CoS/CoE — any rank)
+    // is being applied. We iterate CoA ranks descending (rank 6 → 1) and
+    // cast the highest one the player knows. Triggered cast is silent
+    // (no mana cost, no GCD, doesn't break current cast).
+    //
+    // Trigger spell IDs:
+    //   Curse of Recklessness: 704 (R1), 7658 (R2), 7659 (R3), 11717 (R4)
+    //   Curse of Shadow:       17862 (R1), 17937 (R2)
+    //   Curse of the Elements: 1490 (R1), 11721 (R2), 11722 (R3)
+    //
+    // CoA ranks (high → low): 11713, 11712, 11711, 6217, 1014, 980.
+    {
+        bool const isMaledictionTriggerCurse =
+            m_spellInfo->Id == 704   || m_spellInfo->Id == 7658  ||
+            m_spellInfo->Id == 7659  || m_spellInfo->Id == 11717 ||
+            m_spellInfo->Id == 17862 || m_spellInfo->Id == 17937 ||
+            m_spellInfo->Id == 1490  || m_spellInfo->Id == 11721 ||
+            m_spellInfo->Id == 11722;
+
+        if (isMaledictionTriggerCurse && caster && unitTarget && caster->HasAura(52546))
+        {
+            Player* pCaster = caster->ToPlayer();
+            if (pCaster)
+            {
+                static uint32 const coaRanks[] = { 11713, 11712, 11711, 6217, 1014, 980 };
+                for (uint32 coaId : coaRanks)
+                {
+                    if (pCaster->HasSpell(coaId))
+                    {
+                        pCaster->CastSpell(unitTarget, coaId, true);
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
     Aura* aur = CreateAura(m_spellInfo, eff_idx, &m_currentBasePoints[eff_idx], m_spellAuraHolder, unitTarget, caster, m_CastItem);
     m_spellAuraHolder->AddAura(aur, eff_idx);
@@ -5981,6 +6352,33 @@ void Spell::EffectSummonObjectWild(SpellEffectIndex eff_idx)
 
     pGameObj->SetRespawnTime(duration > 0 ? duration / IN_MILLISECONDS : 0);
     pGameObj->SetSpellId(m_spellInfo->Id);
+
+    // Reservoir of Light (Priest custom 51486/51487/51488): if the caster has
+    // the talent and this is a Lightwell summon, override the GO's max charges.
+    // Lightwell shares CF_PRIEST_MISC1 (bit 30) with Resurrection / Shackle Undead;
+    // gate on summoned GO entry 181102/181105/181106/181107 to scope.
+    if (m_casterUnit && m_casterUnit->IsPlayer() &&
+        m_spellInfo->SpellFamilyName == SPELLFAMILY_PRIEST &&
+        m_spellInfo->IsFitToFamilyMask<CF_PRIEST_MISC1>() &&
+        (gameobject_id == 181102 || gameobject_id == 181105 || gameobject_id == 181106 || gameobject_id == 181107))
+    {
+        int32 bonusCharges = 0;
+        Unit::AuraList const& dummies = m_casterUnit->GetAurasByType(SPELL_AURA_DUMMY);
+        for (auto const& a : dummies)
+        {
+            uint32 const id = a->GetId();
+            if (id == 51486 || id == 51487 || id == 51488)
+            {
+                bonusCharges = a->GetModifier()->m_amount;
+                break;
+            }
+        }
+        if (bonusCharges > 0)
+        {
+            uint32 const baseCharges = pGameObj->GetGOInfo() ? pGameObj->GetGOInfo()->GetCharges() : 5;
+            pGameObj->SetChargeOverride(baseCharges + uint32(bonusCharges));
+        }
+    }
 
     // Wild object not have owner and check clickable by players
     map->Add(pGameObj);

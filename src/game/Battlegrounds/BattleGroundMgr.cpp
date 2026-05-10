@@ -1256,6 +1256,21 @@ BattleGround * BattleGroundMgr::GetBattleGroundTemplate(BattleGroundTypeId bgTyp
     return m_BattleGrounds[bgTypeId].empty() ? nullptr : m_BattleGrounds[bgTypeId].begin()->second;
 }
 
+// Sprint 10 cmangos/playerbots port — find the bracket id matching the player's level.
+// BG templates have a level range; loop the brackets and pick the one containing `level`.
+BattleGroundBracketId BattleGroundMgr::GetBattleGroundBracketIdFromLevel(BattleGroundTypeId bgTypeId, uint32 level)
+{
+    BattleGround* bg = GetBattleGroundTemplate(bgTypeId);
+    if (!bg)
+        return BG_BRACKET_ID_FIRST;
+    if (level < bg->GetMinLevel())
+        return BG_BRACKET_ID_FIRST;
+    uint32 idx = (level - bg->GetMinLevel()) / 10;
+    if (idx >= MAX_BATTLEGROUND_BRACKETS)
+        idx = MAX_BATTLEGROUND_BRACKETS - 1;
+    return BattleGroundBracketId(idx);
+}
+
 uint32 BattleGroundMgr::CreateClientVisibleInstanceId(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracketId)
 {
     // here, we create an instanceid, which is just for

@@ -85,7 +85,8 @@ namespace VMAP
 
 struct MapEntry
 {
-    uint32 id;
+    // Sprint 10 cmangos/playerbots port — bot uses MapID (cmangos); Penqle uses id.
+    union { uint32 id; uint32 MapID; };
     uint32 parent;
     uint32 mapType;
     uint32 linkedZone;
@@ -112,14 +113,18 @@ static AreaFlagByMapId sAreaFlagByMapId;
 
 struct AreaEntry
 {
-    uint32 Id;
+    // Sprint 10 cmangos/playerbots port — anonymous unions provide cmangos
+    // field-name aliases (area_level↔AreaLevel, area_name↔Name) sharing storage
+    // with Penqle's PascalCase names. Penqle code unchanged; bot module can use
+    // either name. Struct size unchanged.
+    union { uint32 Id; uint32 ID; };
     uint32 MapId;
-    uint32 ZoneId;
-    uint32 ExploreFlag;
-    uint32 Flags;
-    int32  AreaLevel;
-    char*  Name;
-    uint32 Team;
+    union { uint32 ZoneId; uint32 zone; };
+    union { uint32 ExploreFlag; uint32 exploreFlag; };
+    union { uint32 Flags; uint32 flags; };
+    union { int32  AreaLevel = 0;  int32  area_level; };
+    union { char*  Name = nullptr; char*  area_name; };
+    union { uint32 Team; uint32 team; };
     uint32 LiquidTypeId;
 
     bool IsZone() const { return ZoneId == 0; }
@@ -440,6 +445,25 @@ class Map : public GridRefManager<NGridType>
         bool IsRaid() const { return i_mapEntry && i_mapEntry->IsRaid(); }
         bool IsBattleGround() const { return i_mapEntry && i_mapEntry->IsBattleGround(); }
         bool IsContinent() const { return i_mapEntry && i_mapEntry->IsContinent(); }
+        // Sprint 10 cmangos/playerbots port — bot calls Map::IsMountAllowed.
+        bool IsMountAllowed() const { return i_mapEntry && i_mapEntry->IsMountAllowed(); }
+        // GetReachableRandomPointOnGround: cmangos has it; Penqle doesn't. Stub returns false.
+        bool GetReachableRandomPointOnGround(uint32 /*phase*/, float /*x*/, float /*y*/, float /*z*/, float /*dist*/, bool /*walk*/ = true) const { return false; }
+        bool GetReachableRandomPointOnGround(float& /*x*/, float& /*y*/, float& /*z*/, float /*dist*/, bool /*walk*/ = true) const { return false; }
+        // GraveyardManager: cmangos has Map::GetGraveyardManager(); Penqle has sObjectMgr.GetClosestGraveYard.
+        // Stub manager forwards to sObjectMgr.
+        struct GraveyardManagerStub {
+            WorldSafeLocsEntry const* GetClosestGraveYard(float x, float y, float z, uint32 MapId, Team team) const;
+        };
+        GraveyardManagerStub& GetGraveyardManager() { static GraveyardManagerStub s; return s; }
+        // HasActiveZone: cmangos has it; Penqle doesn't track active zones. Stub returns true.
+        bool HasActiveZone(uint32 /*zoneId*/) const { return true; }
+        bool HasActiveZones() const { return true; }
+        // HasRealPlayers: cmangos checks if any non-bot players are on the map. Stub returns true.
+        bool HasRealPlayers() const { return true; }
+        // GetTransports: cmangos has Map::GetTransports returning a set/vector. Stub returns empty vector.
+        // Note: GenericTransport is a typedef in shim; forward-decl as struct avoids "class" keyword conflict.
+        std::vector<class Transport*> GetTransports() const { return {}; }
 
         // can't be nullptr for loaded map
         MapPersistentState* GetPersistentState() const { return m_persistentState; }
@@ -569,6 +593,10 @@ class Map : public GridRefManager<NGridType>
         bool isInLineOfSight(float x1, float y1, float z1, float x2, float y2, float z2, bool checkDynLos = true) const;
         // First collision with object
         bool GetLosHitPosition(float srcX, float srcY, float srcZ, float& destX, float& destY, float& destZ, float modifyDist) const;
+        // Sprint 10 cmangos/playerbots port — cmangos calls this GetHitPosition.
+        bool GetHitPosition(float srcX, float srcY, float srcZ, float& destX, float& destY, float& destZ, uint32 /*phasemask*/ = 0, float modifyDist = -0.5f) const {
+            return GetLosHitPosition(srcX, srcY, srcZ, destX, destY, destZ, modifyDist);
+        }
         // Use navemesh to walk
         bool GetWalkHitPosition(Transport* t, float srcX, float srcY, float srcZ, float& destX, float& destY, float& destZ, 
             uint32 moveAllowedFlags = 0xF /*NAV_GROUND | NAV_WATER | NAV_MAGMA | NAV_SLIME*/, float zSearchDist = 20.0f, bool locatedOnSteepSlope = true) const;

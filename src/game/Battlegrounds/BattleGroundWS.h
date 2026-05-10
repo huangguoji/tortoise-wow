@@ -131,6 +131,10 @@ class BattleGroundWS : public BattleGround
         /* BG Flags */
         ObjectGuid GetAllianceFlagPickerGuid() const{ return m_FlagKeepers[BG_TEAM_ALLIANCE]; }
         ObjectGuid GetHordeFlagPickerGuid() const   { return m_FlagKeepers[BG_TEAM_HORDE]; }
+        // Sprint 10 cmangos/playerbots port — cmangos generic accessor; team_index 0=alliance, 1=horde.
+        ObjectGuid GetFlagCarrierGuid(uint32 team_index = 0) const override {
+            return team_index < BG_TEAMS_COUNT ? m_FlagKeepers[team_index] : ObjectGuid();
+        }
         void SetAllianceFlagPicker(ObjectGuid guid) { m_FlagKeepers[BG_TEAM_ALLIANCE] = guid; }
         void SetHordeFlagPicker(ObjectGuid guid)    { m_FlagKeepers[BG_TEAM_HORDE] = guid; }
         void ClearAllianceFlagPicker()              { m_FlagKeepers[BG_TEAM_ALLIANCE].Clear(); }

@@ -200,6 +200,11 @@ class ChatHandler
         bool HandleListAddonsCommand(char *);
         bool HandleUpdateWorldStateCommand(char *);
         bool HandleCastCustomCommand(char* args);
+        // Sprint 10 cmangos/playerbots port — bot adds .perfmon/.bot/.rndbot commands via ChatHandler.
+        bool HandlePerfMonCommand(char* args);
+        bool HandlePlayerbotCommand(char* args);
+        bool HandleRandomPlayerbotCommand(char* args);
+        bool HandleAhBotCommand(char* args);
         bool HandleSendSpellVisualCommand(char *);
         bool HandleSendSpellImpactCommand(char *);
         bool HandleServiceDeleteCharacters(char* args);

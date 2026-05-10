@@ -316,6 +316,10 @@ void Object::SendCreateUpdateToPlayer(Player* player)
     upd.Send(player->GetSession());
 }
 
+// Sprint 10 cmangos/playerbots port — IsFriend/IsEnemy on WorldObject forward to IsFriendlyTo/IsHostileTo.
+bool WorldObject::IsFriend(WorldObject const* target) const { return target && IsFriendlyTo(target); }
+bool WorldObject::IsEnemy(WorldObject const* target) const { return target && IsHostileTo(target); }
+
 void WorldObject::DirectSendPublicValueUpdate(uint32 index, uint32 count)
 {
     // Do we need an update ?
@@ -3764,6 +3768,57 @@ void WorldObject::ProcDamageAndSpell(Unit *pVictim, uint32 procAttacker, uint32 
 
     if (Unit* pUnit = ToUnit())
         pUnit->HandleTriggers(pVictim, procExtra, amount, originalAmount, procSpell, procTriggered);
+
+    // Honor Among Thieves (Rogue Subtlety, TurtleWoW custom 52512 R1 / 52514 R2):
+    // physical critical strikes by party members within range grant the rogue
+    // $s1 Energy. 1-second internal cooldown via spell cooldown on the inner
+    // energize trigger 52513.
+    if ((procExtra & PROC_EX_CRITICAL_HIT) != 0)
+    {
+        Unit* attacker = ToUnit();
+        if (attacker && attacker->IsPlayer())
+        {
+            bool const isPhysical = (procSpell == nullptr) ||
+                                    (procSpell->DmgClass == SPELL_DAMAGE_CLASS_MELEE ||
+                                     procSpell->DmgClass == SPELL_DAMAGE_CLASS_RANGED);
+            if (isPhysical)
+            {
+                Player* attackerPlr = static_cast<Player*>(attacker);
+                if (Group* grp = attackerPlr->GetGroup())
+                {
+                    for (GroupReference* itr = grp->GetFirstMember(); itr != nullptr; itr = itr->next())
+                    {
+                        Player* member = itr->getSource();
+                        if (!member || member == attackerPlr || !member->IsAlive())
+                            continue;
+                        if (!member->IsInMap(attackerPlr) || !member->IsWithinDistInMap(attackerPlr, 100.0f))
+                            continue;
+
+                        // Find HAT R1 (52512) or R2 (52514) on the rogue.
+                        Aura* hat = nullptr;
+                        Unit::AuraList const& dummies = member->GetAurasByType(SPELL_AURA_DUMMY);
+                        for (auto const& a : dummies)
+                        {
+                            uint32 id = a->GetId();
+                            if (id == 52512 || id == 52514)
+                            {
+                                hat = a;
+                                break;
+                            }
+                        }
+                        if (!hat) continue;
+
+                        if (member->HasSpellCooldown(52513))
+                            continue;
+
+                        int32 energy = hat->GetModifier()->m_amount;
+                        member->CastCustomSpell(member, 52513, &energy, nullptr, nullptr, true);
+                        member->AddSpellCooldown(52513, 0, time(nullptr) + 1);
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Melee based spells can be miss, parry or dodge on this step
@@ -3800,7 +3855,23 @@ float WorldObject::MeleeSpellMissChance(Unit* pVictim, WeaponAttackType attType,
             hitChance += pUnit->m_modRangedHitChance;
         else
             hitChance += pUnit->m_modMeleeHitChance;
-    } 
+
+        // Demonic Precision (Warlock 51715-51717): pet inherits s3% of master's
+        // melee hit chance. Marker DUMMY aura on the pet at effect 2 carries s3.
+        if (pUnit->IsPet())
+        {
+            static uint32 const dpIds[] = { 51715, 51716, 51717 };
+            for (uint32 const id : dpIds)
+            {
+                if (Aura* a = pUnit->GetAura(id, EFFECT_INDEX_2))
+                {
+                    if (Unit* owner = pUnit->GetOwner())
+                        hitChance += owner->m_modMeleeHitChance * a->GetModifier()->m_amount / 100.0f;
+                    break;
+                }
+            }
+        }
+    }
 
     // There is some code in 1.12 that explicitly adds a modifier that causes the first 1% of +hit gained from
     // talents or gear to be ignored against monsters with more than 10 Defense Skill above the attacking players Weapon Skill.
@@ -4031,7 +4102,25 @@ int32 WorldObject::MagicSpellHitChance(Unit* pVictim, SpellEntry const* spell, S
 
     // Increase hit chance from attacker SPELL_AURA_MOD_SPELL_HIT_CHANCE and attacker ratings
     if (Unit* pUnit = ToUnit())
+    {
         modHitChance += int32(pUnit->m_modSpellHitChance);
+
+        // Demonic Precision (Warlock 51715-51717): pet inherits s3% of master's
+        // spell hit chance. Marker DUMMY aura on the pet at effect 2 carries s3.
+        if (pUnit->IsPet())
+        {
+            static uint32 const dpIds[] = { 51715, 51716, 51717 };
+            for (uint32 const id : dpIds)
+            {
+                if (Aura* a = pUnit->GetAura(id, EFFECT_INDEX_2))
+                {
+                    if (Unit* owner = pUnit->GetOwner())
+                        modHitChance += int32(owner->m_modSpellHitChance * a->GetModifier()->m_amount / 100.0f);
+                    break;
+                }
+            }
+        }
+    }
     //DEBUG_UNIT(this, DEBUG_SPELL_COMPUTE_RESISTS, "SPELL_AURA_MOD_SPELL_HIT_CHANCE (+ %i) : %f", int32(m_modSpellHitChance), modHitChance);
 
     // Nostalrius: sorts binaires.
@@ -4153,6 +4242,28 @@ uint32 WorldObject::SpellCriticalDamageBonus(SpellEntry const *spellProto, uint3
             modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_CRIT_DAMAGE_BONUS, crit_bonus, spell);
     }
 
+    // Flame Guidance (Shaman 51396): owner-side aura amplifies the crit
+    // damage of Searing/Magma/Fire Nova totem ticks.
+    if (Creature const* pCre = ToCreature())
+    {
+        if (pCre->IsTotem())
+        {
+            if (Unit* owner = pCre->GetOwner())
+            {
+                Unit::AuraList const& dummies = owner->GetAurasByType(SPELL_AURA_DUMMY);
+                for (auto const& a : dummies)
+                {
+                    if (a->GetId() != 51396 || a->GetEffIndex() != EFFECT_INDEX_2)
+                        continue;
+                    uint32 ic = spellProto->SpellIconID;
+                    // 33 = Fire Nova Totem, 37 = Magma Totem, 680 = Searing Totem.
+                    if (ic == 33 || ic == 37 || ic == 680)
+                        crit_bonus += crit_bonus * a->GetModifier()->m_amount / 100;
+                    break;
+                }
+            }
+        }
+    }
 
     if (!pVictim)
         return damage += crit_bonus;
@@ -4636,6 +4747,58 @@ uint32 WorldObject::MeleeDamageBonusDone(Unit* pVictim, uint32 pdamage, WeaponAt
             modOwner->ApplySpellMod(spellProto->Id, damagetype == DOT ? SPELLMOD_DOT : SPELLMOD_DAMAGE, tmpDamage, spell);
     }
 
+    // Improved Primal Aspects (Hunter Sprint 5.6 talent 19549/19550/19551) —
+    // patch9: while in Aspect of the Wolf, melee damage leeches s2% to caster.
+    // Marker DUMMY at EFFECT_INDEX_1 carries leech %. Aspect of Wolf IDs are
+    // the Tortoise custom set (45650 + 51496-51501). DIRECT_DAMAGE only — DoT
+    // periodics shouldn't leech.
+    if (pUnit && pUnit->GetTypeId() == TYPEID_PLAYER && damagetype == DIRECT_DAMAGE && tmpDamage > 0)
+    {
+        bool wolfUp = pUnit->HasAura(45650) || pUnit->HasAura(51496) || pUnit->HasAura(51497) ||
+                      pUnit->HasAura(51498) || pUnit->HasAura(51499) || pUnit->HasAura(51500) ||
+                      pUnit->HasAura(51501);
+        if (wolfUp)
+        {
+            int32 pct = 0;
+            for (uint32 id : { 19549u, 19550u, 19551u })
+            {
+                if (Aura* a = pUnit->GetAura(id, EFFECT_INDEX_1))
+                {
+                    pct = a->GetModifier()->m_amount;
+                    break;
+                }
+            }
+            if (pct > 0)
+            {
+                int32 heal = int32(tmpDamage * pct / 100);
+                if (heal > 0)
+                    pUnit->CastCustomSpell(pUnit, 15290, &heal, nullptr, nullptr, true);
+            }
+        }
+    }
+
+    // Alone Against the World (Hunter Sprint 5.6 talent 52891/52892) — patch9:
+    // when the hunter has no living pet, +X% damage on all damage. DUMMY marker
+    // at EFFECT_INDEX_0 carries the percentage.
+    if (pUnit && pUnit->GetTypeId() == TYPEID_PLAYER && pUnit->GetClass() == CLASS_HUNTER)
+    {
+        Pet* pet = ((Player*)pUnit)->GetPet();
+        if (!pet || !pet->IsAlive())
+        {
+            int32 pct = 0;
+            for (uint32 id : { 52891u, 52892u })
+            {
+                if (Aura* a = pUnit->GetAura(id, EFFECT_INDEX_0))
+                {
+                    pct = a->GetModifier()->m_amount + 1;
+                    break;
+                }
+            }
+            if (pct > 0)
+                tmpDamage *= float(100 + pct) / 100.0f;
+        }
+    }
+
     // bonus result can be negative
     return tmpDamage > 0 ? uint32(tmpDamage) : 0;
 }
@@ -4691,6 +4854,39 @@ uint32 WorldObject::SpellHealingBonusDone(Unit* pVictim, SpellEntry const* spell
                 case 3736: // Hateful Totem of the Third Wind / Increased Lesser Healing Wave / Savage Totem of the Third Wind
                     DoneTotal += i->GetModifier()->m_amount;
                     break;
+                case 5069: // Priest Spiritual Healing + Swift Recovery + Paladin Healing Light
+                {
+                    // Class-script %-healing-done modifier. The same miscvalue
+                    // case exists in the damage-side switch; we replicate it
+                    // here so healing talents that use it (priest 14898 +
+                    // 51484/85, paladin 20237-39) actually fire their bonus.
+                    //
+                    // Swift Recovery (51484/51485) is gated: bonus only applies
+                    // if the heal target has a Priest Renew aura.
+                    uint32 const triggerSpellId = i->GetSpellProto()->Id;
+                    if (triggerSpellId == 51484 || triggerSpellId == 51485)
+                    {
+                        bool targetHasRenew = false;
+                        if (pVictim)
+                        {
+                            Unit::SpellAuraHolderMap const& holders = pVictim->GetSpellAuraHolderMap();
+                            for (Unit::SpellAuraHolderMap::const_iterator it = holders.begin(); it != holders.end(); ++it)
+                            {
+                                SpellEntry const* proto = it->second->GetSpellProto();
+                                if (proto && proto->SpellFamilyName == SPELLFAMILY_PRIEST &&
+                                    (proto->SpellFamilyFlags & UI64LIT(0x40)))
+                                {
+                                    targetHasRenew = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!targetHasRenew)
+                            break;
+                    }
+                    DoneTotalMod += i->GetModifier()->m_amount / 100.0f;
+                    break;
+                }
                 default:
                     break;
             }
@@ -4711,6 +4907,26 @@ uint32 WorldObject::SpellHealingBonusDone(Unit* pVictim, SpellEntry const* spell
         // apply spellmod to Done amount
         if (Player* modOwner = pUnit->GetSpellModOwner())
             modOwner->ApplySpellMod(spellProto->Id, damagetype == DOT ? SPELLMOD_DOT : SPELLMOD_DAMAGE, heal, spell);
+    }
+
+    // Ironclad (Paladin Sprint 5.8 talent 51310/51311) — patch9: paladin's
+    // healing scales with armor from items. Reads the talent's effect2 DUMMY
+    // (m_amount = pct of armor added to heals). The talent uses aura 199 in
+    // the patch9 client which isn't natively implemented in this codebase;
+    // the SQL converts effect2 to DUMMY so this hook can read it.
+    if (pUnit && pUnit->GetTypeId() == TYPEID_PLAYER && pUnit->GetClass() == CLASS_PALADIN)
+    {
+        int32 ironPct = 0;
+        if (Aura* a = pUnit->GetAura(51311, EFFECT_INDEX_1))
+            ironPct = a->GetModifier()->m_amount;
+        else if (Aura* a = pUnit->GetAura(51310, EFFECT_INDEX_1))
+            ironPct = a->GetModifier()->m_amount;
+        if (ironPct > 0)
+        {
+            int32 armor = pUnit->GetArmor();
+            if (armor > 0)
+                heal += float(int64(armor) * ironPct / 100);
+        }
     }
 
     //DEBUG_UNIT(this, DEBUG_SPELLS_DAMAGE, "SpellHealingBonusDone[spell=%u]: (base=%u + %i) * %f. HealingPwr=%i", spellProto->Id, healamount, DoneTotal, DoneTotalMod, DoneAdvertisedBenefit);
@@ -4881,6 +5097,40 @@ uint32 WorldObject::SpellDamageBonusDone(Unit* pVictim, SpellEntry const* spellP
     {
         if (Player* modOwner = pUnit->GetSpellModOwner())
             modOwner->ApplySpellMod(spellProto->Id, damagetype == DOT ? SPELLMOD_DOT : SPELLMOD_DAMAGE, tmpDamage, spell);
+    }
+
+    // Aggression (Rogue talent 18427/18428/18429) — patch9 Sprint 5.5: applies
+    // +3/+6/+10% damage to Surprise Attack (52511, no family flag so SpellMod
+    // can't catch it). Explicit amp here.
+    if (spellProto->Id == 52511 && pUnit)
+    {
+        int32 b = pUnit->HasAura(18429) ? 10 :
+                  pUnit->HasAura(18428) ? 6 :
+                  pUnit->HasAura(18427) ? 3 : 0;
+        if (b > 0)
+            tmpDamage *= float(100 + b) / 100.0f;
+    }
+
+    // Alone Against the World (Hunter Sprint 5.6 talent 52891/52892) — patch9:
+    // hunter with no living pet → +X% spell damage. Mirrors melee path in
+    // MeleeDamageBonusDone above.
+    if (pUnit && pUnit->GetTypeId() == TYPEID_PLAYER && pUnit->GetClass() == CLASS_HUNTER)
+    {
+        Pet* pet = ((Player*)pUnit)->GetPet();
+        if (!pet || !pet->IsAlive())
+        {
+            int32 pct = 0;
+            for (uint32 id : { 52891u, 52892u })
+            {
+                if (Aura* a = pUnit->GetAura(id, EFFECT_INDEX_0))
+                {
+                    pct = a->GetModifier()->m_amount + 1;
+                    break;
+                }
+            }
+            if (pct > 0)
+                tmpDamage *= float(100 + pct) / 100.0f;
+        }
     }
 
     //DEBUG_UNIT(this, DEBUG_SPELLS_DAMAGE, "SpellDmgBonus[spell=%u]: (base=%u + %i) * %f. SP=%i", spellProto->Id, pdamage, DoneTotal, DoneTotalMod, DoneAdvertisedBenefit);
@@ -5055,6 +5305,23 @@ void WorldObject::DealSpellDamage(SpellNonMeleeDamage *damageInfo, bool durabili
     {
         sLog.outError("WorldObject::DealSpellDamage have wrong damageInfo->SpellID: %u", damageInfo->SpellID);
         return;
+    }
+
+    // Savage Rend (Hunter pet patch9 ranks 36536-36541) — crit extends the
+    // bleed DoT by 1 sec. The cast applies a periodic-damage aura on the
+    // victim; on crit we extend that aura's remaining duration. Engine
+    // doesn't natively extend periodic durations on crit.
+    if ((damageInfo->HitInfo & SPELL_HIT_TYPE_CRIT) &&
+        damageInfo->SpellID >= 36536 && damageInfo->SpellID <= 36541)
+    {
+        if (SpellAuraHolder* h = pVictim->GetSpellAuraHolder(damageInfo->SpellID, GetObjectGuid()))
+        {
+            int32 const newDur = h->GetAuraDuration() + 1000;
+            int32 const maxDur = h->GetAuraMaxDuration() + 1000;
+            h->SetAuraMaxDuration(maxDur);
+            h->SetAuraDuration(newDur);
+            h->UpdateAuraDuration();
+        }
     }
 
     // Call default DealDamage (send critical in hit info for threat calculation)

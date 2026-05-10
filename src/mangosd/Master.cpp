@@ -57,6 +57,330 @@
 #include <ace/Dev_Poll_Reactor.h>
 #include <signal.h>
 
+// Sprint12 (sc-overnight): Windows minidump on crash, so we always have
+// a stack trace post-mortem. Without this, an unhandled access-violation
+// just terminates mangosd silently and we have no diagnostics — exactly
+// what bit us on the .rndbot remove crash on 2026-05-02. See
+// runtime/HANDOFF_RNDBOT_REMOVE_CRASH.md.
+//
+// 2026-05-05 (sc-overnight option-1): expanded crash capture to cover
+// failure modes that bypass `SetUnhandledExceptionFilter`:
+//   - heap corruption (0xC0000374): ntdll's RtlReportFatalFailure path
+//     uses RaiseFailFastException → fast-fail abort, NO SEH dispatch.
+//   - C runtime aborts (assert / abort / std::terminate): bypass SEH.
+//   - invalid CRT parameter: fast-fails the process.
+//   - pure virtual call: fast-fails via _purecall_handler.
+// We add a vectored exception handler (fires before SEH frame walk on
+// ALL exceptions, ALL threads) plus C++ runtime hooks. Symptom that
+// drove this: 0xC0000374 heap-corruption crash 1-2min into bot combat
+// on 2026-05-05 left no minidump because SEH was bypassed.
+#ifdef WIN32
+#include <windows.h>
+#include <dbghelp.h>
+#include <signal.h>
+#include <new>          // _set_new_handler
+#include <cstdlib>      // _set_invalid_parameter_handler
+#include <stdlib.h>
+#include <crtdbg.h>
+#pragma comment(lib, "dbghelp.lib")
+
+// SC_PHASE thread-locals: the crashing thread's last-known "what is
+// the bot AI doing" tag. Read in the unhandled-exception filter and
+// written to the companion .txt next to the .dmp so we don't need
+// symbols to figure out which phase blew up. See SoloCommander.h.
+namespace ai { namespace solocommander {
+    extern __declspec(thread) const char* gLastPhaseTag;
+    extern __declspec(thread) const char* gLastPhaseBotName;
+}}
+
+// Re-entrancy guard: if our handler itself crashes, we must NOT recurse —
+// just let the process die. Per-thread so concurrent crashes are handled.
+static __declspec(thread) int g_inCrashHandler = 0;
+
+// Shared minidump-write helper. Called from every crash entry-point we
+// install (vectored, SEH-unhandled, terminate, signal, invalid-param,
+// purecall). Always returns; caller decides whether to continue or die.
+//
+// `ep` may be nullptr — for non-SEH paths (signal/terminate/etc.) we
+// synthesize a context by calling RtlCaptureContext below.
+//
+// `synthCode` is the exception code we tag the dump with when we
+// synthesize a context; ignored when `ep` is set.
+//
+// `tag` is a short label for the crash kind ("VEH-heap-corruption",
+// "terminate", "signal-SIGABRT", etc.) — written into the .txt.
+static void Mangosd_WriteCrashDump(EXCEPTION_POINTERS* ep, DWORD synthCode, const char* tag)
+{
+    // Re-entrancy / recursion guard.
+    if (g_inCrashHandler)
+        return;
+    g_inCrashHandler = 1;
+
+    // Synthesize a context if we don't have one (terminate/signal paths).
+    EXCEPTION_RECORD synthRec = {0};
+    CONTEXT          synthCtx = {0};
+    EXCEPTION_POINTERS synthEp = {0};
+    if (!ep)
+    {
+        synthRec.ExceptionCode = synthCode;
+        synthRec.ExceptionAddress = (PVOID)Mangosd_WriteCrashDump;
+        RtlCaptureContext(&synthCtx);
+        synthEp.ExceptionRecord = &synthRec;
+        synthEp.ContextRecord = &synthCtx;
+        ep = &synthEp;
+    }
+
+    SYSTEMTIME st; GetLocalTime(&st);
+    char tsBuf[64];
+    snprintf(tsBuf, sizeof(tsBuf), "%04d%02d%02d_%02d%02d%02d",
+             st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+
+    // mangosd's CWD is `bin/` per the launcher .bat (`pushd "...\bin"`),
+    // but logs/ lives at the parent (`..\logs\`). Try parent-logs first,
+    // then sibling bin-local logs/, then CWD root as last resort.
+    const char* candidatePaths[] = { "..\\logs", "logs", ".", nullptr };
+
+    char filename[512] = {0};
+    HANDLE hFile = INVALID_HANDLE_VALUE;
+    for (int i = 0; candidatePaths[i] != nullptr; ++i)
+    {
+        snprintf(filename, sizeof(filename), "%s\\crash_%s.dmp",
+                 candidatePaths[i], tsBuf);
+        hFile = CreateFileA(filename, GENERIC_WRITE, 0, nullptr,
+                             CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (hFile != INVALID_HANDLE_VALUE)
+            break;
+    }
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        fprintf(stderr, "[CRASH] mangosd unhandled %s, but failed to open %s for write\n",
+                tag ? tag : "(unknown)", filename);
+        g_inCrashHandler = 0;
+        return;
+    }
+
+    MINIDUMP_EXCEPTION_INFORMATION mei = { 0 };
+    mei.ThreadId          = GetCurrentThreadId();
+    mei.ExceptionPointers = ep;
+    mei.ClientPointers    = FALSE;
+
+    // For heap corruption, we want enough memory in the dump to
+    // reconstruct the corrupted allocation. WithDataSegs+ThreadInfo+
+    // IndirectlyReferenced gives us local variables + the chain of
+    // referenced pointers around the failing thread, which is what
+    // matters for use-after-free / overrun analysis. Adding
+    // WithProcessThreadData ensures the heap metadata travels too.
+    MINIDUMP_TYPE dumpType = (MINIDUMP_TYPE)(
+        MiniDumpWithDataSegs |
+        MiniDumpWithThreadInfo |
+        MiniDumpWithIndirectlyReferencedMemory |
+        MiniDumpWithProcessThreadData);
+
+    MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(),
+                       hFile, dumpType, &mei, nullptr, nullptr);
+    CloseHandle(hFile);
+
+    // Read SC_PHASE thread-locals (guarded — TLS itself can be corrupted
+    // when the corruption was in arbitrary memory).
+    const char* phaseTag = "(no phase set)";
+    const char* phaseBot = "(no bot)";
+    __try
+    {
+        if (ai::solocommander::gLastPhaseTag)
+            phaseTag = ai::solocommander::gLastPhaseTag;
+        if (ai::solocommander::gLastPhaseBotName)
+            phaseBot = ai::solocommander::gLastPhaseBotName;
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {}
+
+    char txtFilename[512];
+    snprintf(txtFilename, sizeof(txtFilename), "%s.txt", filename);
+    if (FILE* tf = fopen(txtFilename, "w"))
+    {
+        fprintf(tf, "Crash timestamp: %s\n", tsBuf);
+        fprintf(tf, "Crash kind: %s\n", tag ? tag : "(unknown)");
+        fprintf(tf, "Exception code: 0x%08lx", ep->ExceptionRecord->ExceptionCode);
+        // Decode common fast-fail / heap codes for grep-friendly logs.
+        switch (ep->ExceptionRecord->ExceptionCode)
+        {
+            case 0xC0000005L: fprintf(tf, " (ACCESS_VIOLATION)\n"); break;
+            case 0xC0000094L: fprintf(tf, " (INTEGER_DIVIDE_BY_ZERO)\n"); break;
+            case 0xC0000374L: fprintf(tf, " (HEAP_CORRUPTION)\n"); break;
+            case 0xC0000409L: fprintf(tf, " (STACK_BUFFER_OVERRUN / FAIL_FAST)\n"); break;
+            case 0xC0000420L: fprintf(tf, " (ASSERTION_FAILURE)\n"); break;
+            case 0xC0000602L: fprintf(tf, " (UNHANDLED_CXX_EXCEPTION)\n"); break;
+            case 0xE06D7363L: fprintf(tf, " (CXX_THROW)\n"); break;
+            default:          fprintf(tf, "\n"); break;
+        }
+        fprintf(tf, "Exception address: 0x%p\n", ep->ExceptionRecord->ExceptionAddress);
+        if (ep->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION
+            && ep->ExceptionRecord->NumberParameters >= 2)
+        {
+            fprintf(tf, "Access violation: %s at 0x%p\n",
+                    ep->ExceptionRecord->ExceptionInformation[0] == 0 ? "READ" :
+                    ep->ExceptionRecord->ExceptionInformation[0] == 1 ? "WRITE" :
+                    ep->ExceptionRecord->ExceptionInformation[0] == 8 ? "EXECUTE" : "?",
+                    (void*)ep->ExceptionRecord->ExceptionInformation[1]);
+        }
+        fprintf(tf, "Crashing thread id: %lu\n", GetCurrentThreadId());
+        fprintf(tf, "Last SC_PHASE tag: %s\n", phaseTag);
+        fprintf(tf, "Last SC_PHASE bot: %s\n", phaseBot);
+        fclose(tf);
+    }
+
+    fprintf(stderr, "[CRASH] mangosd wrote minidump: %s (kind=%s)\n", filename, tag ? tag : "?");
+    fprintf(stderr, "[CRASH] last phase: %s on bot %s\n", phaseTag, phaseBot);
+    sLog.outError("[CRASH] %s (code 0x%08lx). Minidump: %s",
+                   tag ? tag : "Unhandled exception",
+                   ep->ExceptionRecord->ExceptionCode, filename);
+    sLog.outError("[CRASH] Last SC_PHASE: %s (bot=%s)", phaseTag, phaseBot);
+
+    g_inCrashHandler = 0;
+}
+
+// Decide whether VEH should claim this exception. VEH fires for EVERY
+// exception including SEH-handled ones (e.g. C++ throws inside try/catch),
+// so claim only fatal codes that we KNOW bypass SEH or the cmangos
+// codebase can't handle. Returning true → write the dump and let the OS
+// terminate (we don't tail-call ExitProcess; we let the failing primitive
+// continue its own death sequence).
+static bool MangosdShouldClaimVehException(DWORD code)
+{
+    switch (code)
+    {
+        case 0xC0000374L: // STATUS_HEAP_CORRUPTION (RtlReportFatalFailure path)
+        case 0xC0000409L: // STATUS_STACK_BUFFER_OVERRUN / __fastfail
+        case 0xC0000420L: // STATUS_ASSERTION_FAILURE
+        case 0x80000003L: // STATUS_BREAKPOINT (only if not under debugger; treat as crash)
+            return true;
+        // 0xC0000005 (AV) and 0xE06D7363 (C++ throw) are too noisy in VEH —
+        // they happen during normal operation inside try/catch frames.
+        // Let the existing UnhandledExceptionFilter catch genuinely-unhandled
+        // ones via the SEH chain.
+        default:
+            return false;
+    }
+}
+
+static LONG CALLBACK MangosdVectoredExceptionHandler(EXCEPTION_POINTERS* ep)
+{
+    if (!ep || !ep->ExceptionRecord)
+        return EXCEPTION_CONTINUE_SEARCH;
+
+    DWORD code = ep->ExceptionRecord->ExceptionCode;
+    if (!MangosdShouldClaimVehException(code))
+        return EXCEPTION_CONTINUE_SEARCH;
+
+    // Pick a label by code so the .txt clearly identifies the crash kind.
+    const char* tag = "VEH";
+    switch (code)
+    {
+        case 0xC0000374L: tag = "VEH-heap-corruption"; break;
+        case 0xC0000409L: tag = "VEH-stack-buffer-overrun-or-fastfail"; break;
+        case 0xC0000420L: tag = "VEH-assertion-failure"; break;
+        case 0x80000003L: tag = "VEH-breakpoint-no-debugger"; break;
+    }
+
+    Mangosd_WriteCrashDump(ep, code, tag);
+    return EXCEPTION_CONTINUE_SEARCH; // let the original kill chain proceed
+}
+
+// Original SEH unhandled-filter path. Kept for non-fast-fail unhandled
+// exceptions (mainly access violations that escape every __try/catch).
+static LONG WINAPI MangosdUnhandledExceptionFilter(EXCEPTION_POINTERS* ep)
+{
+    Mangosd_WriteCrashDump(ep,
+                            ep && ep->ExceptionRecord ? ep->ExceptionRecord->ExceptionCode : 0,
+                            "SEH-unhandled");
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+
+// std::terminate() — uncaught C++ exception, set_terminate target,
+// or std::terminate() called explicitly. Bypasses SEH entirely.
+static void MangosdTerminateHandler()
+{
+    Mangosd_WriteCrashDump(nullptr, 0xC0000602L /* synthetic UNHANDLED_CXX */,
+                            "terminate");
+    // Fall through to default terminate (process dies cleanly here).
+    abort();
+}
+
+// SIGABRT: triggered by abort(), assert() failure, uncaught CRT errors.
+static void MangosdSignalHandler(int sig)
+{
+    const char* tag = "signal-unknown";
+    switch (sig)
+    {
+        case SIGABRT: tag = "signal-SIGABRT"; break;
+        case SIGSEGV: tag = "signal-SIGSEGV"; break;
+        case SIGFPE:  tag = "signal-SIGFPE"; break;
+        case SIGILL:  tag = "signal-SIGILL"; break;
+    }
+    Mangosd_WriteCrashDump(nullptr, 0xC0000420L /* synthetic ASSERTION_FAILURE */,
+                            tag);
+    // Don't reinstall — the next abort() would loop. Default handler runs.
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
+
+// MSVC CRT invalid-parameter handler — fires when CRT API gets bad args
+// (e.g. passing nullptr to printf %s, scanf format mismatch). Default
+// behavior is to fast-fail; override so we capture the dump first.
+static void MangosdInvalidParameterHandler(const wchar_t* /*expr*/,
+                                             const wchar_t* /*func*/,
+                                             const wchar_t* /*file*/,
+                                             unsigned int /*line*/,
+                                             uintptr_t /*reserved*/)
+{
+    Mangosd_WriteCrashDump(nullptr, 0xC0000420L,
+                            "invalid-parameter");
+    // Don't return — CRT expects this handler to terminate. abort() will
+    // re-enter our SIGABRT handler, but g_inCrashHandler stops recursion.
+    abort();
+}
+
+// Pure virtual call handler — called when a pure virtual function is
+// invoked (typically from a destructor on a partially-destroyed object).
+// MSVC's _purecall hook.
+static void MangosdPureCallHandler()
+{
+    Mangosd_WriteCrashDump(nullptr, 0xC0000420L, "pure-virtual-call");
+    abort();
+}
+
+// Install all crash-capture hooks. Called once at the start of Master::Run.
+static void MangosdInstallCrashHandlers()
+{
+    // VEH first — it fires before SEH frame walk, so we capture the dump
+    // even when ntdll is about to call __fastfail and bypass SEH entirely.
+    // Argument 1 = "first" (run before any other vectored handler).
+    AddVectoredExceptionHandler(1, MangosdVectoredExceptionHandler);
+
+    // Backstop SEH filter — catches anything that DOES propagate up the
+    // SEH chain unhandled (rare for fast-fails, common for normal AVs).
+    SetUnhandledExceptionFilter(MangosdUnhandledExceptionFilter);
+
+    // C++ runtime hooks for paths that bypass SEH altogether.
+    std::set_terminate(MangosdTerminateHandler);
+    _set_invalid_parameter_handler(MangosdInvalidParameterHandler);
+    _set_purecall_handler(MangosdPureCallHandler);
+
+    // Disable the WER "process has stopped working" dialog — we want
+    // the process to die immediately so the launcher .bat can restart
+    // it without operator interaction. The dump is already on disk.
+    _CrtSetReportMode(_CRT_WARN, 0);
+    _CrtSetReportMode(_CRT_ERROR, 0);
+    _CrtSetReportMode(_CRT_ASSERT, 0);
+
+    // Signal-based hooks (mostly redundant with the above on Windows,
+    // but cover edge cases like stdlib code calling abort() directly).
+    signal(SIGABRT, MangosdSignalHandler);
+    signal(SIGSEGV, MangosdSignalHandler);
+    signal(SIGFPE,  MangosdSignalHandler);
+    signal(SIGILL,  MangosdSignalHandler);
+}
+#endif
+
 #include "ace/MMAP_Memory_Pool.h"
 #include "ace/Shared_Memory_MM.h"
 #include "ace/ACE.h"
@@ -136,6 +460,16 @@ Master::~Master()
 /// Main function
 int Master::Run()
 {
+#ifdef WIN32
+    // Sprint12: install crash-dump capture ASAP so any startup-time
+    // crash (e.g. DBC load failure) also produces a usable dump.
+    // 2026-05-05: expanded from a single SEH filter to VEH + CRT hooks
+    // to catch heap corruption / fast-fail / std::terminate paths that
+    // bypass `SetUnhandledExceptionFilter`. See MangosdInstallCrashHandlers
+    // above for the full hook inventory.
+    MangosdInstallCrashHandlers();
+#endif
+
     /// worldd PID file creation
     std::string pidfile = sConfig.GetStringDefault("PidFile", "");
     if (!pidfile.empty())

@@ -46,6 +46,8 @@ class Transport : public GameObject
         void BuildUpdate(UpdateDataMapType& data_map);
 
         void AddPassenger(WorldObject* passenger);
+        // Sprint 10 cmangos/playerbots port — cmangos passes a 2nd bool (advised, ignored).
+        void AddPassenger(WorldObject* passenger, bool /*advised*/) { AddPassenger(passenger); }
         void RemovePassenger(WorldObject* passenger);
         PassengerSet const& GetPassengers() const { return _passengers; }
 

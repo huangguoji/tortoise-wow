@@ -311,8 +311,12 @@ void Player::UpdateAttackPowerAndDamage(bool ranged)
             case CLASS_DRUID:
             {
                 ShapeshiftForm form = GetShapeshiftForm();
-                //Check if Predatory Strikes is skilled
-                float mLevelMult = 0.0;
+                // Predatory Strikes — patch9 redesign:
+                // bp = +%AP multiplier on existing AP (3/6/10%) instead of vanilla
+                // "+level * bp/100" flat AP. The talent's effect2 SpellMod handles
+                // +%damage to Claw/Rake/Maul/Swipe/Savage Bite via spell_template
+                // (data-side, no C++ needed for that clause). See DRUID_PATCH9_MIGRATION C-2.
+                float predStrPct = 0.0f;
                 switch (form)
                 {
                     case FORM_CAT:
@@ -322,10 +326,10 @@ void Player::UpdateAttackPowerAndDamage(bool ranged)
                         Unit::AuraList const& mDummy = GetAurasByType(SPELL_AURA_DUMMY);
                         for (const auto itr : mDummy)
                         {
-                            // Predatory Strikes
+                            // Predatory Strikes — SpellIconID 1563
                             if (itr->GetSpellProto()->SpellIconID == 1563)
                             {
-                                mLevelMult = itr->GetModifier()->m_amount / 100.0f;
+                                predStrPct = (itr->GetModifier()->m_amount + 1) / 100.0f;
                                 break;
                             }
                         }
@@ -338,16 +342,18 @@ void Player::UpdateAttackPowerAndDamage(bool ranged)
                 switch (form)
                 {
                     case FORM_CAT:
-                        val2 = GetLevel() * mLevelMult + GetStat(STAT_STRENGTH) * 2.0f + GetStat(STAT_AGILITY) - 20.0f;
+                        val2 = GetStat(STAT_STRENGTH) * 2.0f + GetStat(STAT_AGILITY) - 20.0f;
                         break;
                     case FORM_BEAR:
                     case FORM_DIREBEAR:
-                        val2 = GetLevel() * mLevelMult + GetStat(STAT_STRENGTH) * 2.0f - 20.0f;
+                        val2 = GetStat(STAT_STRENGTH) * 2.0f - 20.0f;
                         break;
                     default:
                         val2 = GetStat(STAT_STRENGTH) * 2.0f - 20.0f;
                         break;
                 }
+                if (predStrPct > 0.0f)
+                    val2 *= (1.0f + predStrPct);
                 break;
             }
             case CLASS_MAGE:

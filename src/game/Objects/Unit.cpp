@@ -388,6 +388,28 @@ void Unit::Update(uint32 update_diff, uint32 p_time)
         m_damageTakenHistory.clear();
 }
 
+// Sprint 10 cmangos/playerbots port — bot uses cmangos's IsInTeam(team) on Unit*.
+// Penqle only has Player::GetTeam(); for non-players default to Alliance team membership.
+bool Unit::IsInTeam(uint32 team, bool /*allowFFA*/) const
+{
+    if (Player const* p = ToPlayer())
+        return p->GetTeam() == team;
+    // Non-player units (creatures, totems, pets) — bot's PVP filters apply this to "enemy player" checks;
+    // treat as Alliance by default (the same fallback cmangos uses for non-team units).
+    return team == ALLIANCE;
+}
+
+// Sprint 10 cmangos/playerbots port — overload: same-team check between two units.
+bool Unit::IsInTeam(Unit const* other, bool allowFFA) const
+{
+    if (!other) return false;
+    Player const* p = ToPlayer();
+    Player const* o = other->ToPlayer();
+    if (p && o) return p->GetTeam() == o->GetTeam();
+    // If either is non-player, fall through to Alliance default.
+    return true;
+}
+
 bool Unit::UsesPvPCombatTimer() const
 {
     if (IsPlayer())
@@ -712,6 +734,24 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
 {
     if (pVictim && pVictim->IsPlayer() && pVictim->ToPlayer()->m_disableGeneralDamage == true)
         return 0;
+
+    // Sprint12 (sc-overnight) bot logging suite — hook damage events.
+    // Wrapper checks attacker AND victim for bot AI; non-bot ↔ non-bot
+    // case is two cheap pointer-null-checks. Sampled 1/5 to avoid spam
+    // in heavy-DoT raid scenarios.
+    {
+        extern void BotActionLog_LogDamage(Unit* attacker, Unit* victim, uint32 damage, uint32 spellId, const char* damageType);
+        const char* dt = "?";
+        switch (damagetype) {
+            case DIRECT_DAMAGE: dt = "DIRECT"; break;
+            case SPELL_DIRECT_DAMAGE: dt = "SPELL_DIRECT"; break;
+            case DOT: dt = "DOT"; break;
+            case HEAL: dt = "HEAL"; break;
+            case NODAMAGE: dt = "NODAMAGE"; break;
+            case SELF_DAMAGE: dt = "SELF"; break;
+        }
+        BotActionLog_LogDamage(this, pVictim, damage, spellProto ? spellProto->Id : 0, dt);
+    }
 
     // remove affects from attacker at any non-DoT damage (including 0 damage)
     if (damagetype != DOT)
@@ -1057,7 +1097,7 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
             pVictim->RemoveAura(PLAINSRUNNING_FIRST_TICK, EFFECT_INDEX_0);
             pVictim->RemoveAura(PLAINSRUNNING_FIRST_TICK, EFFECT_INDEX_1);
         }
-        else if (pVictim->HasAura(PLAINSRUNNING_SPELL)) 
+        else if (pVictim->HasAura(PLAINSRUNNING_SPELL))
         {
             pVictim->RemoveAura(PLAINSRUNNING_SPELL, EFFECT_INDEX_0);
             pVictim->RemoveAura(PLAINSRUNNING_SPELL, EFFECT_INDEX_1);
@@ -3476,6 +3516,18 @@ bool Unit::AddSpellAuraHolder(SpellAuraHolder *holder)
 {
     SpellEntry const* aurSpellInfo = holder->GetSpellProto();
 
+    // SoloCommander aura-attempt hook (sc-overnight 2026-05-07). Logged BEFORE any
+    // early-returns (refresh, stack, dead target, debuff-limit, etc.) so the bot
+    // log captures every aura that any code path tries to put on a bot — even
+    // those that get rejected or merged into an existing holder. This was needed
+    // to debug a self-applied Bash 25515 that was invisible to the post-success
+    // hook below (refreshes never reach it). Logged with tag AURA_ATTEMPT so it's
+    // distinguishable from the AURA_APPLY tag that fires on confirmed first-apply.
+    {
+        extern void BotActionLog_LogAuraAttempt(Unit* target, uint32 spellId, int32 durationMs, uint64 casterGuidRaw);
+        BotActionLog_LogAuraAttempt(this, holder->GetId(), holder->GetAuraMaxDuration(), holder->GetCasterGuid().GetRawValue());
+    }
+
     // ghost spell check, allow apply any auras at player loading in ghost mode (will be cleanup after load)
     if (!IsAlive() && !aurSpellInfo->IsDeathPersistentSpell() && !aurSpellInfo->CanTargetDeadTarget() &&
         (!IsPlayer() || !((Player*)this)->GetSession()->PlayerLoading()))
@@ -3693,6 +3745,15 @@ bool Unit::AddSpellAuraHolder(SpellAuraHolder *holder)
     }
     // When we call _AddSpellAuraHolder, we must have a free aura slot
     holder->_AddSpellAuraHolder();
+
+    // Sprint12 (sc-overnight) bot logging suite — hook aura applies. The
+    // wrapper checks if `this` is a bot Player; non-bots cost only the
+    // GetPlayerbotAI() null check. Resolves at final mangosd link.
+    {
+        extern void BotActionLog_LogAuraApply(Unit* target, uint32 spellId, int32 durationMs, uint64 casterGuidRaw);
+        int32 durMs = holder->GetAuraMaxDuration();
+        BotActionLog_LogAuraApply(this, holder->GetId(), durMs, holder->GetCasterGuid().GetRawValue());
+    }
 
     return true;
 }
@@ -4258,6 +4319,13 @@ void Unit::DeleteAuraHolder(SpellAuraHolder *holder)
 
 void Unit::RemoveSpellAuraHolder(SpellAuraHolder *holder, AuraRemoveMode mode)
 {
+    // Sprint12 (sc-overnight) bot logging suite — hook aura removes. Logged
+    // BEFORE the holder is destroyed so the caster GUID is still valid.
+    {
+        extern void BotActionLog_LogAuraRemove(Unit* target, uint32 spellId, uint64 casterGuidRaw);
+        BotActionLog_LogAuraRemove(this, holder->GetId(), holder->GetCasterGuid().GetRawValue());
+    }
+
     // Statue unsummoned at holder remove
     Totem* statue = nullptr;
     WorldObject* caster = holder->GetRealCaster();
@@ -5697,6 +5765,32 @@ uint32 Unit::SpellDamageBonusTaken(WorldObject* pCaster, SpellEntry const* spell
         takenFlatMod = -float(pdamage / 2);
     // use float as more appropriate for negative values and percent applying
     float tmpDamage = (pdamage + takenFlatMod) * takenTotalMod;
+
+    // Wrathstone (51700) effect 2 — patch9 stone:
+    //   "Increases the threat generated by your Fire spells by $s1% AND
+    //    reduces the Fire damage you take from your Hellfire spell by $s2%
+    //    for $d."
+    // Effect 1 (MOD_THREAT, miscValue=4 Fire, bp=39 → +40%) works engine-side.
+    // Effect 2 is aura type 4 (DUMMY) bp=29 → 30% — needs this hook because
+    // DUMMY auras have no built-in damage modifier. Filter:
+    //   - victim has Wrathstone aura (51700) on effect index 1
+    //   - incoming damage spell is one of Hellfire's ranks (1949/11683/11684)
+    //   - the damage is self-inflicted (pCaster == this) — Hellfire's effect
+    //     2 is PERIODIC_DAMAGE on TARGET_SELF, so this condition holds for
+    //     the caster's own ticks but not for AOE ticks against enemies.
+    if (spellProto && pCaster == this &&
+        (spellProto->Id == 1949 || spellProto->Id == 11683 || spellProto->Id == 11684))
+    {
+        if (SpellAuraHolder* wrathstone = GetSpellAuraHolder(51700))
+        {
+            if (Aura* eff2 = wrathstone->GetAuraByEffectIndex(EFFECT_INDEX_1))
+            {
+                int32 reduction = eff2->GetModifier()->m_amount;  // bp+1 = 30
+                tmpDamage *= (100.0f - float(reduction)) / 100.0f;
+            }
+        }
+    }
+
     return tmpDamage > 0 ? uint32(roundf(tmpDamage)) : 0;
 }
 
@@ -5798,6 +5892,20 @@ bool Unit::IsSpellCrit(Unit const* pVictim, SpellEntry const* spellProto, SpellS
             case SPELL_DAMAGE_CLASS_MELEE:
             case SPELL_DAMAGE_CLASS_RANGED:
             {
+                // Elemental Weapons (Tortoise 16266/29079/29080): Frostbrand
+                // attack guarantees a crit if the target has any Frost Shock.
+                if (pVictim &&
+                    spellProto->IsFitToFamily<SPELLFAMILY_SHAMAN, CF_SHAMAN_FROSTBRAND_ATTACK>() &&
+                    (HasAura(16266) || HasAura(29079) || HasAura(29080)))
+                {
+                    static uint32 const frostShockIds[] = {
+                        8056, 8057, 8058, 8059, 10472, 10473, 10474, 10475,
+                        12548, 15089, 15499, 19133, 21030, 21401, 22582, 23115, 51266
+                    };
+                    for (uint32 fsId : frostShockIds)
+                        if (pVictim->HasAura(fsId))
+                            return true;
+                }
                 if (pVictim->IsPlayer() && !pVictim->IsStandingUp())
                     return true;
                 crit_chance = GetUnitCriticalChance(attackType, pVictim);
@@ -5876,6 +5984,23 @@ uint32 Unit::SpellHealingBonusTaken(WorldObject* pCaster, SpellEntry const* spel
                 // Flash of Light
                 else if (spellProto->IsFitToFamilyMask<CF_PALADIN_FLASH_OF_LIGHT1>() && i->GetEffIndex() == EFFECT_INDEX_1)
                     takenFlatMod += i->GetModifier()->m_amount;
+            }
+        }
+    }
+
+    // Daybreak (51322): target-side dummy aura. Amplifies healing taken from
+    // Flash of Light, Holy Light, and Holy Shock by the value stored in the
+    // buff's eff2 basepoint. Buff is applied by talent 51323 on heal-crit.
+    if (spellProto->SpellFamilyName == SPELLFAMILY_PALADIN &&
+        spellProto->IsFitToFamilyMask<CF_PALADIN_FLASH_OF_LIGHT1, CF_PALADIN_HOLY_LIGHT2, CF_PALADIN_HOLY_SHOCK>())
+    {
+        AuraList const& mDummyAuras = GetAurasByType(SPELL_AURA_DUMMY);
+        for (const auto& i : mDummyAuras)
+        {
+            if (i->GetId() == 51322 && i->GetEffIndex() == EFFECT_INDEX_1)
+            {
+                takenTotalMod *= (100.0f + (i->GetModifier()->m_amount + 1)) / 100.0f;
+                break;
             }
         }
     }
@@ -7861,15 +7986,42 @@ bool Unit::CanHaveThreatList() const
 
 float Unit::ApplyTotalThreatModifier(float threat, SpellSchoolMask schoolMask)
 {
+    float baseThreat = threat;
+
+    // Defensive Tactics (Tortoise custom 51606/51607/51608): retain X% of
+    // Defensive Stance's +30% threat in other stances when shielded.
+    // V1: bp+1 stored as % of Defensive Stance's threat bonus
+    // (60/120/180% in basepoint terms; rank 3 stacks above 100% per tooltip).
+    if (IsPlayer() && GetClass() == CLASS_WARRIOR)
+    {
+        Player* p = static_cast<Player*>(this);
+        ShapeshiftForm form = p->GetShapeshiftForm();
+        if (form != FORM_DEFENSIVESTANCE && form != FORM_NONE)
+        {
+            if (Item* off = p->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND))
+            {
+                if (off->GetProto() && off->GetProto()->InventoryType == INVTYPE_SHIELD)
+                {
+                    float retainPct = 0.0f;
+                    if (HasAura(51608))      retainPct = 1.80f;
+                    else if (HasAura(51607)) retainPct = 1.20f;
+                    else if (HasAura(51606)) retainPct = 0.60f;
+                    if (retainPct > 0.0f)
+                        baseThreat *= 1.0f + (0.30f * retainPct);
+                }
+            }
+        }
+    }
+
     if (!HasAuraType(SPELL_AURA_MOD_THREAT))
-        return threat;
+        return baseThreat;
 
     if (schoolMask == SPELL_SCHOOL_MASK_NONE)
-        return threat;
+        return baseThreat;
 
     SpellSchools school = GetFirstSchoolInMask(schoolMask);
 
-    return threat * m_threatModifier[school];
+    return baseThreat * m_threatModifier[school];
 }
 
 //======================================================================
@@ -9343,6 +9495,14 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* pTarget, uint32 procFlag, 
                         if (Player* me = ToPlayer())
                             me->AddComboPoints(pTarget, 1);
                     }
+                    // TurtleWoW: Warrior Counterattack talent (51631-34 passive grants
+                    // 51626-29 active gated by AURA_STATE_HUNTER_PARRY, shared slot).
+                    else if (GetClass() == CLASS_WARRIOR && IsPlayer() &&
+                             (HasSpell(51631) || HasSpell(51632) || HasSpell(51633) || HasSpell(51634)))
+                    {
+                        ModifyAuraState(AURA_STATE_HUNTER_PARRY, true);
+                        StartReactiveTimer(REACTIVE_HUNTER_PARRY, pTarget->GetObjectGuid());
+                    }
                     else
                     {
                         ModifyAuraState(AURA_STATE_DEFENSE, true);
@@ -9829,7 +9989,8 @@ void Unit::ClearAllReactives()
 
     if (HasAuraState(AURA_STATE_DEFENSE))
         ModifyAuraState(AURA_STATE_DEFENSE, false);
-    if (GetClass() == CLASS_HUNTER && HasAuraState(AURA_STATE_HUNTER_PARRY))
+    // AURA_STATE_HUNTER_PARRY is shared with TurtleWoW Warrior Counterattack talent.
+    if ((GetClass() == CLASS_HUNTER || GetClass() == CLASS_WARRIOR) && HasAuraState(AURA_STATE_HUNTER_PARRY))
         ModifyAuraState(AURA_STATE_HUNTER_PARRY, false);
     if (GetClass() == CLASS_ROGUE && HasAuraState(AURA_STATE_TARGET_DODGED))
         ModifyAuraState(AURA_STATE_TARGET_DODGED, false);
@@ -9859,7 +10020,8 @@ void Unit::UpdateReactives(uint32 p_time)
                         ModifyAuraState(AURA_STATE_DEFENSE, false);
                     break;
                 case REACTIVE_HUNTER_PARRY:
-                    if (GetClass() == CLASS_HUNTER && HasAuraState(AURA_STATE_HUNTER_PARRY))
+                    // AURA_STATE_HUNTER_PARRY is shared with TurtleWoW Warrior Counterattack talent.
+                    if ((GetClass() == CLASS_HUNTER || GetClass() == CLASS_WARRIOR) && HasAuraState(AURA_STATE_HUNTER_PARRY))
                         ModifyAuraState(AURA_STATE_HUNTER_PARRY, false);
                     break;
                 case REACTIVE_OVERPOWER:
@@ -11458,6 +11620,28 @@ void Unit::RestoreMovement()
     }
 }
 
+// Sprint 10 cmangos/playerbots port — bot passes SpellEntry; forward to spell_id version.
+void Unit::RemoveSpellCooldown(SpellEntry const& spellInfo, bool update)
+{
+    RemoveSpellCooldown(spellInfo.Id, update);
+}
+
+// Sprint 10 cmangos/playerbots port — bot calls unit->GetAttackDistance(target) on a Unit*.
+// Penqle implements this only on Creature. Forward when we are a Creature, else return a default.
+float Unit::GetAttackDistance(Unit const* target) const
+{
+    if (GetTypeId() == TYPEID_UNIT)
+        return ((Creature const*)this)->GetAttackDistance(target);
+    return 20.0f; // reasonable default for non-creature attackers
+}
+
+// Sprint 10 cmangos/playerbots port — GetCreator returns the unit that summoned this one.
+Unit* Unit::GetCreator() const
+{
+    ObjectGuid const& guid = GetCreatorGuid();
+    return guid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*this, guid);
+}
+
 /** Spell cooldown management system. Shared by Players, Creatures, Pets, ... */
 void Unit::RemoveSpellCooldown(uint32 spell_id, bool update)
 {
@@ -11595,6 +11779,24 @@ void Unit::AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 item
         cat = spellInfo->Category;
         rec = spellInfo->RecoveryTime;
         catrec = spellInfo->CategoryRecoveryTime;
+    }
+
+    // Stable Shields (Shaman talent 16261/16290/16291): adds cooldown floor
+    // between activations of shaman shield spells (Lightning/Water/Earth Shield).
+    if (spellInfo->SpellFamilyName == SPELLFAMILY_SHAMAN &&
+        (spellInfo->IsFitToFamilyMask<CF_SHAMAN_LIGHTNING_SHIELD>() ||
+         spellInfo->IsFitToFamilyMask<CF_SHAMAN_WATER_SHIELD>()))
+    {
+        int32 stableSec = 0;
+        if (HasAura(16291))      stableSec = 6;
+        else if (HasAura(16290)) stableSec = 4;
+        else if (HasAura(16261)) stableSec = 2;
+        if (stableSec > 0)
+        {
+            int32 const stableMs = stableSec * IN_MILLISECONDS;
+            if (rec < stableMs)
+                rec = stableMs;
+        }
     }
 
     time_t curTime = time(nullptr);

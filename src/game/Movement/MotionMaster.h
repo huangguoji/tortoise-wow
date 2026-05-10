@@ -129,6 +129,8 @@ class MotionMaster : std::stack<MovementGenerator *>
         void MoveRandom(bool use_current_position = false, float wander_distance = 0.0f, uint32 expire_time = 0);
         void MoveTargetedHome();
         void MoveFollow(Unit* target, float dist, float angle);
+        // Sprint 10 cmangos/playerbots port — bot's 5-arg form (extra flags ignored).
+        void MoveFollow(Unit* target, float dist, float angle, bool /*forceTarget*/, bool /*useAngle*/) { MoveFollow(target, dist, angle); }
         void MoveChase(Unit* target, float dist = 0.0f, float angle = 0.0f);
         void MoveConfused();
         void MoveFleeing(Unit* enemy, uint32 time = 0);
@@ -146,6 +148,24 @@ class MotionMaster : std::stack<MovementGenerator *>
         void MoveCharge(Unit* target, uint32 delay = 0, bool triggerAutoAttack = false);
         void MoveDistance(Unit* target, float distance);
         void ReInitializePatrolMovement();
+
+        // Sprint 10 cmangos/playerbots port — bot calls MovePath with a vector of points.
+        // Stubbed for Wave 1; full implementation deferred to Wave 5+ (path-based movement
+        // generator). For now, no-op so the bot module compiles.
+        template<typename PointPath>
+        void MovePath(PointPath const& /*pointPath*/, uint32 /*moveMode*/, bool /*flying*/, bool /*walk*/ = false) {}
+        // MoveFall: cmangos returns bool. Stub returns false.
+        bool MoveFall() { return false; }
+        // DistanceYourself: cmangos move-away action. Stub no-op (multiple forms).
+        void DistanceYourself(float /*distance*/) {}
+        void DistanceYourself(Unit* /*target*/) {}
+        void DistanceYourself(Unit* /*target*/, float /*distance*/) {}
+        // MoveInFormation: cmangos formation movement. Stub no-op.
+        template<typename T> void MoveInFormation(T /*formationData*/, bool /*main*/ = false) {}
+        // PauseWaypoints: cmangos pauses waypoint movement. Stub no-op.
+        void PauseWaypoints(uint32 /*timer*/ = 0) {}
+        // MoveChase 7-arg form: cmangos has extra angle/options/relativeAngle args.
+        void MoveChase(Unit* target, float dist, float angle, bool /*moveBackward*/, bool /*walk*/, bool /*combatMove*/, bool /*delayedPathCalculation*/) { MoveChase(target, dist, angle); }
 
         MovementGeneratorType GetCurrentMovementGeneratorType() const;
         static char const* GetMovementGeneratorTypeName(MovementGeneratorType generator);

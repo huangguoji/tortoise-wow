@@ -291,7 +291,12 @@ class BattleGround
         // Get methods:
         char const* GetName() const         { return m_Name; }
         BattleGroundTypeId GetTypeID() const { return m_TypeID; }
+        // Sprint 10 cmangos/playerbots port — cmangos uses GetTypeId (lowercase d).
+        BattleGroundTypeId GetTypeId() const { return m_TypeID; }
         bool IsArena() const { return GetTypeID() == BATTLEGROUND_BR ? true : false; }
+        // cmangos generic flag carrier accessor — bot calls bg->GetFlagCarrierGuid(team_index).
+        // Default no-op base; BattleGroundWS / BattleGroundAB override / shadow.
+        virtual ObjectGuid GetFlagCarrierGuid(uint32 /*team_index*/ = 0) const { return ObjectGuid(); }
         BattleGroundBracketId GetBracketId() const { return m_BracketId; }
         // the instanceId check is also used to determine a bg-template
         // that's why the m_map hack is here..

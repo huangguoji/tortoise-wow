@@ -65,6 +65,9 @@ class ZoneScript;
 class PlayerAI;
 class PlayerBroadcaster;
 class MapReference;
+// Sprint 10 cmangos/playerbots port — forward decls for bot system Wave 5 host hooks
+class PlayerbotAI;
+class PlayerbotMgr;
 
 static constexpr uint8 PLAYER_MAX_SKILLS = 127;
 constexpr uint8 PLAYER_EXPLORED_ZONES_SIZE = 64;
@@ -1109,6 +1112,10 @@ class Player final: public Unit
         static void InitVisibleBits();
 
         bool Create(uint32 guidlow, std::string const& name, uint8 race, uint8 class_, uint8 gender, uint8 skin, uint8 face, uint8 hairStyle, uint8 hairColor, uint8 facialHair);
+        // Sprint 10 cmangos/playerbots port — cmangos's 11-arg form (extra outfitId, ignored).
+        bool Create(uint32 guidlow, std::string const& name, uint8 race, uint8 class_, uint8 gender, uint8 skin, uint8 face, uint8 hairStyle, uint8 hairColor, uint8 facialHair, uint8 /*outfitId*/) {
+            return Create(guidlow, name, race, class_, gender, skin, face, hairStyle, hairColor, facialHair);
+        }
         void Update(uint32 update_diff, uint32 time) override;
         static bool BuildEnumData(QueryResult* result,  WorldPacket* pData);
 
@@ -1224,7 +1231,9 @@ class Player final: public Unit
         bool CheckAmmoCompatibility(const ItemPrototype* ammo_proto) const;
         void QuickEquipItem(uint16 pos, Item* pItem);
         void VisualizeItem(uint8 slot, Item* pItem);
+    public: // Sprint 10 cmangos/playerbots port — make SetVisibleItemSlot public for bot module.
         void SetVisibleItemSlot(uint8 slot, Item* pItem);
+    private:
         // in trade, guild bank, mail....
         void RemoveItemDependentAurasAndCasts(Item* pItem);
         void UpdateEnchantTime(uint32 time);
@@ -1368,6 +1377,8 @@ class Player final: public Unit
         void LogItem(Item* item, LogItemAction action, uint32 count = 0);
 
         float GetReputationPriceDiscount(Creature const* pCreature) const;
+        // Sprint 10 cmangos/playerbots port — bot passes FactionTemplateEntry. Stub.
+        float GetReputationPriceDiscount(FactionTemplateEntry const* /*ft*/) const { return 1.0f; }
 
         Player* GetTrader() const { return m_trade ? m_trade->GetTrader() : nullptr; }
         TradeData* GetTradeData() const { return m_trade; }
@@ -1445,6 +1456,7 @@ class Player final: public Unit
         bool CanGiveQuestSourceItemIfNeed(Quest const* pQuest, ItemPosCountVec* dest = nullptr) const;
         void GiveQuestSourceItemIfNeed(Quest const* pQuest);
 
+    public:  // Sprint 10 cmangos/playerbots port — make quest slot accessors public for bot module.
         uint16 FindQuestSlot(uint32 quest_id) const;
         uint32 GetQuestSlotQuestId(uint16 slot) const { return GetUInt32Value(PLAYER_QUEST_LOG_1_1 + slot * MAX_QUEST_OFFSET + QUEST_ID_OFFSET); }
         void SetQuestSlot(uint16 slot, uint32 quest_id, uint32 timer = 0)
@@ -1686,6 +1698,8 @@ class Player final: public Unit
         bool HasSpell(uint32 spell) const override;
         bool HasActiveSpell(uint32 spell) const;            // show in spellbook
         TrainerSpellState GetTrainerSpellState(TrainerSpell const* trainer_spell) const;
+        // Sprint 10 cmangos/playerbots port — cmangos passes (spell, reqLevel); ignore reqLevel.
+        TrainerSpellState GetTrainerSpellState(TrainerSpell const* trainer_spell, uint32 /*reqLevel*/) const { return GetTrainerSpellState(trainer_spell); }
         bool IsSpellFitByClassAndRace(uint32 spell_id, uint32* pReqlevel = nullptr) const;
         bool IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex index, bool castOnSelf) const override;
         void ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs) override;
@@ -1696,6 +1710,8 @@ class Player final: public Unit
 
         void LearnSpell(uint32 spell_id, bool dependent, bool talent = false);
         void RemoveSpell(uint32 spell_id, bool disabled = false, bool learn_low_rank = true, bool hardReset = false);
+        // Sprint 10 cmangos/playerbots port — cmangos camelCase + 2-arg form.
+        void removeSpell(uint32 spell_id, bool disabled = false, bool learn_low_rank = true) { RemoveSpell(spell_id, disabled, learn_low_rank); }
         void ResetSpells();
         void LearnDefaultSpells();
         void LearnQuestRewardedSpells();
@@ -1737,12 +1753,16 @@ class Player final: public Unit
         uint32 m_usedTalentCount;
         uint32 m_extraBonusTalentCount;
 
+    public: // Sprint 10 cmangos/playerbots port — make UpdateFreeTalentPoints public for bot module.
         void UpdateFreeTalentPoints(bool resetIfNeed = true);
+    private:
         uint32 GetResetTalentsCost() const;
         void UpdateResetTalentsMultiplier() const;
-        uint32 CalculateTalentsPoints() const;
+        // Sprint 10 cmangos/playerbots port — moved to public; bot's Talentspec.h
+        // calls this on bot Player instances. No encapsulation concern (pure getter).
         void SendTalentWipeConfirm(ObjectGuid guid) const;
     public:
+        uint32 CalculateTalentsPoints() const;
         uint32 GetFreeTalentPoints() const { return GetUInt32Value(PLAYER_CHARACTER_POINTS1); }
         void SetFreeTalentPoints(uint32 points) { SetUInt32Value(PLAYER_CHARACTER_POINTS1, points); }
         void SetBonusTalentCount(uint32 count) { m_extraBonusTalentCount = count; UpdateFreeTalentPoints(); }
@@ -1764,6 +1784,10 @@ class Player final: public Unit
         float m_carryHealthRegen;
         ObjectGuid m_comboTargetGuid;
         int8 m_comboPoints;
+        // Book of Prayer (Priest Sprint 5.4 talent 52943/52944) — last
+        // direct-heal target for the "different target than previous heal"
+        // mana-refund gate.
+        ObjectGuid m_lastHealTargetGuid;
         uint32 m_weaponChangeTimer;
         bool m_canParry;
         bool m_canBlock;
@@ -1810,6 +1834,11 @@ class Player final: public Unit
         void AddComboPoints(Unit* target, int8 count);
         void ClearComboPoints();
         void SetComboPoints();
+
+        // Book of Prayer (Priest Sprint 5.4 talent 52943/52944): refund only on
+        // heals that change target.
+        ObjectGuid const& GetLastHealTargetGuid() const { return m_lastHealTargetGuid; }
+        void SetLastHealTargetGuid(ObjectGuid g) { m_lastHealTargetGuid = g; }
 
         bool UpdateStats(Stats stat) override;
         bool UpdateAllStats() override;
@@ -1877,12 +1906,16 @@ class Player final: public Unit
         /***                   SKILLS SYSTEM                   ***/
         /*********************************************************/
 
-    private:
+    public: // Sprint 10 cmangos/playerbots port — make InitPrimaryProfessions public for bot module.
         void InitPrimaryProfessions();
+    private:
         void UpdateSkillTrainedSpells(uint16 id, uint16 currVal);                                   // learns/unlearns spells dependent on a skill
         void UpdateSpellTrainedSkills(uint32 spellId, bool apply, bool hardReset = false);                                  // learns/unlearns skills dependent on a spell
         void UpdateOldRidingSkillToNew(bool has_epic_mount);
+    public: // Sprint 10 cmangos/playerbots port — make UpdateSkillsForLevel public for bot module.
         void UpdateSkillsForLevel();
+        void UpdateSkillsForLevel(uint32 /*level*/) { UpdateSkillsForLevel(); }
+    private:
         SkillStatusMap mSkillStatus;
         std::unordered_map<uint16, uint16> m_mForgottenSkills;
 
@@ -2070,6 +2103,8 @@ class Player final: public Unit
         {
             m_fallStartZ = fallStartZ;
         }
+        // Sprint 10 cmangos/playerbots port — cmangos passes (time, fallStartZ).
+        void SetFallInformation(uint32 /*time*/, float fallStartZ) { m_fallStartZ = fallStartZ; }
         void HandleFall(MovementInfo const& movementInfo);
         bool IsFalling() const { return m_fallStartZ != 0; }
 
@@ -2153,6 +2188,10 @@ class Player final: public Unit
 
         uint32 GetHomeBindMap() const { return m_homebindMapId; }
         uint16 GetHomeBindAreaId() const { return m_homebindAreaId; }
+        // Sprint 10 cmangos/playerbots port — cmangos GetHomebindLocation populates out-params.
+        void GetHomebindLocation(float& x, float& y, float& z, uint32& mapId) const {
+            x = m_homebindX; y = m_homebindY; z = m_homebindZ; mapId = m_homebindMapId;
+        }
 
         void SendSummonRequest(ObjectGuid summonerGuid, uint32 mapId, uint32 zoneId, float x, float y, float z);
         void SetSummonPoint(uint32 mapid, float x, float y, float z)
@@ -2251,9 +2290,8 @@ class Player final: public Unit
         /***                    TAXI SYSTEM                    ***/
         /*********************************************************/
         
-    private:
+    public: // Sprint 10 cmangos/playerbots port — bot accesses m_taxi directly.
         PlayerTaxi m_taxi;
-    public:
         PlayerTaxi& GetTaxi() { return m_taxi; }
         PlayerTaxi const& GetTaxi() const { return m_taxi; }
         void InitTaxiNodes() { m_taxi.InitTaxiNodes(GetRace(), GetLevel()); }
@@ -2326,6 +2364,177 @@ class Player final: public Unit
         void SetControlledBy(Unit* Who);
         bool ChangeRace(uint8 newRace, uint8 newGender, uint32 playerbyte1, uint32 playerbyte2);
         void RemoveAI();
+
+        // Sprint 10 cmangos/playerbots port — Phase 3d host hooks.
+        // m_playerbotAI is set by CreatePlayerbotAI() during PlayerbotHolder::OnBotLogin.
+        // m_playerbotMgr is set when a real Player logs in (mgr drives all their bots).
+        PlayerbotAI* GetPlayerbotAI() const { return m_playerbotAI; }
+        PlayerbotMgr* GetPlayerbotMgr() const { return m_playerbotMgr; }
+        // isRealPlayer: a bot's AI is non-null and not flagged as real-player; otherwise this is a real player.
+        bool isRealPlayer() const;
+
+        // cmangos-style aliases the bot module uses on Player:
+        // IsInGroup(other) — checks if `other` is in the same group as this player.
+        // IsInGroup(other, sub) — same; sub flag is cmangos's "same subgroup" check;
+        //   stub to ignore (Wave 5 candidate to wire properly).
+        bool IsInGroup(Player const* other, bool /*sub*/ = false) const { return other && GetGroup() && GetGroup() == other->GetGroup(); }
+        bool IsInGroup(Unit const* other, bool /*sub*/ = false) const {
+            Player const* p = (other && other->GetTypeId() == TYPEID_PLAYER) ? (Player const*)other : nullptr;
+            return IsInGroup(p);
+        }
+        // CanInteract: cmangos has CanInteract(GameObject*); Penqle has CanInteractWithGameObject.
+        bool CanInteract(GameObject const* go) const { return CanInteractWithGameObject(go); }
+        bool CanInteract(Creature const* c, uint32 mask = ~0u) const { return CanInteractWithNPC(c, mask); }
+        // AddCooldown: cmangos forwards spell+item cooldown; Penqle uses AddSpellAndCategoryCooldowns.
+        void AddCooldown(SpellEntry const& spellInfo, ItemPrototype const* proto, bool /*permanent*/ = false) {
+            AddSpellAndCategoryCooldowns(&spellInfo, proto ? proto->ItemId : 0);
+        }
+        // IsSpellReady: cmangos checks spell cooldown; Penqle uses HasSpellCooldown (inverted).
+        bool IsSpellReady(SpellEntry const& spellInfo) const { return !HasSpellCooldown(spellInfo.Id); }
+        bool IsSpellReady(uint32 spellId) const { return !HasSpellCooldown(spellId); }
+        // 2-arg form: cmangos passes spell + item proto for item-based ability cooldowns.
+        bool IsSpellReady(SpellEntry const& spellInfo, ItemPrototype const* /*proto*/) const { return !HasSpellCooldown(spellInfo.Id); }
+        bool IsSpellReady(uint32 spellId, ItemPrototype const* /*proto*/) const { return !HasSpellCooldown(spellId); }
+        // HasMana: cmangos shorthand for power-type check; Penqle uses GetPowerType() == POWER_MANA.
+        bool HasMana() const { return GetPowerType() == POWER_MANA; }
+        // CanReachWithMeleeAttack: cmangos name; Penqle uses CanReachWithMeleeAutoAttack.
+        bool CanReachWithMeleeAttack(Unit const* pVictim) const { return CanReachWithMeleeAutoAttack(pVictim); }
+
+        // cmangos camelCase / alternate-name aliases used by vendored bot module:
+        void learnSpell(uint32 spell_id, bool dependent, bool talent = false) { LearnSpell(spell_id, dependent, talent); }
+        // GetPlayerMenu: cmangos returns PlayerMenu*; Penqle uses PlayerTalkClass.
+        PlayerMenu* GetPlayerMenu() const { return PlayerTalkClass; }
+        // Whisper: cmangos signature (text, lang, target). Out-of-line in Player.cpp.
+        void Whisper(const std::string& text, uint32 language, ObjectGuid receiver);
+        void Whisper(const char* text, uint32 language, ObjectGuid receiver) { Whisper(std::string(text ? text : ""), language, receiver); }
+        // GetItemByEntry: cmangos finds first Item* in inventory/equipment with matching entry. Out-of-line in Player.cpp.
+        Item* GetItemByEntry(uint32 itemEntry) const;
+        // IsFreeFlying: cmangos shorthand. Penqle has IsFlying(); we forward.
+        bool IsFreeFlying() const { return IsFlying(); }
+        // Mail iterators: cmangos exposes them on Player. Penqle hosts mail on MasterPlayer; forward.
+        // Return type spelled as the underlying iterator to avoid including MasterPlayer.h here.
+        std::deque<Mail*>::iterator GetMailBegin();
+        std::deque<Mail*>::iterator GetMailEnd();
+        // GetMItem: cmangos returns mail-attachment Item* by id. Penqle hosts on MasterPlayer.
+        Item* GetMItem(uint32 id);
+        // RemoveMail: cmangos forwarder; Penqle hosts on MasterPlayer.
+        void RemoveMail(uint32 id);
+
+        // cmangos lower/uppercase aliases.
+        bool isTaxiCheater() const { return IsTaxiCheater(); }
+        bool isDND() const { return IsDND(); }
+        // IsStandState: cmangos shorthand for "is the unit standing (not sitting/lying)".
+        bool IsStandState() const { return GetStandState() == UNIT_STAND_STATE_STAND; }
+        // GetHonorHighestRankInfo: cmangos forwarder.
+        HonorRankInfo GetHonorHighestRankInfo() const { return m_honorMgr.GetHighestRank(); }
+        // IsTaxiDebug: cmangos shorthand for "currently on a flight path".
+        bool IsTaxiDebug() const { return IsTaxiFlying(); }
+        // GetDbGuid: cmangos returns DB-side player guid (low part).
+        uint32 GetDbGuid() const { return GetGUIDLow(); }
+        // SetCanFly: cmangos sets the unit's flying capability flag; Penqle uses different mechanism.
+        // Stub no-op; Wave 5+ candidate.
+        void SetCanFly(bool /*can*/) {}
+        // getStandState: cmangos camelCase alias.
+        uint8 getStandState() const { return GetStandState(); }
+        // GetTaxiPathSpline: cmangos exposes spline of in-flight taxi route. Stub returns nullptr.
+        void* GetTaxiPathSpline() const { return nullptr; }
+        // SendMessageToPlayer: cmangos sends a SMSG_MESSAGECHAT to target player. Stub forwards to whisper.
+        void SendMessageToPlayer(Player* target, std::string const& msg) {
+            if (target) Whisper(msg, LANG_UNIVERSAL, target->GetObjectGuid());
+        }
+        // 1-arg form: cmangos has just (msg) for self-message; stub no-op.
+        void SendMessageToPlayer(std::string const& /*msg*/) {}
+        // IsStunnedByLogout: cmangos has it; Penqle uses HasUnitState UNIT_STAT_STUNNED. Stub returns false.
+        bool IsStunnedByLogout() const { return false; }
+        // isAFK: cmangos camelCase alias.
+        bool isAFK() const { return IsAFK(); }
+        // GetHonorRankInfo: cmangos accessor; Penqle uses GetHonorMgr().GetRank().
+        HonorRankInfo GetHonorRankInfo() const { return m_honorMgr.GetRank(); }
+        // GetFaction: cmangos returns the player's faction template id.
+        uint32 GetFaction() const { return GetFactionTemplateId(); }
+        // IsSitState: cmangos shorthand.
+        bool IsSitState() const { return GetStandState() == UNIT_STAND_STATE_SIT; }
+        // learnClassLevelSpells / learnDefaultSpells: cmangos training helpers; Penqle has equivalents.
+        void learnClassLevelSpells(bool /*includeHighLevelQuestRewards*/ = false) {}
+        void learnDefaultSpells() {}
+        // isGMVisible: cmangos shorthand for "GM is visible to others".
+        bool isGMVisible() const { return !(m_ExtraFlags & PLAYER_EXTRA_GM_INVISIBLE); }
+        // setCinematic: cmangos sets cinematic state. Stub no-op.
+        void setCinematic(uint32 /*cinematic*/) {}
+        // TakeQuestSourceItem: cmangos quest helper. Stub no-op.
+        void TakeQuestSourceItem(uint32 /*quest_id*/, bool /*sendUpdate*/ = true) {}
+        // OnTaxiFlightEject: cmangos handler called when bot is forced off taxi.
+        void OnTaxiFlightEject(bool /*force*/ = false) {}
+        // GetMountInfo: cmangos returns the bot's saved mount data with Name field. Stub returns nullptr.
+        struct MountInfoStub { std::string Name; };
+        MountInfoStub const* GetMountInfo() const { return nullptr; }
+        // GetMaster: cmangos returns Player's master (party leader / bot owner). Out-of-line in Player.cpp.
+        Player* GetMaster() const;
+        // RemovePlayerbotAI / CreatePlayerbotAI: bot lifecycle.
+        // Implementations in Player.cpp; CreatePlayerbotAI allocates a PlayerbotAI for this Player.
+        void RemovePlayerbotAI();
+        void CreatePlayerbotAI();
+        // RemovePlayerbotMgr / CreatePlayerbotMgr: real-player bot-controller lifecycle.
+        // Real players (non-bots) get a PlayerbotMgr to manage their alt bots via .bot commands.
+        void RemovePlayerbotMgr();
+        void CreatePlayerbotMgr();
+        // SetPlayerbotMgr/AI: setters used by RandomPlayerbotMgr / OnSessionLogin to attach managers.
+        void SetPlayerbotAI(PlayerbotAI* ai) { m_playerbotAI = ai; }
+        void SetPlayerbotMgr(PlayerbotMgr* mgr) { m_playerbotMgr = mgr; }
+        // Per-Player tick driver — called from Player::Update. Implementation in HostHooks.cpp.
+        void UpdatePlayerbotHooks(uint32 diff);
+        // MeleeAttackStart/Stop: cmangos forwarders to AttackerStateUpdate. Stub no-op.
+        void MeleeAttackStart(Unit* /*pVictim*/) {}
+        void MeleeAttackStop(Unit* /*pVictim*/ = nullptr) {}
+        // RemoveAllCooldowns: cmangos has it; Penqle has RemoveAllSpellCooldown. Forwarder.
+        void RemoveAllCooldowns(bool /*sendOnly*/ = false) { RemoveAllSpellCooldown(); }
+        // isMovingOrTurning: cmangos check; Penqle uses HasMovementFlag with MASK_MOVING_OR_TURN.
+        bool isMovingOrTurning() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_MASK_MOVING_OR_TURN); }
+        // CanEnterNewInstance: cmangos check; Penqle CheckInstanceCount/etc. Stub returns true.
+        bool CanEnterNewInstance(uint32 /*instanceId*/) const { return true; }
+        // GetCurrentCell: cmangos returns the cell the player is in. Stub returns default Cell.
+        // (Bot only uses it to check movement; safe default works for compile.)
+        struct CellStub {};
+        CellStub GetCurrentCell() const { return {}; }
+        // IsInGuild: cmangos shorthand for HasGuild.
+        bool IsInGuild() const { return GetGuildId() != 0; }
+        // 1-arg form: cmangos checks specific guild.
+        bool IsInGuild(uint32 guildId) const { return GetGuildId() == guildId; }
+        // SendMailResult: cmangos sends a mail action result packet. Stub no-op.
+        void SendMailResult(uint32 /*mailId*/, uint32 /*action*/, uint32 /*result*/, uint32 /*equipError*/ = 0, uint32 /*item_guid*/ = 0, uint32 /*item_count*/ = 0) {}
+        // GetMailSize / RemoveMItem: cmangos forwarders; Penqle hosts on MasterPlayer. Out-of-line.
+        uint32 GetMailSize();
+        void RemoveMItem(uint32 id);
+        // CanNoReagentCast: cmangos shorthand for "spell uses no reagent due to talent". Stub returns false.
+        bool CanNoReagentCast(SpellEntry const* /*spellInfo*/) const { return false; }
+        // HasTarget: cmangos shorthand for has selection (0/1-arg forms).
+        bool HasTarget() const { return !GetSelectionGuid().IsEmpty(); }
+        bool HasTarget(ObjectGuid guid) const { return GetSelectionGuid() == guid; }
+        // isGMChat: cmangos camelCase alias.
+        bool isGMChat() const { return IsGMChat(); }
+        // TaxiFlightInterrupt: cmangos stops taxi flight. Stub no-op.
+        void TaxiFlightInterrupt(bool /*saveOnHere*/ = false) {}
+        // GetSkillInfo / SetSkillStep: cmangos skill helpers. Stubs (variadic forms accept any signature).
+        template<typename... A> bool GetSkillInfo(A... /*args*/) const { return false; }
+        template<typename... A> void SetSkillStep(A... /*args*/) {}
+        // IsFacingTargetsBack: cmangos check; Penqle has no equivalent. Stub returns false.
+        bool IsFacingTargetsBack(Unit const* /*target*/) const { return false; }
+        // resetTalents: cmangos camelCase. Penqle has ResetTalents.
+        bool resetTalents(bool no_cost = false) { return ResetTalents(no_cost); }
+        // resetSpells: cmangos camelCase.
+        void resetSpells() { /* Penqle has no equivalent; stub no-op */ }
+        // learnQuestRewardedSpells: cmangos quest reward learner. Stub no-op.
+        void learnQuestRewardedSpells() {}
+        // GetAngleAt: cmangos returns angle from (x1,y1) to (x2,y2). Stub uses 4-arg form via atan2.
+        float GetAngleAt(float x1, float y1, float x2, float y2) const {
+            return atan2(y2 - y1, x2 - x1);
+        }
+        float GetAngleAt(float x, float y) const { return GetAngle(x, y); }
+        // IsStunned: cmangos shorthand for HasUnitState(UNIT_STAT_STUNNED).
+        bool IsStunned() const { return HasUnitState(UNIT_STAT_STUNNED); }
+        // duel field alias: bot uses bot->duel; Penqle has m_duel — keep an inline-method-style alias name (duel_) NOT used,
+        // bot module rewritten to m_duel directly.
+
         void ModPossessPet(Pet* pet, bool apply, AuraRemoveMode m_removeMode = AURA_REMOVE_BY_DEFAULT);
 
         void SetDeathState(DeathState s) override;                   // overwrite Unit::SetDeathState
@@ -2353,6 +2562,9 @@ class Player final: public Unit
         void SendMessageToSet(WorldPacket* data, bool self) const override;
         void SendMessageToSetInRange(WorldPacket* data, float fist, bool self) const override;
         void SendMessageToSetInRange(WorldPacket* data, float dist, bool self, bool own_team_only) const;
+        // Sprint 10 cmangos/playerbots port — bot module calls these with WorldPacket& by value.
+        void SendMessageToSet(WorldPacket& data, bool self) const { SendMessageToSet(&data, self); }
+        void SendMessageToSetInRange(WorldPacket& data, float dist, bool self) const { SendMessageToSetInRange(&data, dist, self); }
         void SendInitWorldStates(uint32 zone) const;
         void SendUpdateWorldState(uint32 Field, uint32 Value) const;
         void SendDirectMessage(WorldPacket* data) const;
@@ -2505,6 +2717,8 @@ class Player final: public Unit
         void ClearResurrectRequestData() { SetResurrectRequestData(ObjectGuid(), 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, 0); }
         bool IsRessurectRequestedBy(ObjectGuid guid) const { return m_resurrectData.resurrectorGuid == guid; }
         bool IsRessurectRequested() const { return !m_resurrectData.resurrectorGuid.IsEmpty(); }
+        // Sprint 10 cmangos/playerbots port — bot uses cmangos camelCase isRessurectRequested.
+        bool isRessurectRequested() const { return IsRessurectRequested(); }
         ObjectGuid const& GetResurrector() const { return m_resurrectData.resurrectorGuid; }
         void ResurectUsingRequestData();
 
@@ -2777,6 +2991,8 @@ public:
         void RewardHonor(Unit* uVictim, uint32 groupSize);
         void RewardHonorOnDeath();
         bool IsHonorOrXPTarget(Unit* pVictim) const;
+        // Sprint 10 cmangos/playerbots port — cmangos camelCase alias.
+        bool isHonorOrXPTarget(Unit* pVictim) const { return IsHonorOrXPTarget(pVictim); }
 
         HonorMgr&       GetHonorMgr() { return m_honorMgr; }
         HonorMgr const& GetHonorMgr() const { return m_honorMgr; }
@@ -3084,10 +3300,30 @@ public:
     public:
         void SendAddonMessage(std::string prefix, std::string message);
         void SendAddonMessage(std::string prefix, std::string message, Player* from);
+
+        // Sprint 10 cmangos/playerbots port — Phase 3d host hooks for bot integration.
+        // m_playerbotAI: non-null if this Player is a bot; null otherwise.
+        // m_playerbotMgr: non-null if this Player has bots under its control (real player driving bots).
+    private:
+        PlayerbotAI* m_playerbotAI = nullptr;
+        PlayerbotMgr* m_playerbotMgr = nullptr;
 };
 
 void AddItemsSetItem(Player*player,Item* item);
 void RemoveItemsSetItem(Player*player,ItemPrototype const* proto);
+
+// Sprint 10 cmangos/playerbots port — outgoing-packet interceptor for bots.
+// WorldSession::SendPacket calls this; if the player has a PlayerbotAI attached, the AI
+// processes the packet (group invites, BG status, vendor errors, etc.) and returns true
+// to suppress network send. Real players (no AI) return false. Implementation in HostHooks.cpp.
+bool Player_DispatchBotOutgoingPacket(Player* player, class WorldPacket const& packet);
+
+// Sprint 10 cmangos/playerbots port — chat-message dispatcher for bots.
+// WorldSession::HandleMessagechatOpcode calls this after validating the master's chat input,
+// so each bot under the master's PlayerbotMgr (and matching random bots) gets the message
+// fed to their PlayerbotAI::HandleCommand for parsing as a bot command (/party "co" etc).
+// Implementation in HostHooks.cpp.
+void Player_DispatchBotChatCommand(Player* master, uint32 type, std::string const& msg, uint32 lang);
 
 // "the bodies of template functions must be made available in a header file"
 template <class T> T Player::ApplySpellMod(uint32 spellId, SpellModOp op, T &basevalue, Spell* spell)

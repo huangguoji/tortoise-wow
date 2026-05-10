@@ -61,7 +61,7 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/src/game/Movement/spline
   ${CMAKE_SOURCE_DIR}/src/game/Objects
   ${CMAKE_SOURCE_DIR}/src/game/OutdoorPvP
-  ${CMAKE_SOURCE_DIR}/src/game/PlayerBots
+  # PlayerBots include dir removed - Penqle stub binned for Sprint 10 cmangos port.
   ${CMAKE_SOURCE_DIR}/src/game/Protocol
   ${CMAKE_SOURCE_DIR}/src/game/Spells
   ${CMAKE_SOURCE_DIR}/src/game/Threat
@@ -123,9 +123,19 @@ if(USE_DISCORD_BOT)
   )
 endif()
 
+# Sprint 10 - playerbots library link gated by BUILD_PLAYERBOTS.
+if(BUILD_PLAYERBOTS)
+  target_link_libraries(${EXECUTABLE_NAME} playerbots)
+endif()
+
 target_link_libraries(${EXECUTABLE_NAME}
     libdeflate
 )
+
+# Sprint 10 cmangos/playerbots port - boost lib search path for transitive boost references.
+if(WIN32 AND DEFINED ENV{BOOST_ROOT})
+    target_link_directories(${EXECUTABLE_NAME} PRIVATE "$ENV{BOOST_ROOT}/lib64-msvc-14.3")
+endif()
 
 
 if(WIN32)

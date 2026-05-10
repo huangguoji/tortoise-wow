@@ -222,6 +222,10 @@ class BattleGroundMgr
         BattleGround* GetBattleGroundTemplate(BattleGroundTypeId bgTypeId);
         BattleGround* CreateNewBattleGround(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id);
 
+        // Sprint 10 cmangos/playerbots port — bot uses this helper.
+        // Returns the bracket id matching the player's level for a given BG template.
+        BattleGroundBracketId GetBattleGroundBracketIdFromLevel(BattleGroundTypeId bgTypeId, uint32 level);
+
         uint32 CreateBattleGround(BattleGroundTypeId bgTypeId, uint32 minPlayersPerTeam, uint32 maxPlayersPerTeam, uint32 levelMin, uint32 levelMax, uint32 allianceWinSpell, uint32 allianceLoseSpell, uint32 hordeWinSpell, uint32 hordeLoseSpell, char const* battleGroundName, uint32 mapID, float team1StartLocX, float team1StartLocY, float team1StartLocZ, float team1StartLocO, float team2StartLocX, float team2StartLocY, float team2StartLocZ, float team2StartLocO, uint32 playerSkinReflootId);
 
         void AddBattleGround(uint32 InstanceID, BattleGroundTypeId bgTypeId, BattleGround* BG);
@@ -295,6 +299,8 @@ class BattleGroundMgr
 
         static BattleGroundQueueTypeId BGQueueTypeId(BattleGroundTypeId bgTypeId);
         static BattleGroundTypeId BGTemplateId(BattleGroundQueueTypeId bgQueueTypeId);
+        // Sprint 10 cmangos/playerbots port — bot uses BgTemplateId (lowercase g); Penqle has BGTemplateId.
+        static BattleGroundTypeId BgTemplateId(BattleGroundQueueTypeId bgQueueTypeId) { return BGTemplateId(bgQueueTypeId); }
 
         static HolidayIds BGTypeToWeekendHolidayId(BattleGroundTypeId bgTypeId);
         static BattleGroundTypeId WeekendHolidayIdToBGType(HolidayIds holiday);

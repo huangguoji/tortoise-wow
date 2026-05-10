@@ -40,12 +40,26 @@ class Config
     ~Config();
 
     bool SetSource(const char *file);
+    // Sprint 10 cmangos/playerbots port — bot calls SetSource with config-key prefix arg.
+    bool SetSource(std::string const& file) { return SetSource(file.c_str()); }
+    bool SetSource(const char* file, const char* /*prefix*/) { return SetSource(file); }
+    bool SetSource(std::string const& file, std::string const& /*prefix*/) { return SetSource(file.c_str()); }
+    bool SetSource(const char* file, std::string const& /*prefix*/) { return SetSource(file); }
     bool Reload();
 
     std::string GetStringDefault(const char* name, const char* def);
+    // Sprint 10 cmangos/playerbots port — cmangos's 1-arg form (default = "").
+    std::string GetStringDefault(const char* name) { return GetStringDefault(name, ""); }
+    std::string GetStringDefault(std::string const& name) { return GetStringDefault(name.c_str(), ""); }
+    std::string GetStringDefault(std::string const& name, const char* def) { return GetStringDefault(name.c_str(), def); }
+    std::string GetStringDefault(std::string const& name, std::string const& def) { return GetStringDefault(name.c_str(), def.c_str()); }
     bool GetBoolDefault(const char* name, const bool def = false);
     int32 GetIntDefault(const char* name, const int32 def);
     float GetFloatDefault(const char* name, const float def);
+    // Sprint 10 cmangos/playerbots port — bot passes std::string keys.
+    bool GetBoolDefault(std::string const& name, const bool def = false) { return GetBoolDefault(name.c_str(), def); }
+    int32 GetIntDefault(std::string const& name, const int32 def) { return GetIntDefault(name.c_str(), def); }
+    float GetFloatDefault(std::string const& name, const float def) { return GetFloatDefault(name.c_str(), def); }
 
     std::string GetFilename() const { return mFilename; }
     bool GetValueHelper(const char* name, ACE_TString &result);

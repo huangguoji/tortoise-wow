@@ -39,6 +39,24 @@
 #include "Anticheat/Movement/Movement.hpp"
 #include "SuspiciousStatisticMgr.h"
 
+// SoloCommander diagnostic logging. We don't include playerbot/SoloCommander.h here
+// because game/ module isn't on the include path for playerbot. Inline a thin SC_LOG
+// macro that writes to the same sLog channel ("[SC]" prefix lets `grep "[SC]"` filter
+// these lines from info.log). Used for ghost-state root-cause diagnosis.
+#define SC_LOG(fmt, ...) sLog.outDetail("[SC] " fmt, ##__VA_ARGS__)
+
+// SoloCommander helper — true iff the session belongs to a bot (synthetic/null socket
+// or the player has a PlayerbotAI attached). Used to gate SC_LOG so we don't spam the
+// log for real-player teleports.
+static bool _scIsBotSession(WorldSession const* sess)
+{
+    if (!sess) return false;
+    Player const* p = sess->GetPlayer();
+    if (p && p->GetPlayerbotAI()) return true;
+    // Fall-back: free-floating bot sessions have remote address "" or "disconnected/bot".
+    return sess->GetRemoteAddress().empty() || sess->GetRemoteAddress() == "disconnected/bot";
+}
+
 void WorldSession::HandleMoveWorldportAckOpcode(WorldPacket& /*recvData*/)
 {
     DEBUG_LOG("WORLD: Recvd MSG_MOVE_WORLDPORT_ACK.");
@@ -47,9 +65,30 @@ void WorldSession::HandleMoveWorldportAckOpcode(WorldPacket& /*recvData*/)
 
 void WorldSession::HandleMoveWorldportAckOpcode()
 {
+    bool const isBot = _scIsBotSession(this);
+    Player* p = GetPlayer();
+    if (isBot)
+    {
+        SC_LOG("worldport-ack ENTRY bot=%s guid=%u isBeingTeleportedFar=%d isInWorld=%d "
+               "destMapId=%u destX=%.1f destY=%.1f destZ=%.1f",
+               p ? p->GetName() : "(null)", p ? p->GetGUIDLow() : 0u,
+               p ? (int)p->IsBeingTeleportedFar() : -1,
+               p ? (int)p->IsInWorld() : -1,
+               p ? p->GetTeleportDest().mapId : 0u,
+               p ? p->GetTeleportDest().x : 0.f,
+               p ? p->GetTeleportDest().y : 0.f,
+               p ? p->GetTeleportDest().z : 0.f);
+    }
+
     // ignore unexpected far teleports
     if (!GetPlayer()->IsBeingTeleportedFar())
+    {
+        if (isBot)
+            SC_LOG("worldport-ack EARLY-RETURN bot=%s — IsBeingTeleportedFar=false "
+                   "(map setup never finished — bot will stay where it is)",
+                   p ? p->GetName() : "(null)");
         return;
+    }
 
     // get start teleport coordinates (will used later in fail case)
     WorldLocation oldLoc;
@@ -61,6 +100,9 @@ void WorldSession::HandleMoveWorldportAckOpcode()
     // possible errors in the coordinate validity check (only cheating case possible)
     if (!MapManager::IsValidMapCoord(loc))
     {
+        if (isBot)
+            SC_LOG("worldport-ack INVALID-COORD bot=%s — falling back to homebind",
+                   p ? p->GetName() : "(null)");
         sLog.outError("WorldSession::HandleMoveWorldportAckOpcode: %s was teleported far to a not valid location "
                       "(map:%u, x:%f, y:%f, z:%f) We port him to his homebind instead..",
                       GetPlayer()->GetGuidStr().c_str(), loc.mapId, loc.x, loc.y, loc.z);
@@ -116,8 +158,16 @@ void WorldSession::HandleMoveWorldportAckOpcode()
     GetPlayer()->SendInitialPacketsBeforeAddToMap();
     // the CanEnter checks are done in TeleporTo but conditions may change
     // while the player is in transit, for example the map may get full
-    if (!GetPlayer()->GetMap()->Add(GetPlayer()))
+    bool const _scAddOk = GetPlayer()->GetMap()->Add(GetPlayer());
+    if (isBot)
+        SC_LOG("worldport-ack map->Add bot=%s result=%d destMapId=%u",
+               p ? p->GetName() : "(null)", (int)_scAddOk, loc.mapId);
+    if (!_scAddOk)
     {
+        if (isBot)
+            SC_LOG("worldport-ack ADD-FAILED bot=%s — calling HandleReturnOnTeleportFail "
+                   "(this can loop and produce a ghost)",
+                   p ? p->GetName() : "(null)");
         DETAIL_LOG("WorldSession::HandleMoveWorldportAckOpcode: %s was teleported far but couldn't be added to map "
             " (map:%u, x:%f, y:%f, z:%f) Trying to port him to his previous place..",
             GetPlayer()->GetGuidStr().c_str(), loc.mapId, loc.x, loc.y, loc.z);
@@ -126,6 +176,11 @@ void WorldSession::HandleMoveWorldportAckOpcode()
         return;
     }
     GetPlayer()->SetSemaphoreTeleportFar(false);
+    if (isBot)
+        SC_LOG("worldport-ack OK bot=%s now in mapId=%u inWorld=%d",
+               p ? p->GetName() : "(null)",
+               p ? p->GetMapId() : 0u,
+               p ? (int)p->IsInWorld() : -1);
 
     // battleground state prepare (in case join to BG), at relogin/tele player not invited
     // only add to bg group and object, if the player was invited (else he entered through command)

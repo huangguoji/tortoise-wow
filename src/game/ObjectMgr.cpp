@@ -9523,6 +9523,34 @@ void ObjectMgr::LoadShop()
 
             CachedEntry.resize(1024);
             int32 FormatResult = std::snprintf(CachedEntry.data(), 1024, "Entries:%u=%u=%s=%u=%s=%u=%u=%u=%.02f=%.02f=%.02f=%.02f=%u=%s=%u",
+            // patch7-A live client expects 13 `=`-delimited fields per
+            // Shop_ProcessEntries (Turtle_ShopUI.lua line 251+ in patch7.mpq):
+            //   info[1]  category
+            //   info[2]  subcategory  (tonumber — MUST be a number, not nil)
+            //   info[3]  name
+            //   info[4]  price
+            //   info[5]  text         (description; raw string)
+            //   info[6]  id           (= item entry; used in SetHyperlink "item:N:0:0:0")
+            //   info[7]  modelid
+            //   info[8]  itemid       (item display id)
+            //   info[9]  posx
+            //   info[10] posy
+            //   info[11] posz
+            //   info[12] rotation
+            //   info[13] holiday      (tonumber — MUST be a number; 0 = always-available)
+            // Pre-fix server sent 12 fields with Entry.Item at info[5] and
+            // Entry.ItemDisplayID at info[7] → SetHyperlink got the display id
+            // which fails as "Unknown link type". Plus holiday was missing →
+            // tonumber(nil) → entry.holiday > 0 throws "compare number with nil".
+            // patch7 client stores info[5] in entry["text"] but doesn't render
+            // it (tooltips come from SetHyperlink at line 285). WoW's addon
+            // message cap is 254 bytes — including pProto->Description here
+            // overflows for items with long descriptions (e.g. Race Change
+            // Tokens at 208 chars push total to ~377 bytes), truncating the
+            // message mid-description and losing info[6]+ → entry.id = nil →
+            // SetHyperlink("item:nil:0:0:0") fails as "Unknown link type" at
+            // line 285. Send empty string at info[5] so the message fits.
+			int32 FormatResult = std::snprintf(CachedEntry.data(), 1024, "Entries:%u=%u=%s=%u==%u=%u=%u=%.02f=%.02f=%.02f=%.02f=%u",
                 Entry.Category,
                 0, // TODO: subcategory
                 ItemName.c_str(),

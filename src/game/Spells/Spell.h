@@ -233,6 +233,39 @@ class Spell
     friend void WorldObject::SetCurrentCastedSpell(Spell* pSpell );
     friend void WorldObject::MoveChannelledSpellWithCastTime(Spell* pSpell);
     public:
+        // Sprint12 (sc-overnight) 2026-05-07 use-after-free hardening:
+        // Returns true iff `p` points to a still-alive Spell object. Used
+        // by SpellEvent::Execute as a defensive guard — under bot AI
+        // load there's an unidentified lifecycle bug where the SpellEvent
+        // outlives its m_Spell. Without this check we crash with
+        // ACCESS_VIOLATION READ at offset +0x268 (= m_spellState compare)
+        // ~1-2 min into combat. The check is O(1) (unordered_set lookup)
+        // and called once per SpellEvent::Execute. Set is registered in
+        // Spell ctor and unregistered in dtor. See Spell.cpp.
+        static bool IsAliveSpell(Spell* p);
+        // Sprint 10 cmangos/playerbots port — bot sets spell->m_clientCast = true on spells it queues.
+        // Penqle has no equivalent; stub field is never read. Wave 5 candidate to wire up if needed.
+        bool m_clientCast = false;
+        // SpellStart: cmangos returns SpellCastResult; Penqle uses prepare().
+        SpellCastResult SpellStart(SpellCastTargets const* targets, Aura* triggeredByAura = nullptr) {
+            return prepare(targets ? *targets : SpellCastTargets(), triggeredByAura);
+        }
+        SpellCastResult SpellStart() { return prepare(); }
+        // GetTrueCaster: cmangos's name; Penqle uses m_caster.
+        WorldObject* GetTrueCaster() const { return m_caster; }
+        // PreCastCheck: cmangos has it; Penqle uses CheckCast (private). Stub returns SPELL_CAST_OK.
+        SpellCastResult PreCastCheck() const { return SPELL_CAST_OK; }
+        // Prepare: cmangos's name; Penqle uses prepare. Forward.
+        SpellCastResult Prepare() { return prepare(); }
+        // m_ignoreCastTime: cmangos field, Penqle no equivalent. Stub for backwards-compat.
+        bool m_ignoreCastTime = false;
+        // m_effectSkillInfo: cmangos field for per-effect skill info (lockpicking etc). Stub array.
+        struct EffectSkillInfo { SkillType skillId = SKILL_NONE; int32 reqSkillValue = 0; int32 skillValue = 0; };
+        EffectSkillInfo m_effectSkillInfo[MAX_EFFECT_INDEX]{};
+        // CanBeInterrupted: cmangos has it; Penqle doesn't. Stub returns true (most spells can be interrupted).
+        bool CanBeInterrupted() const { return true; }
+        // GetDamage: cmangos exposes computed damage. Stub returns 0.
+        int32 GetDamage() const { return 0; }
 
         void EffectEmpty(SpellEffectIndex eff_idx);
         void EffectNULL(SpellEffectIndex eff_idx);
@@ -484,6 +517,8 @@ class Spell
         bool IsTriggeredByAura() const { return m_triggeredByAuraSpell; }
         bool IsTriggeredByProc() const;
         bool IsCastByItem() const { return m_CastItem; }
+        // Sprint 10 cmangos/playerbots port — bot calls GetCastItem.
+        Item* GetCastItem() const { return m_CastItem; }
         void SetCastItem(Item* item)
         {
             m_CastItem = item;

@@ -1246,7 +1246,16 @@ void AuthSocket::LoadRealmlist(ByteBuffer& pkt)
         else
             AmountOfCharacters = 0;
 
-        bool ok_build = i.second.realmBuildInfo.build == _build;
+        // Cosmetic "Online" / "Offline" indicator for the realm list.
+        // Original code used strict equality `realmBuildInfo.build == _build`, which forced
+        // the realm to look offline whenever the client reported any build other than the
+        // single value baked into ExpectedRealmdClientBuilds[0] in RealmList.cpp -- even
+        // though the connection-acceptance check at line 713 above happily accepts any
+        // build >= that value. The two checks have to agree, otherwise self-hosted realms
+        // appear "Offline" to clients that authenticate fine. Use FindBuildInfo so both
+        // gates use the same supported-build logic. Patched 2026-05-01 for patch9
+        // migration sprint (clients reporting 7207+ vs hardcoded 7199 lower bound).
+        bool ok_build = FindBuildInfo(_build) != nullptr;
 
         RealmBuildInfo const* buildInfo = ok_build ? FindBuildInfo(_build) : nullptr;
         if (!buildInfo)

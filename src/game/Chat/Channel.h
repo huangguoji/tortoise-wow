@@ -96,7 +96,11 @@ inline bool IsDefenseChannel(uint32 channelId)
 class Channel
 {
     friend class ChannelBroadcaster;
+    // Sprint 10 cmangos/playerbots port — bot calls Channel::Say directly.
+    friend class PlayerbotAI;
     public:
+        // Sprint 10 cmangos/playerbots port — bot's Say(Player*, ...) overload.
+        void Say(Player const* player, const char* what, uint32 lang = LANG_UNIVERSAL, bool skipCheck = false);
     enum ChannelFlags
     {
         CHANNEL_FLAG_NONE       = 0x00,
@@ -188,6 +192,8 @@ class Channel
         Team GetTeam() const { return m_Team;}
 
         void Join(ObjectGuid guid, const char *password, bool checkPassword = true);
+        // Sprint 10 cmangos/playerbots port — Player* overload.
+        void Join(Player const* player, const char* password = "");
         void Leave(ObjectGuid guid, bool send = true);
         void KickOrBan(ObjectGuid guid, const char *targetName, bool ban);
         void Kick(ObjectGuid guid, const char *targetName) { KickOrBan(guid, targetName, false); }

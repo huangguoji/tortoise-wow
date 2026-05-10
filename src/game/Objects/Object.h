@@ -898,8 +898,30 @@ class WorldObject : public Object
         float GetDistance3dToCenter(Position const& position) const { return GetDistance(position.x, position.y, position.z, SizeFactor::None); }
         float GetDistance(WorldObject const* obj, SizeFactor distcalc = SizeFactor::BoundingRadius) const;
         float GetDistance(float x, float y, float z, SizeFactor distcalc = SizeFactor::BoundingRadius) const;
+        // Sprint 10 cmangos/playerbots port — bot's signature is (target, bool is3D, DistanceCalculation calc).
+        // Penqle has (target, SizeFactor); ignore the bool, ignore the calc enum (taken as int because
+        // DistanceCalculation enum is defined in the bot's shim header, not visible here).
+        float GetDistance(WorldObject const* obj, bool /*is3D*/, int /*distance_calc*/) const { return GetDistance(obj); }
         float GetDistance(WorldLocation const& position, SizeFactor distcalc = SizeFactor::BoundingRadius) const { return GetDistance(position.x, position.y, position.z, distcalc); }
         float GetDistance(Position const& position, SizeFactor distcalc = SizeFactor::BoundingRadius) const { return GetDistance(position.x, position.y, position.z, distcalc); }
+        // Sprint 10 cmangos/playerbots port — IsFriend/IsEnemy on WorldObject (forward to Unit dispatch).
+        bool IsFriend(WorldObject const* target) const;  // out-of-line in Object.cpp
+        bool IsEnemy(WorldObject const* target) const;
+        // Sprint 10 cmangos/playerbots port — bot passes int (DistanceCalculation enum).
+        // Map DIST_CALC_NONE/BOUNDING_RADIUS/COMBAT_REACH (cmangos) to SizeFactor (Penqle).
+        float GetDistance(float x, float y, float z, int distcalc) const {
+            return GetDistance(x, y, z, distcalc == 0 ? SizeFactor::None : (distcalc == 2 ? SizeFactor::CombatReach : SizeFactor::BoundingRadius));
+        }
+        float GetDistance(WorldObject const* obj, int distcalc) const {
+            return GetDistance(obj, distcalc == 0 ? SizeFactor::None : (distcalc == 2 ? SizeFactor::CombatReach : SizeFactor::BoundingRadius));
+        }
+        // GetDistance2d 3-arg form taking int.
+        float GetDistance2d(float x, float y, int distcalc) const {
+            return GetDistance2d(x, y, distcalc == 0 ? SizeFactor::None : (distcalc == 2 ? SizeFactor::CombatReach : SizeFactor::BoundingRadius));
+        }
+        float GetDistance2d(WorldObject const* obj, int distcalc) const {
+            return GetDistance2d(obj, distcalc == 0 ? SizeFactor::None : (distcalc == 2 ? SizeFactor::CombatReach : SizeFactor::BoundingRadius));
+        }
         float GetDistance2d(WorldObject const* obj, SizeFactor distcalc = SizeFactor::BoundingRadius) const;
         float GetDistance2d(float x, float y, SizeFactor distcalc = SizeFactor::BoundingRadius) const;
         float GetDistance2d(WorldLocation const& position, SizeFactor distcalc = SizeFactor::BoundingRadius) const { return GetDistance2d(position.x, position.y, distcalc); }
@@ -993,6 +1015,8 @@ class WorldObject : public Object
 
         virtual void SendMessageToSetInRange(WorldPacket *data, float dist, bool self) const;
         void SendMessageToSetExcept(WorldPacket *data, Player const* skipped_receiver) const;
+        // Sprint 10 cmangos/playerbots port — bot passes by reference.
+        void SendMessageToSetExcept(WorldPacket& data, Player const* skipped_receiver) const { SendMessageToSetExcept(&data, skipped_receiver); }
         void DirectSendPublicValueUpdate(uint32 index, uint32 count = 1);
         void DirectSendPublicValueUpdate(UpdateMask& updateMask);
         void DirectSendPublicValueUpdate(std::initializer_list<uint32> indexes);
@@ -1207,6 +1231,10 @@ virtual uint32 GetLevel() const = 0;
 
         // Event handler
         EventProcessor m_Events;
+    public: // Sprint 10 cmangos/playerbots port — bot accesses m_events directly. Expose alias.
+        EventProcessor& GetEvents() { return m_Events; }
+        // Reference alias allows bot's m_events.AddEvent style; immobile but WorldObject isn't copyable.
+    protected:
 
 		inline void SetExclusiveVisibleFor(WorldObject* visibleFor)
 		{
@@ -1245,22 +1273,21 @@ virtual uint32 GetLevel() const = 0;
 
         std::array<Spell*, CURRENT_MAX_SPELL> m_currentSpells{};
         uint32 m_castCounter = 0;                           // count casts chain of triggered spells for prevent infinity cast crashes
-    private:
-        // Error traps for some wrong args using
-        // this will catch and prevent build for any cases when all optional args skipped and instead triggered used non boolean type
-        // no bodies expected for this declarations
+    public:
+        // Sprint 10 cmangos/playerbots port — these were "error traps" to catch non-bool triggered.
+        // Bot module legitimately passes uint32 (cmangos style); make them public and bool-convert.
         template <typename TR>
-        SpellCastResult CastSpell(Unit* Victim, uint32 spell, TR triggered);
+        SpellCastResult CastSpell(Unit* Victim, uint32 spell, TR triggered) { return CastSpell(Victim, spell, (bool)(triggered != 0)); }
         template <typename TR>
-        SpellCastResult CastSpell(Unit* Victim, SpellEntry const* spell, TR triggered);
+        SpellCastResult CastSpell(Unit* Victim, SpellEntry const* spell, TR triggered) { return CastSpell(Victim, spell, (bool)(triggered != 0)); }
         template <typename TR>
-        void CastCustomSpell(Unit* Victim, uint32 spell, int32 const* bp0, int32 const* bp1, int32 const* bp2, TR triggered);
+        void CastCustomSpell(Unit* Victim, uint32 spell, int32 const* bp0, int32 const* bp1, int32 const* bp2, TR triggered) { CastCustomSpell(Victim, spell, bp0, bp1, bp2, (bool)(triggered != 0)); }
         template <typename SP, typename TR>
-        void CastCustomSpell(Unit* Victim, SpellEntry const* spell, int32 const* bp0, int32 const* bp1, int32 const* bp2, TR triggered);
+        void CastCustomSpell(Unit* Victim, SpellEntry const* spell, int32 const* bp0, int32 const* bp1, int32 const* bp2, TR triggered) { CastCustomSpell(Victim, spell, bp0, bp1, bp2, (bool)(triggered != 0)); }
         template <typename TR>
-        SpellCastResult CastSpell(float x, float y, float z, uint32 spell, TR triggered);
+        SpellCastResult CastSpell(float x, float y, float z, uint32 spell, TR triggered) { return CastSpell(x, y, z, spell, (bool)(triggered != 0)); }
         template <typename TR>
-        SpellCastResult CastSpell(float x, float y, float z, SpellEntry const* spell, TR triggered);
+        SpellCastResult CastSpell(float x, float y, float z, SpellEntry const* spell, TR triggered) { return CastSpell(x, y, z, spell, (bool)(triggered != 0)); }
 };
 
 // Helper functions to cast between different Object pointers. Useful when unsure that your object* is valid at all.

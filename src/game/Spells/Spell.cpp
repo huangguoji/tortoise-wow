@@ -34,6 +34,7 @@
 #include "SpellEntry.h"
 #include "Player.h"
 #include "Pet.h"
+#include "Totem.h"
 #include "DynamicObject.h"
 #include "Group.h"
 #include "UpdateData.h"
@@ -47,6 +48,27 @@
 #include "BattleGround.h"
 #include "Util.h"
 #include "Chat.h"
+#include <unordered_set>
+#include <mutex>
+
+// Sprint12 (sc-overnight) 2026-05-07 — live-Spell registry. Spell ctor
+// inserts; ~Spell removes. SpellEvent::Execute checks before deref'ing
+// m_Spell. Diagnostic side-table for an unidentified lifecycle bug
+// where bot AI somehow leaves a SpellEvent in EventProcessor's queue
+// after its m_Spell has been freed. PageHeap repro: ACCESS_VIOLATION
+// READ at offset +0x268 (m_spellState compare) in SpellEvent::Execute,
+// 1-2 min into bot combat. See Spell::IsAliveSpell.
+namespace {
+    std::unordered_set<Spell*> s_aliveSpells;
+    std::mutex                 s_aliveSpellsMutex;
+}
+
+bool Spell::IsAliveSpell(Spell* p)
+{
+    if (!p) return false;
+    std::lock_guard<std::mutex> lock(s_aliveSpellsMutex);
+    return s_aliveSpells.count(p) > 0;
+}
 #include "PathFinder.h"
 #include "CharacterDatabaseCache.h"
 #include "GameObjectAI.h"
@@ -300,6 +322,12 @@ Spell::Spell(Unit* caster, SpellEntry const *info, bool triggered, ObjectGuid or
     m_canReflect = victim ? m_spellInfo->IsReflectableSpell(caster, victim) : m_spellInfo->IsReflectableSpell();
 
     CleanupTargetList();
+
+    // Sprint12 (sc-overnight) live-Spell registry — see Spell::IsAliveSpell.
+    {
+        std::lock_guard<std::mutex> lock(s_aliveSpellsMutex);
+        s_aliveSpells.insert(this);
+    }
 }
 
 Spell::Spell(GameObject* caster, SpellEntry const *info, bool triggered, ObjectGuid originalCasterGUID, SpellEntry const* triggeredBy, Unit* victim, SpellEntry const* triggeredByParent, bool bCanIgnoreLOS /*= false*/):
@@ -329,11 +357,23 @@ Spell::Spell(GameObject* caster, SpellEntry const *info, bool triggered, ObjectG
     m_canReflect = victim ? m_spellInfo->IsReflectableSpell(caster, victim) : m_spellInfo->IsReflectableSpell();
 
     CleanupTargetList();
+
+    // Sprint12 (sc-overnight) live-Spell registry — see Spell::IsAliveSpell.
+    {
+        std::lock_guard<std::mutex> lock(s_aliveSpellsMutex);
+        s_aliveSpells.insert(this);
+    }
 }
 
 Spell::~Spell()
 {
     m_destroyed = true;
+    // Sprint12 (sc-overnight) live-Spell registry: remove ourselves so
+    // SpellEvent::Execute can detect dangling pointers via IsAliveSpell.
+    {
+        std::lock_guard<std::mutex> lock(s_aliveSpellsMutex);
+        s_aliveSpells.erase(this);
+    }
 }
 
 template<typename T>
@@ -3994,6 +4034,15 @@ void Spell::cancel()
 
 void Spell::cast(bool skipCheck)
 {
+    // Sprint12 (sc-overnight) bot logging suite — hook cast start.
+    // Logged BEFORE the MAX_SPELL_ID guard so even rejected casts show up.
+    {
+        extern void BotActionLog_LogCastStart(WorldObject* caster, uint32 spellId, uint64 targetGuidRaw, uint32 castTimeMs);
+        ObjectGuid tgt = m_targets.getUnitTargetGuid();
+        if (!tgt) tgt = m_targets.getGOTargetGuid();
+        BotActionLog_LogCastStart(m_caster, m_spellInfo->Id, tgt.GetRawValue(), m_casttime);
+    }
+
     if (m_spellInfo->Id <= 0 || m_spellInfo->Id > MAX_SPELL_ID)
         return;
 
@@ -4002,6 +4051,25 @@ void Spell::cast(bool skipCheck)
         return;
 
     SetExecutedCurrently(true);
+
+    // Flame Guidance (Shaman 51396): casting Flame Shock causes the player's
+    // active Searing Totem to focus on the Flame Shock target.
+    if (m_casterUnit && m_casterUnit->IsPlayer() &&
+        m_casterUnit->HasAura(51396) &&
+        m_spellInfo->IsFitToFamily<SPELLFAMILY_SHAMAN, CF_SHAMAN_FLAME_SHOCK>())
+    {
+        if (Unit* fsTarget = m_targets.getUnitTarget())
+        {
+            if (Totem* searing = m_casterUnit->GetTotem(TOTEM_SLOT_FIRE))
+            {
+                if (searing->GetEntry() == 2523)  // Searing Totem creature entry
+                {
+                    searing->SetInFront(fsTarget);
+                    searing->Attack(fsTarget, false);
+                }
+            }
+        }
+    }
 
     if (!m_caster->CheckAndIncreaseCastCounter())
     {
@@ -4769,6 +4837,18 @@ void Spell::HandleAddTargetTriggerAuras()
             // Calculate chance at that moment (can be depend for example from combo points)
             int32 auraBasePoints = targetTrigger->GetBasePoints();
             int32 chance = m_casterUnit->CalculateSpellDamage(target, auraSpellInfo, auraSpellIdx, &auraBasePoints);
+
+            // Qiraji Recuperation (Druid Tortoise patch9 idol passive 52697) —
+            // tooltip: "X% chance per combo point spent". The bp on the aura
+            // is bp_per_cp; multiply by the player's combo points at finisher
+            // time to get the actual proc rate. Caps at 100.
+            if (auraSpellInfo->Id == 52697 && m_casterUnit->IsPlayer())
+            {
+                uint8 const cp = ((Player*)m_casterUnit)->GetComboPoints();
+                if (cp > 0)
+                    chance = std::min<int32>(100, (auraBasePoints + 1) * int32(cp));
+            }
+
             if ((m_casterUnit->IsPlayer() && m_casterUnit->ToPlayer()->HasOption(PLAYER_CHEAT_ALWAYS_PROC)) || roll_chance_i(chance))
                 m_casterUnit->CastSpell(target, triggerSpellInfo, true, nullptr, targetTrigger);
         }
@@ -4786,6 +4866,13 @@ void Spell::finish(bool ok)
         return;
 
     m_spellState = SPELL_STATE_FINISHED;
+
+    // Sprint12 (sc-overnight) bot logging suite — hook cast result. `ok`
+    // is true on success, false on cancel/interrupt/fail.
+    {
+        extern void BotActionLog_LogCastResult(WorldObject* caster, uint32 spellId, uint8 result, const char* phase);
+        BotActionLog_LogCastResult(m_caster, m_spellInfo->Id, ok ? 0 : 1, "finish");
+    }
 
     // Clear the creature's casting target so it faces victim
     if (m_setCreatureTarget)
@@ -5915,7 +6002,17 @@ SpellCastResult Spell::CheckCast(bool strict)
 
         if (strict && m_casterUnit)
         {
-            if (m_casterUnit && m_casterUnit->IsInCombat() && m_spellInfo->IsNonCombatSpell())
+            // Untamed Trapper (51586): bypass NonCombatSpell guard for Hunter
+            // trap launcher spells (SUMMON_OBJECT_WILD effect).
+            bool bypassCombat = false;
+            if (m_spellInfo->IsNonCombatSpell() &&
+                m_spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER &&
+                m_spellInfo->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_SUMMON_OBJECT_WILD &&
+                m_casterUnit->HasAura(51586))
+            {
+                bypassCombat = true;
+            }
+            if (m_casterUnit && m_casterUnit->IsInCombat() && m_spellInfo->IsNonCombatSpell() && !bypassCombat)
                 return SPELL_FAILED_AFFECTING_COMBAT;
 
             // only check at first call, Stealth auras are already removed at second call
@@ -6697,9 +6794,10 @@ SpellCastResult Spell::CheckCast(bool strict)
                     return SPELL_FAILED_DONT_REPORT;
                 }
 
+                // Penqle's GetSession()->GetBot() guard removed (stub binned).
+                // cmangos's isRealPlayer() check lands here in Phase 3 if needed.
                 if (plrCaster->GetPetGuid() || plrCaster->GetCharmGuid() ||
-                   (!plrCaster->GetSession()->GetBot() &&
-                    sCharacterDatabaseCache.GetCharacterPetByOwner(plrCaster->GetGUIDLow())))
+                    sCharacterDatabaseCache.GetCharacterPetByOwner(plrCaster->GetGUIDLow()))
                 {
                     plrCaster->SendPetTameFailure(PETTAME_ANOTHERSUMMONACTIVE);
                     return SPELL_FAILED_DONT_REPORT;
@@ -7473,7 +7571,20 @@ SpellCastResult Spell::CheckPetCast(Unit* target)
         return SPELL_FAILED_SPELL_IN_PROGRESS;
 
     if (m_casterUnit->IsInCombat() && m_spellInfo->IsNonCombatSpell())
-        return SPELL_FAILED_AFFECTING_COMBAT;
+    {
+        // Untamed Trapper (51586): bypass for Hunter trap launchers when
+        // owner has the talent (pets and hunters share the cast path here).
+        bool bypassCombat = false;
+        if (m_spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER &&
+            m_spellInfo->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_SUMMON_OBJECT_WILD)
+        {
+            Unit* owner = m_casterUnit->GetOwner();
+            if ((owner && owner->HasAura(51586)) || m_casterUnit->HasAura(51586))
+                bypassCombat = true;
+        }
+        if (!bypassCombat)
+            return SPELL_FAILED_AFFECTING_COMBAT;
+    }
 
     if (m_casterUnit->IsCreature() && (((Creature*)m_casterUnit)->IsPet() || m_casterUnit->IsCharmed()))
     {
@@ -8607,6 +8718,21 @@ SpellEvent::SpellEvent(Spell* spell) : BasicEvent()
 
 SpellEvent::~SpellEvent()
 {
+    // Sprint12 (sc-overnight) 2026-05-07 use-after-free guard. If
+    // SpellEvent::Execute already detected the m_Spell as freed and
+    // cleared it, skip the deref + delete here. Without this guard,
+    // ~SpellEvent would re-deref the dangling pointer.
+    if (!m_Spell)
+        return;
+
+    if (!Spell::IsAliveSpell(m_Spell))
+    {
+        // Spell was freed without us — log + abandon to avoid double-free.
+        sLog.outError("[Spell/UAF] ~SpellEvent: m_Spell=0x%p was already freed; skipping ->cancel/->Delete to avoid double-free.", (void*)m_Spell);
+        m_Spell = nullptr;
+        return;
+    }
+
     if (m_Spell->getState() != SPELL_STATE_FINISHED)
         m_Spell->cancel();
 
@@ -8615,6 +8741,20 @@ SpellEvent::~SpellEvent()
 
 bool SpellEvent::Execute(uint64 e_time, uint32 p_time)
 {
+    // Sprint12 (sc-overnight) 2026-05-07 use-after-free guard. There's an
+    // unidentified lifecycle bug under bot AI load where SpellEvent stays
+    // queued in EventProcessor after its m_Spell has been freed. Without
+    // this check we crash with ACCESS_VIOLATION READ at offset +0x268 in
+    // the m_Spell->getState() comparison below. Detect via the live-Spell
+    // registry (see Spell::IsAliveSpell). Treat dangling m_Spell as
+    // "spell already finished" — return true so EventProcessor deletes us.
+    if (!Spell::IsAliveSpell(m_Spell))
+    {
+        sLog.outError("[Spell/UAF] SpellEvent::Execute: m_Spell=0x%p is dangling (already freed); finishing event silently to avoid crash.", (void*)m_Spell);
+        m_Spell = nullptr;  // ~SpellEvent will skip cleanup
+        return true;        // tell EventProcessor: done, please delete me
+    }
+
     // update spell if it is not finished
     if (m_Spell->getState() != SPELL_STATE_FINISHED)
         m_Spell->update(p_time);
@@ -8724,6 +8864,12 @@ bool SpellEvent::Execute(uint64 e_time, uint32 p_time)
 
 void SpellEvent::Abort(uint64 /*e_time*/)
 {
+    // Sprint12 (sc-overnight) UAF guard.
+    if (!m_Spell || !Spell::IsAliveSpell(m_Spell))
+    {
+        m_Spell = nullptr;
+        return;
+    }
     // oops, the spell we try to do is aborted
     if (m_Spell->getState() != SPELL_STATE_FINISHED)
         m_Spell->cancel();
@@ -8731,6 +8877,10 @@ void SpellEvent::Abort(uint64 /*e_time*/)
 
 bool SpellEvent::IsDeletable() const
 {
+    // Sprint12 (sc-overnight) UAF guard. If m_Spell is dangling, the event
+    // is logically deletable (no real owner remains).
+    if (!m_Spell || !Spell::IsAliveSpell(m_Spell))
+        return true;
     return m_Spell->IsDeletable();
 }
 

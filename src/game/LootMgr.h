@@ -103,6 +103,8 @@ class Player;
 class WorldObject;
 class LootStore;
 struct Loot;
+// Sprint 10 cmangos/playerbots port — bot has GroupLootRoll (cmangos type, defined in shim).
+class GroupLootRoll;
 
 struct LootStoreItem
 {
@@ -128,9 +130,12 @@ struct LootStoreItem
 
 typedef std::set<uint32> AllowedLooterSet;
 
+// Sprint 10 cmangos/playerbots port — bot uses lootItemType field. Stub default 0 = NORMAL.
+// LootItemType enum is defined in cmangos-compat-shim.h.
 struct LootItem
 {
-    uint32  itemid;
+    // Sprint 10 cmangos/playerbots port — bot uses itemId (cmangos camelCase); Penqle uses itemid.
+    union { uint32 itemid; uint32 itemId; };
     int32   randomPropertyId;
     uint16  conditionId       :16;                          // allow compiler pack structure
     uint8   count             : 8;
@@ -141,6 +146,20 @@ struct LootItem
     bool    is_counted        : 1;
     bool    needs_quest       : 1;                          // quest drop
     ObjectGuid lootOwner;           // Roll winner player guid, in case of full inventory
+    // Sprint 10 cmangos/playerbots port — bot reads lootItemType. Default 0 (NORMAL).
+    uint32 lootItemType = 0;
+    // Sprint 10 cmangos/playerbots port — bot reads isBlocked (cmangos camelCase) — alias for is_blocked.
+    bool isBlocked() const { return is_blocked; }
+    // Sprint 10 cmangos/playerbots port — bot reads freeForAll (cmangos camelCase). Penqle has freeforall (lowercase).
+    // Provide as a method to read the underlying bitfield (can't alias bitfields by reference).
+    bool freeForAll() const { return freeforall; }
+    // Sprint 10 cmangos/playerbots port — bot reads isReleased (cmangos has per-item released-by-owner concept).
+    // Penqle has no equivalent; stub returns false.
+    bool isReleased() const { return false; }
+    // 2-arg form of GetSlotTypeForSharedLoot (cmangos drops some args).
+    LootSlotType GetSlotTypeForSharedLoot(PermissionTypes permission, Player* viewer) const {
+        return GetSlotTypeForSharedLoot(permission, viewer, nullptr, false);
+    }
 
     // Constructor, copies most fields from LootStoreItem, generates random count and random suffixes/properties
     // Should be called for non-reference LootStoreItem entries only (mincountOrRef > 0)
@@ -285,6 +304,29 @@ struct Loot
     Loot(WorldObject const* lootTarget, uint32 _gold = 0) :
         m_personal(false), gold(_gold), unlootedCount(0), roundRobinPlayer(0), loot_type(LOOT_CORPSE), m_lootTarget(lootTarget), m_groupTeam(TEAM_CROSSFACTION) { }
     ~Loot() { clear(); }
+
+    // Sprint 10 cmangos/playerbots port — bot calls these accessors.
+    // Penqle exposes items vector directly; cmangos has named accessors.
+    LootItem* GetLootItemInSlot(uint32 slot) {
+        if (slot < items.size()) return &items[slot];
+        return nullptr;
+    }
+    // GroupLootRoll system: Penqle has none (loot rolls go through CGroupLoot or similar).
+    // Stub returns nullptr so callers fall through to single-player path.
+    // Sprint 10 cmangos/playerbots port — return cmangos's GroupLootRoll* (forward-decl below).
+    class GroupLootRoll* GetRollForSlot(uint32 /*slot*/) const { return nullptr; }
+    // GetGoldAmount: cmangos accessor.
+    uint32 GetGoldAmount() const { return gold; }
+    // CanLoot: cmangos checks player can loot. Stub returns true.
+    bool CanLoot(Player* /*player*/) const { return true; }
+    // Release: cmangos clears loot reservation. Stub no-op.
+    void Release(Player* /*player*/) {}
+    // GetLootItemsListFor: cmangos returns/populates per-player loot items list.
+    // Two forms used by bot: returning ref or populating out-param.
+    LootItemList const& GetLootItemsListFor(Player* /*player*/) const { return items; }
+    void GetLootItemsListFor(Player* /*player*/, LootItemList& out) const {
+        for (auto const& it : items) out.push_back(it);
+    }
 
     // if loot becomes invalid this reference is used to inform the listener
     void addLootValidatorRef(LootValidatorRef* pLootValidatorRef)

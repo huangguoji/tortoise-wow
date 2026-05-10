@@ -152,6 +152,9 @@ class TerrainInfo : public Referencable<AtomicLong>
         bool IsSwimmable(float x, float y, float z, float radius = 1.5f, GridMapLiquidData* data = 0) const;
         bool IsInWater(float x, float y, float z, GridMapLiquidData* data = 0) const;
         bool IsUnderWater(float x, float y, float z) const;
+        // Sprint 10 cmangos/playerbots port — cmangos has CanCheckLiquidLevel; Penqle no equivalent.
+        // Stub returns true (assume always checkable).
+        bool CanCheckLiquidLevel(float /*x*/, float /*y*/) const { return true; }
 
         GridMapLiquidStatus getLiquidStatus(float x, float y, float z, uint8 ReqLiquidType, GridMapLiquidData* data = 0) const;
 
