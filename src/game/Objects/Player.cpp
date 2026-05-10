@@ -75,19 +75,21 @@
 #include "ZoneScript.h"
 #include "ZoneScriptMgr.h"
 
-// SC_PHASE crash diagnostic — thread-local "what's the bot AI thread
-// doing right now" marker. Defined in src/modules/PlayerBots/playerbot/
-// SoloCommander.cpp; the symbol resolves at final mangosd.exe link.
-// Read by the unhandled-exception filter in Master.cpp on crash, dumped
-// to crash_<ts>.dmp.txt next to the minidump.
-#ifdef WIN32
-namespace ai { namespace solocommander {
+// SC_PHASE_PLAYER — Player-scoped crash diagnostic. Stamps the current
+// "what's this thread doing" tag into a thread-local read by Master.cpp's
+// unhandled-exception filter. Symbols defined in BotDiagnostics.cpp; flag
+// gating done inside SC_PHASE so the macro is cheap when disabled.
+#if defined(WIN32) && defined(BUILD_PLAYERBOTS)
+namespace ai { namespace botdiag {
+    bool IsActionLogEnabled();
     extern __declspec(thread) const char* gLastPhaseTag;
     extern __declspec(thread) const char* gLastPhaseBotName;
 }}
 #define SC_PHASE_PLAYER(tag) do { \
-    ai::solocommander::gLastPhaseTag = (tag); \
-    ai::solocommander::gLastPhaseBotName = GetName(); \
+    if (ai::botdiag::IsActionLogEnabled()) { \
+        ai::botdiag::gLastPhaseTag     = (tag); \
+        ai::botdiag::gLastPhaseBotName = GetName(); \
+    } \
 } while (0)
 #else
 #define SC_PHASE_PLAYER(tag) do {} while (0)

@@ -58,11 +58,7 @@ namespace ai
 
             if (master->GetPlayerbotAI()) //Copy formation from bot master.
             {
-                // SoloCommander: public "Send me an invite %name!" / "Sure I will join you." reply
-                // disabled. The user wants the bot silent. Whisper "hi" via TellPlayer below still fires.
-                // Master switch: sPlayerbotAIConfig.botsSilent (default true). The legacy inviteChat
-                // path is still respected so flipping botsSilent=false brings the chat back if needed.
-                if (!sPlayerbotAIConfig.botsSilent && sPlayerbotAIConfig.inviteChat && (sRandomPlayerbotMgr.IsFreeBot(bot) || !ai->HasActivePlayerMaster()))
+                if (sPlayerbotAIConfig.inviteChat && (sRandomPlayerbotMgr.IsFreeBot(bot) || !ai->HasActivePlayerMaster()))
                 {
                     std::map<std::string, std::string> placeholders;
                     placeholders["%name"] = master->GetName();

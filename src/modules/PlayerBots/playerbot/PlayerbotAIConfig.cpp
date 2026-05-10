@@ -490,8 +490,9 @@ bool PlayerbotAIConfig::Initialize()
     randomBotGroupNearby = config.GetBoolDefault("AiPlayerbot.RandomBotGroupNearby", true);
     randomBotRaidNearby = config.GetBoolDefault("AiPlayerbot.RandomBotRaidNearby", true);
     randomBotGuildNearby = config.GetBoolDefault("AiPlayerbot.RandomBotGuildNearby", true);
-    inviteChat = config.GetBoolDefault("AiPlayerbot.InviteChat", false); // SoloCommander default: silence the public "Sure I will join you." reply. Whisper "hi" still fires via TellPlayer.
-    botsSilent = config.GetBoolDefault("AiPlayerbot.BotsSilent", true); // SoloCommander master mute: skips all PlayerbotAI::Say / Yell, RP emotes, and the auto-talk emote on whisper.
+    inviteChat = config.GetBoolDefault("AiPlayerbot.InviteChat", true);
+    botsSilent = config.GetBoolDefault("AiPlayerbot.BotsSilent", false);
+    enableActionLog = config.GetBoolDefault("AiPlayerbot.EnableActionLog", false);
     enableOffSpecStrategies = config.GetBoolDefault("AiPlayerbot.EnableOffSpecStrategies", true);
     useWanderAsDefaultFollowStrategy = config.GetBoolDefault("AiPlayerbot.UseWanderAsDefaultFollowStrategy", true);
     defaultFormation = config.GetStringDefault("AiPlayerbot.DefaultFormation", "near");

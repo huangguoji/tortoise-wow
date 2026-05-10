@@ -18,7 +18,7 @@
 #include "LootObjectStack.h"
 #include "playerbot/PlayerbotAIConfig.h"
 #include "PlayerbotAI.h"
-#include "SoloCommander.h"
+#include "BotDiagnostics.h"
 #include "playerbot/PlayerbotFactory.h"
 #include "PlayerbotSecurity.h"
 #include "Group/Group.h"
@@ -280,21 +280,6 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
         }
     }
 
-    // SoloCommander addon (sprint12) — emit periodic HP/MP/TGT/STRAT
-    // heartbeat to the bot's master if one is connected. Internally
-    // throttles by combat state so the cost on idle bots is minimal.
-    SC_PHASE("UpdateAI.TickHeartbeat", bot ? bot->GetName() : "(null)");
-    ai::solocommander::Commander::TickHeartbeat(this, elapsed);
-
-    // SoloCommander raid-encounter awareness (sprint12-late). Re-enabled
-    // 2026-05-03 after defensive rewrite (uses bot->GetMap()->GetUnit()
-    // instead of cached Unit*; bails early if bot not in world). With
-    // SC_LOG instrumentation in place we can see exactly where it
-    // crashes if it does.
-    SC_PHASE("UpdateAI.TickEncounter", bot ? bot->GetName() : "(null)");
-    ai::solocommander::Commander::TickEncounter(this);
-    SC_PHASE("UpdateAI.afterSCHooks", bot ? bot->GetName() : "(null)");
-    
     if(aiInternalUpdateDelay > elapsed)
     {
         aiInternalUpdateDelay -= elapsed;
@@ -3442,10 +3427,6 @@ bool PlayerbotAI::SayToRaid(std::string msg)
 
 bool PlayerbotAI::Yell(std::string msg, bool likePlayer)
 {
-    // SoloCommander silence gate: block ALL public yells from bots.
-    if (sPlayerbotAIConfig.botsSilent)
-        return false;
-
     uint32 lang = LANG_UNIVERSAL;
     if (bot->GetTeam() == ALLIANCE)
     {
@@ -3481,10 +3462,6 @@ bool PlayerbotAI::Yell(std::string msg, bool likePlayer)
 
 bool PlayerbotAI::Say(std::string msg, bool likePlayer)
 {
-    // SoloCommander silence gate: block ALL public says from bots.
-    if (sPlayerbotAIConfig.botsSilent)
-        return false;
-
     uint32 lang = LANG_UNIVERSAL;
     if (bot->GetTeam() == ALLIANCE)
     {
@@ -3718,10 +3695,7 @@ bool PlayerbotAI::TellPlayer(Player* player, std::string text, PlayerbotSecurity
         if (!sServerFacade.IsInFront(bot, player, sPlayerbotAIConfig.sightDistance, EMOTE_ANGLE_IN_FRONT))
             sServerFacade.SetFacingTo(bot, player);
 
-        // SoloCommander silence gate: skip the auto-talk emote animation. The user wants no emojis at all,
-        // and EMOTE_ONESHOT_TALK fires every time the bot whispers (e.g. on every TellPlayer reply).
-        if (!sPlayerbotAIConfig.botsSilent)
-            bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
+        bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
     }
 
     return true;
@@ -6550,11 +6524,6 @@ void PlayerbotAI::EnsureDefaultMovementStrategy(Player* requester)
 
 std::string PlayerbotAI::HandleRemoteCommand(std::string command)
 {
-    // SoloCommander addon (sprint12) — claim "sc:*" before the legacy
-    // vocabulary so the addon's protocol vocabulary is reserved cleanly.
-    if (ai::solocommander::Commander::ClaimsCommand(command))
-        return ai::solocommander::Commander::HandleCommand(this, command);
-
     if (command == "state")
     {
         switch (currentState)

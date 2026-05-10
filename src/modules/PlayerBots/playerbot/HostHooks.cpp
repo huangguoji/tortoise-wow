@@ -11,7 +11,7 @@
 #include "World.h"
 #include "playerbot/RandomPlayerbotMgr.h"
 #include "playerbot/PlayerbotAIConfig.h"
-#include "SoloCommander.h"
+#include "BotDiagnostics.h"
 
 void Player::CreatePlayerbotAI()
 {

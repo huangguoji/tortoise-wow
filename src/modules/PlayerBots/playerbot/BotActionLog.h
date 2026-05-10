@@ -37,7 +37,7 @@
 class Player;
 class PlayerbotAI;
 
-namespace ai { namespace solocommander {
+namespace ai { namespace botdiag {
 
 class BotActionLog
 {
@@ -100,4 +100,4 @@ private:
     static void EnsureLogDir();
 };
 
-}}  // namespace ai::solocommander
+}}  // namespace ai::botdiag

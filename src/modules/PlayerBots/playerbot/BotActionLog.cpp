@@ -5,7 +5,8 @@
 #include "playerbot/playerbot.h"
 #include "BotActionLog.h"
 #include "PlayerbotAI.h"
-#include "SoloCommander.h"  // for SC_LOG
+#include "BotDiagnostics.h"  // for SC_LOG + IsActionLogEnabled
+#include "PlayerbotAIConfig.h"
 #include "Objects/Player.h"
 #include "Objects/Unit.h"
 #include "ObjectGuid.h"
@@ -24,7 +25,7 @@
 #include <direct.h>
 #endif
 
-namespace ai { namespace solocommander {
+namespace ai { namespace botdiag {
 
 std::unordered_map<uint32, std::FILE*> BotActionLog::sFiles;
 
@@ -74,6 +75,9 @@ std::string BotActionLog::BuildPath(Player* bot)
 
 std::FILE* BotActionLog::Open(PlayerbotAI* ai)
 {
+    // Gate: when AiPlayerbot.EnableActionLog is off, never open log files.
+    // All Write* methods route through Open and become silent no-ops.
+    if (!ai::botdiag::IsActionLogEnabled()) return nullptr;
     if (!ai) return nullptr;
     Player* bot = ai->GetBot();
     if (!bot) return nullptr;
@@ -146,7 +150,11 @@ std::FILE* BotActionLog::GetHandle(PlayerbotAI* ai)
     Player* bot = ai->GetBot();
     if (!bot) return nullptr;
     auto it = sFiles.find(bot->GetGUIDLow());
-    return (it != sFiles.end()) ? it->second : nullptr;
+    if (it != sFiles.end() && it->second)
+        return it->second;
+    // Lazy-open on first use. Open() itself gates on AiPlayerbot.EnableActionLog,
+    // returning nullptr (and not creating any file) when the flag is off.
+    return Open(ai);
 }
 
 static std::string TimestampWithMs()
@@ -303,7 +311,7 @@ void BotActionLog::LogTargetChange(PlayerbotAI* ai, ObjectGuid oldTarget, Object
           reason ? reason : "?");
 }
 
-}}  // namespace ai::solocommander — close so wrappers below are at global
+}}  // namespace ai::botdiag — close so wrappers below are at global
     // scope where the host's forward-declarations expect them.
 
 // ============================================================================
@@ -315,7 +323,7 @@ void BotActionLog::LogTargetChange(PlayerbotAI* ai, ObjectGuid oldTarget, Object
 // wrapper unconditionally and pay only the (very cheap) bot-AI null check
 // when the player is a real human.
 // ============================================================================
-using ai::solocommander::BotActionLog;
+using ai::botdiag::BotActionLog;
 
 namespace {
     inline PlayerbotAI* AiFor(Unit* u) {
@@ -423,8 +431,8 @@ void BotActionLog_LogTargetChange(Unit* bot, uint64 oldTargetRaw, uint64 newTarg
     BotActionLog::LogTargetChange(ai, ObjectGuid(oldTargetRaw), ObjectGuid(newTargetRaw), reason);
 }
 
-// Re-open namespace for CloseAll definition (member of ai::solocommander::BotActionLog).
-namespace ai { namespace solocommander {
+// Re-open namespace for CloseAll definition (member of ai::botdiag::BotActionLog).
+namespace ai { namespace botdiag {
 
 void BotActionLog::CloseAll()
 {
@@ -440,4 +448,4 @@ void BotActionLog::CloseAll()
     sFiles.clear();
 }
 
-}}  // namespace ai::solocommander
+}}  // namespace ai::botdiag

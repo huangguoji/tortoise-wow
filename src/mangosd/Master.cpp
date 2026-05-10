@@ -84,14 +84,16 @@
 #include <crtdbg.h>
 #pragma comment(lib, "dbghelp.lib")
 
-// SC_PHASE thread-locals: the crashing thread's last-known "what is
-// the bot AI doing" tag. Read in the unhandled-exception filter and
-// written to the companion .txt next to the .dmp so we don't need
-// symbols to figure out which phase blew up. See SoloCommander.h.
-namespace ai { namespace solocommander {
+#ifdef BUILD_PLAYERBOTS
+// SC_PHASE thread-locals: the crashing thread's last-known "what is the
+// bot AI doing" tag. Forward-declared here (rather than via #include) so
+// mangosd doesn't need a transitive dep on the playerbots module headers.
+// Set by SC_PHASE macro in BotDiagnostics.h iff AiPlayerbot.EnableActionLog=1.
+namespace ai { namespace botdiag {
     extern __declspec(thread) const char* gLastPhaseTag;
     extern __declspec(thread) const char* gLastPhaseBotName;
 }}
+#endif
 
 // Re-entrancy guard: if our handler itself crashes, we must NOT recurse —
 // just let the process die. Per-thread so concurrent crashes are handled.
@@ -181,17 +183,21 @@ static void Mangosd_WriteCrashDump(EXCEPTION_POINTERS* ep, DWORD synthCode, cons
     CloseHandle(hFile);
 
     // Read SC_PHASE thread-locals (guarded — TLS itself can be corrupted
-    // when the corruption was in arbitrary memory).
+    // when the corruption was in arbitrary memory). The TLS is only set
+    // when AiPlayerbot.EnableActionLog=1; otherwise these stay nullptr
+    // and we report "(no phase set)".
     const char* phaseTag = "(no phase set)";
     const char* phaseBot = "(no bot)";
+#ifdef BUILD_PLAYERBOTS
     __try
     {
-        if (ai::solocommander::gLastPhaseTag)
-            phaseTag = ai::solocommander::gLastPhaseTag;
-        if (ai::solocommander::gLastPhaseBotName)
-            phaseBot = ai::solocommander::gLastPhaseBotName;
+        if (ai::botdiag::gLastPhaseTag)
+            phaseTag = ai::botdiag::gLastPhaseTag;
+        if (ai::botdiag::gLastPhaseBotName)
+            phaseBot = ai::botdiag::gLastPhaseBotName;
     }
     __except (EXCEPTION_EXECUTE_HANDLER) {}
+#endif
 
     char txtFilename[512];
     snprintf(txtFilename, sizeof(txtFilename), "%s.txt", filename);

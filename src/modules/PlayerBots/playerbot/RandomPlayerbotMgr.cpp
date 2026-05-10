@@ -9,7 +9,7 @@
 #include "ObjectMgr.h"
 #include "Database/DatabaseEnv.h"
 #include "PlayerbotAI.h"
-#include "SoloCommander.h"  // for SC_LOG
+#include "BotDiagnostics.h"  // for SC_LOG
 #include "Objects/Player.h"
 #include "playerbot/AiFactory.h"
 #include "PlayerbotCommandServer.h"

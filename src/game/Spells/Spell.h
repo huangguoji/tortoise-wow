@@ -233,16 +233,6 @@ class Spell
     friend void WorldObject::SetCurrentCastedSpell(Spell* pSpell );
     friend void WorldObject::MoveChannelledSpellWithCastTime(Spell* pSpell);
     public:
-        // Sprint12 (sc-overnight) 2026-05-07 use-after-free hardening:
-        // Returns true iff `p` points to a still-alive Spell object. Used
-        // by SpellEvent::Execute as a defensive guard — under bot AI
-        // load there's an unidentified lifecycle bug where the SpellEvent
-        // outlives its m_Spell. Without this check we crash with
-        // ACCESS_VIOLATION READ at offset +0x268 (= m_spellState compare)
-        // ~1-2 min into combat. The check is O(1) (unordered_set lookup)
-        // and called once per SpellEvent::Execute. Set is registered in
-        // Spell ctor and unregistered in dtor. See Spell.cpp.
-        static bool IsAliveSpell(Spell* p);
         // Sprint 10 cmangos/playerbots port — bot sets spell->m_clientCast = true on spells it queues.
         // Penqle has no equivalent; stub field is never read. Wave 5 candidate to wire up if needed.
         bool m_clientCast = false;

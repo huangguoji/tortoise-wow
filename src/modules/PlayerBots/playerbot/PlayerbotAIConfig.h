@@ -250,7 +250,11 @@ public:
     bool randomBotFormGuild;
     bool randomBotRandomPassword;
     bool inviteChat;
-    bool botsSilent; // SoloCommander: master switch to silence ALL bot RP/say/yell/emote behaviour. Whispers ("hi") still go through.
+    bool botsSilent;
+    // Opt-in diagnostic logging: when true, [BOT] log lines and per-bot action
+    // log files (logs/bots/<name>_acc<id>_<timestamp>.log) are emitted. Default
+    // off so production servers don't pay disk I/O / branch overhead.
+    bool enableActionLog;
     bool enableOffSpecStrategies;
     bool useWanderAsDefaultFollowStrategy;
     std::string defaultFormation;

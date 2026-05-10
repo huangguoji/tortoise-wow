@@ -48,27 +48,6 @@
 #include "BattleGround.h"
 #include "Util.h"
 #include "Chat.h"
-#include <unordered_set>
-#include <mutex>
-
-// Sprint12 (sc-overnight) 2026-05-07 — live-Spell registry. Spell ctor
-// inserts; ~Spell removes. SpellEvent::Execute checks before deref'ing
-// m_Spell. Diagnostic side-table for an unidentified lifecycle bug
-// where bot AI somehow leaves a SpellEvent in EventProcessor's queue
-// after its m_Spell has been freed. PageHeap repro: ACCESS_VIOLATION
-// READ at offset +0x268 (m_spellState compare) in SpellEvent::Execute,
-// 1-2 min into bot combat. See Spell::IsAliveSpell.
-namespace {
-    std::unordered_set<Spell*> s_aliveSpells;
-    std::mutex                 s_aliveSpellsMutex;
-}
-
-bool Spell::IsAliveSpell(Spell* p)
-{
-    if (!p) return false;
-    std::lock_guard<std::mutex> lock(s_aliveSpellsMutex);
-    return s_aliveSpells.count(p) > 0;
-}
 #include "PathFinder.h"
 #include "CharacterDatabaseCache.h"
 #include "GameObjectAI.h"
@@ -322,12 +301,6 @@ Spell::Spell(Unit* caster, SpellEntry const *info, bool triggered, ObjectGuid or
     m_canReflect = victim ? m_spellInfo->IsReflectableSpell(caster, victim) : m_spellInfo->IsReflectableSpell();
 
     CleanupTargetList();
-
-    // Sprint12 (sc-overnight) live-Spell registry — see Spell::IsAliveSpell.
-    {
-        std::lock_guard<std::mutex> lock(s_aliveSpellsMutex);
-        s_aliveSpells.insert(this);
-    }
 }
 
 Spell::Spell(GameObject* caster, SpellEntry const *info, bool triggered, ObjectGuid originalCasterGUID, SpellEntry const* triggeredBy, Unit* victim, SpellEntry const* triggeredByParent, bool bCanIgnoreLOS /*= false*/):
@@ -357,23 +330,11 @@ Spell::Spell(GameObject* caster, SpellEntry const *info, bool triggered, ObjectG
     m_canReflect = victim ? m_spellInfo->IsReflectableSpell(caster, victim) : m_spellInfo->IsReflectableSpell();
 
     CleanupTargetList();
-
-    // Sprint12 (sc-overnight) live-Spell registry — see Spell::IsAliveSpell.
-    {
-        std::lock_guard<std::mutex> lock(s_aliveSpellsMutex);
-        s_aliveSpells.insert(this);
-    }
 }
 
 Spell::~Spell()
 {
     m_destroyed = true;
-    // Sprint12 (sc-overnight) live-Spell registry: remove ourselves so
-    // SpellEvent::Execute can detect dangling pointers via IsAliveSpell.
-    {
-        std::lock_guard<std::mutex> lock(s_aliveSpellsMutex);
-        s_aliveSpells.erase(this);
-    }
 }
 
 template<typename T>
@@ -8718,21 +8679,6 @@ SpellEvent::SpellEvent(Spell* spell) : BasicEvent()
 
 SpellEvent::~SpellEvent()
 {
-    // Sprint12 (sc-overnight) 2026-05-07 use-after-free guard. If
-    // SpellEvent::Execute already detected the m_Spell as freed and
-    // cleared it, skip the deref + delete here. Without this guard,
-    // ~SpellEvent would re-deref the dangling pointer.
-    if (!m_Spell)
-        return;
-
-    if (!Spell::IsAliveSpell(m_Spell))
-    {
-        // Spell was freed without us — log + abandon to avoid double-free.
-        sLog.outError("[Spell/UAF] ~SpellEvent: m_Spell=0x%p was already freed; skipping ->cancel/->Delete to avoid double-free.", (void*)m_Spell);
-        m_Spell = nullptr;
-        return;
-    }
-
     if (m_Spell->getState() != SPELL_STATE_FINISHED)
         m_Spell->cancel();
 
@@ -8741,20 +8687,6 @@ SpellEvent::~SpellEvent()
 
 bool SpellEvent::Execute(uint64 e_time, uint32 p_time)
 {
-    // Sprint12 (sc-overnight) 2026-05-07 use-after-free guard. There's an
-    // unidentified lifecycle bug under bot AI load where SpellEvent stays
-    // queued in EventProcessor after its m_Spell has been freed. Without
-    // this check we crash with ACCESS_VIOLATION READ at offset +0x268 in
-    // the m_Spell->getState() comparison below. Detect via the live-Spell
-    // registry (see Spell::IsAliveSpell). Treat dangling m_Spell as
-    // "spell already finished" — return true so EventProcessor deletes us.
-    if (!Spell::IsAliveSpell(m_Spell))
-    {
-        sLog.outError("[Spell/UAF] SpellEvent::Execute: m_Spell=0x%p is dangling (already freed); finishing event silently to avoid crash.", (void*)m_Spell);
-        m_Spell = nullptr;  // ~SpellEvent will skip cleanup
-        return true;        // tell EventProcessor: done, please delete me
-    }
-
     // update spell if it is not finished
     if (m_Spell->getState() != SPELL_STATE_FINISHED)
         m_Spell->update(p_time);
@@ -8864,12 +8796,6 @@ bool SpellEvent::Execute(uint64 e_time, uint32 p_time)
 
 void SpellEvent::Abort(uint64 /*e_time*/)
 {
-    // Sprint12 (sc-overnight) UAF guard.
-    if (!m_Spell || !Spell::IsAliveSpell(m_Spell))
-    {
-        m_Spell = nullptr;
-        return;
-    }
     // oops, the spell we try to do is aborted
     if (m_Spell->getState() != SPELL_STATE_FINISHED)
         m_Spell->cancel();
@@ -8877,10 +8803,6 @@ void SpellEvent::Abort(uint64 /*e_time*/)
 
 bool SpellEvent::IsDeletable() const
 {
-    // Sprint12 (sc-overnight) UAF guard. If m_Spell is dangling, the event
-    // is logically deletable (no real owner remains).
-    if (!m_Spell || !Spell::IsAliveSpell(m_Spell))
-        return true;
     return m_Spell->IsDeletable();
 }
 

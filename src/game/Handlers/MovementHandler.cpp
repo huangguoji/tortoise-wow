@@ -39,15 +39,23 @@
 #include "Anticheat/Movement/Movement.hpp"
 #include "SuspiciousStatisticMgr.h"
 
-// SoloCommander diagnostic logging. We don't include playerbot/SoloCommander.h here
-// because game/ module isn't on the include path for playerbot. Inline a thin SC_LOG
-// macro that writes to the same sLog channel ("[SC]" prefix lets `grep "[SC]"` filter
-// these lines from info.log). Used for ghost-state root-cause diagnosis.
-#define SC_LOG(fmt, ...) sLog.outDetail("[SC] " fmt, ##__VA_ARGS__)
+// Bot diagnostic logging — flag-gated via AiPlayerbot.EnableActionLog. We
+// can't #include "BotDiagnostics.h" here because the playerbot/ dir isn't
+// on game/'s include path; forward-declare the flag accessor and inline a
+// thin SC_LOG macro. Filter with `grep "\[BOT\]"` from info.log.
+#ifdef BUILD_PLAYERBOTS
+namespace ai { namespace botdiag { bool IsActionLogEnabled(); } }
+#define SC_LOG(fmt, ...) do { \
+    if (ai::botdiag::IsActionLogEnabled()) \
+        sLog.outDetail("[BOT] " fmt, ##__VA_ARGS__); \
+} while (0)
+#else
+#define SC_LOG(fmt, ...) ((void)0)
+#endif
 
-// SoloCommander helper — true iff the session belongs to a bot (synthetic/null socket
-// or the player has a PlayerbotAI attached). Used to gate SC_LOG so we don't spam the
-// log for real-player teleports.
+// Helper — true iff the session belongs to a bot (synthetic/null socket or
+// the player has a PlayerbotAI attached). Used to gate SC_LOG so we don't
+// spam the log for real-player teleports.
 static bool _scIsBotSession(WorldSession const* sess)
 {
     if (!sess) return false;

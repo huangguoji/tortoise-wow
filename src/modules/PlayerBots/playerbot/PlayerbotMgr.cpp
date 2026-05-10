@@ -7,7 +7,8 @@
 #include "playerbot/ServerFacade.h"
 #include "playerbot/TravelMgr.h"
 #include "playerbot/PlayerbotLoginMgr.h"
-#include "playerbot/SoloCommander.h"
+#include "BotDiagnostics.h"
+#include "BotActionLog.h"
 #include "playerbot/BotActionLog.h"
 #include "Chat/ChannelMgr.h"
 #include "SocialMgr.h"
@@ -480,11 +481,11 @@ void PlayerbotHolder::LogoutPlayerBot(uint32 guid, bool allowInstant, bool forDe
         // BotActionLog: write LIFECYCLE LOGOUT and close the per-bot log
         // file. Done early in the logout sequence so the file flushes
         // before any potentially-crashing teardown work runs.
-        ai::solocommander::BotActionLog::Write(ai, "LIFECYCLE",
+        ai::botdiag::BotActionLog::Write(ai, "LIFECYCLE",
             "event=LOGOUT bot=%s guid=%u allowInstant=%d forDelete=%d",
             bot->GetName(), guid, (int)allowInstant, (int)forDelete);
-        ai::solocommander::BotActionLog::LogState(ai, "pre-logout");
-        ai::solocommander::BotActionLog::Close(ai);
+        ai::botdiag::BotActionLog::LogState(ai, "pre-logout");
+        ai::botdiag::BotActionLog::Close(ai);
 
         if (!sPlayerbotAIConfig.bExplicitDbStoreSave)
         {
@@ -763,11 +764,6 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
     ai->SetActionDuration(urand(2000, 4000));
 
     ai->TellPlayer(ai->GetMaster(), BOT_TEXT("hello"));
-
-    // SoloCommander addon (sprint12) — Phase 1a wires the call site; the
-    // body (level/gear sync to match master) lands in Phase 1c. Stubbed
-    // implementation is a no-op so this is safe to call now.
-    ai::solocommander::Commander::OnBotSummoned(ai);
 
     JoinChatChannels(bot);
 

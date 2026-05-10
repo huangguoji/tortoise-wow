@@ -5,7 +5,7 @@
 #include "AI/CreatureAI.h"
 #include "playerbot/LootObjectStack.h"
 #include "playerbot/ServerFacade.h"
-#include "playerbot/SoloCommander.h" // SC_LOG for attack-command diagnostic trace
+#include "playerbot/BotDiagnostics.h" // SC_LOG for attack-command diagnostic trace
 #include "playerbot/strategy/generic/CombatStrategy.h"
 
 using namespace ai;
