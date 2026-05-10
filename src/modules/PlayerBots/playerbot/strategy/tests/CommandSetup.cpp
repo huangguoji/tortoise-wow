@@ -130,7 +130,7 @@ TestResult CommandSetupClearMobs::Execute(const std::string& params, Player* bot
     {
         if (creature->IsAlive() && sServerFacade.IsHostileTo(bot, creature))
         {
-            // Sprint 10 cmangos/playerbots port — cmangos has Unit::Kill as 5-arg static; Penqle has 3-arg member.
+            // cmangos has Unit::Kill as a 5-arg static; Penqle has a 3-arg member.
             bot->Kill(creature, nullptr, false);
             cleared++;
         }

@@ -866,9 +866,9 @@ namespace MaNGOS
     {
         public:
             AnyUnfriendlyUnitInObjectRangeCheck(WorldObject const* obj, Unit const* funit, float range) : i_obj(obj), i_funit(funit), i_range(range) {}
-            // Sprint 10 cmangos/playerbots port — cmangos's 2-arg ctor (obj acts as both observer and friendly-ref).
+            // cmangos's 2-arg ctor (obj acts as both observer and friendly-ref).
             AnyUnfriendlyUnitInObjectRangeCheck(WorldObject const* obj, float range) : i_obj(obj), i_funit(obj && obj->IsUnit() ? (Unit const*)obj : nullptr), i_range(range) {}
-            // Sprint 10 cmangos/playerbots port — bot's 4-arg form (extra alive flag ignored).
+            // bot's 4-arg form (extra alive flag ignored).
             AnyUnfriendlyUnitInObjectRangeCheck(WorldObject const* obj, Unit const* funit, float range, bool /*alive*/) : i_obj(obj), i_funit(funit), i_range(range) {}
             WorldObject const& GetFocusObject() const { return *i_obj; }
             bool operator()(Unit* u)
@@ -1208,7 +1208,7 @@ namespace MaNGOS
         public:
             NearestCreatureEntryWithLiveStateInObjectRangeCheck(WorldObject const& obj,uint32 entry, bool alive, float range, Creature const* except = nullptr)
                 : i_obj(obj), i_entry(entry), i_alive(alive), i_range(range), i_except(except) {}
-            // Sprint 10 cmangos/playerbots port — bot's 6-arg form (extra flags ignored).
+            // bot's 6-arg form (extra flags ignored).
             NearestCreatureEntryWithLiveStateInObjectRangeCheck(WorldObject const& obj, uint32 entry, bool alive, bool /*friendly*/, float range, bool /*excludeSelf*/)
                 : i_obj(obj), i_entry(entry), i_alive(alive), i_range(range), i_except(nullptr) {}
             WorldObject const& GetFocusObject() const { return i_obj; }
@@ -1425,7 +1425,7 @@ namespace MaNGOS
     {
     public:
         AllCreaturesOfEntryInRange(const WorldObject* pObject, uint32 uiEntry, float fMaxRange) : m_pObject(pObject), m_uiEntry(uiEntry), m_fRange(fMaxRange) {}
-        // Sprint 10 cmangos/playerbots port — bot uses ...Check naming.
+        // bot uses ...Check naming.
         AllCreaturesOfEntryInRange(const WorldObject* pObject, uint32 uiEntry, float fMaxRange, bool /*alive*/) : m_pObject(pObject), m_uiEntry(uiEntry), m_fRange(fMaxRange) {}
         bool operator() (Unit* pUnit)
         {
@@ -1438,7 +1438,7 @@ namespace MaNGOS
         float m_fRange;
     };
 
-    // Sprint 10 cmangos/playerbots port — cmangos suffixes these with "Check".
+    // cmangos suffixes these with "Check".
     typedef AllCreaturesOfEntryInRange AllCreaturesOfEntryInRangeCheck;
 
     class AllCreaturesInRange

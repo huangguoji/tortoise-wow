@@ -1,0 +1,33 @@
+// Empty implementations of the bot-subsystem hooks for builds that don't link
+// the playerbots module (BUILD_PLAYERBOTS=OFF). The host code calls these
+// unconditionally; without these stubs the link step fails on missing symbols.
+//
+// When BUILD_PLAYERBOTS=ON the bot module provides the real implementations
+// (HostHooks.cpp + BotActionLog.cpp) and this file is excluded from the build
+// (see src/game/CMakeLists.txt).
+
+#include "Objects/Player.h"
+#include "Objects/Unit.h"
+#include "World.h"
+#include "WorldPacket.h"
+
+void Player::CreatePlayerbotAI()              {}
+void Player::RemovePlayerbotAI()              {}
+void Player::CreatePlayerbotMgr()             {}
+void Player::RemovePlayerbotMgr()             {}
+// No bot Player can exist when BUILD_PLAYERBOTS=OFF, so every Player is real.
+bool Player::isRealPlayer() const             { return true; }
+void Player::UpdatePlayerbotHooks(uint32)     {}
+
+void World::UpdatePlayerbotsTick(uint32)      {}
+void World::InitPlayerbotsAtStartup()         {}
+
+bool Player_DispatchBotOutgoingPacket(Player*, WorldPacket const&) { return false; }
+void Player_DispatchBotChatCommand(Player*, uint32, std::string const&, uint32) {}
+
+void BotActionLog_LogCastStart  (WorldObject*, uint32, uint64, uint32)         {}
+void BotActionLog_LogCastResult (WorldObject*, uint32, uint8, const char*)     {}
+void BotActionLog_LogDamage     (Unit*, Unit*, uint32, uint32, const char*)    {}
+void BotActionLog_LogAuraAttempt(Unit*, uint32, int32, uint64)                 {}
+void BotActionLog_LogAuraApply  (Unit*, uint32, int32, uint64)                 {}
+void BotActionLog_LogAuraRemove (Unit*, uint32, uint64)                        {}

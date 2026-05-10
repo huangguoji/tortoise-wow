@@ -43,7 +43,7 @@ class ChannelMgr
 
         Channel *GetOrCreateChannel(std::string const& name, bool allowAreaDependantChans = true);
         Channel *GetChannel(std::string const& name, PlayerPointer p, bool pkt = true);
-        // Sprint 10 cmangos/playerbots port — bot passes Player*; PlayerPointer is a smart-ish wrapper.
+        // bot passes Player*; PlayerPointer is a smart-ish wrapper.
         Channel* GetChannel(std::string const& name, Player* p, bool pkt = true);
         // cmangos camelCase aliases.
         ChannelMap const& GetChannels() const { return channels; }

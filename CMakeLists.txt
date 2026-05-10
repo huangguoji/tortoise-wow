@@ -47,8 +47,10 @@ option(ENABLE_PROFILING "(Windows only) Enable Optick integration, which allows 
 option(ENABLE_LSAN "Enables Leak Sanitizer" OFF)
 # Allow enabling official Turtle addon support
 option(ALLOW_TURTLE_ADDONS "Allow Turtle addons" OFF)
-# Sprint 10 — cmangos/playerbots port (see bot-deployment-sprint-plan.md)
-option(BUILD_PLAYERBOTS "Build cmangos/playerbots module (Sprint 10 port; OFF until Phase 3 host hooks land)" OFF)
+# Build cmangos/playerbots — bot AI vendored under src/modules/PlayerBots/.
+# When ON, mangosd links the bot subsystem; runtime activation is gated by
+# AiPlayerbot.Enabled in aiplayerbot.conf.
+option(BUILD_PLAYERBOTS "Build the cmangos/playerbots subsystem" OFF)
 
 
 if(UNIX)
@@ -453,8 +455,8 @@ if(UNIX)
 elseif(WIN32)
   # Disable warnings in Visual Studio 8 and above and add /MP
   if(MSVC AND NOT CMAKE_GENERATOR MATCHES "Visual Studio 7")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_RELEASE} /wd4996 /wd4355 /wd4244 /wd4985 /wd4267 /EHsc")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_RELEASE} /wd4996 /wd4355 /wd4244 /wd4267 /EHsc")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_RELEASE} /wd4996 /wd4355 /wd4244 /wd4985 /wd4267 /MP /EHsc")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_RELEASE} /wd4996 /wd4355 /wd4244 /wd4267 /MP /EHsc")
   endif()
 endif()
 
@@ -554,7 +556,7 @@ message(STATUS "Build flags (DEBUG)   : ${CMAKE_CXX_FLAGS_DEBUG}")
 add_subdirectory(src)
 add_subdirectory(dep)
 
-# Sprint 10 — cmangos/playerbots vendored module
+# cmangos/playerbots vendored module
 if (BUILD_PLAYERBOTS)
     message(STATUS "BUILD_PLAYERBOTS=ON - adding cmangos/playerbots vendored module at src/modules/PlayerBots/")
     set(PCH ${USE_PCH})

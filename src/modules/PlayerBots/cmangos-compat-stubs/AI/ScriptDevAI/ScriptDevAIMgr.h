@@ -1,8 +1,6 @@
-// cmangos/playerbots compat stub — Penqle has no ScriptDevAIMgr.h.
-// cmangos uses ScriptDevAIMgr as a registry/dispatcher for ScriptDev2 scripts.
-// Penqle has its own ScriptMgr (src/game/ScriptMgr.h) that handles the same
-// territory but with a different API surface.
-// Phase 3: PlayerbotAI.cpp + GossipHelloAction.cpp pull this header
-// unconditionally. Identify which ScriptDevAIMgr methods they call, then map
-// to Penqle's ScriptMgr equivalents.
 #pragma once
+
+// Intentionally empty. cmangos uses ScriptDevAIMgr as a dispatcher for the
+// ScriptDev2 script suite; Penqle's equivalent is ScriptMgr in src/game/.
+// Bot module sites #including this header resolve their call sites against
+// Penqle's ScriptMgr via the compat shim.

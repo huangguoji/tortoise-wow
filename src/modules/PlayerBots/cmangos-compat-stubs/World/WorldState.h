@@ -1,9 +1,6 @@
-// cmangos/playerbots compat stub — Penqle has no WorldState.h.
-// cmangos uses WorldState for cross-server-tick state tracking (rolling
-// events, weekly resets, etc.). Penqle stores equivalent state in World.cpp
-// directly + GameEventMgr.
-// Phase 3: PlayerbotAIConfig.cpp + RandomPlayerbotMgr.cpp pull this header
-// unconditionally. Identify what specific WorldState symbols they reference,
-// then either (a) port the matching API to a Penqle adapter, or (b) gate the
-// using code with #ifdef CMANGOS_WORLDSTATE that we don't define.
 #pragma once
+
+// Intentionally empty. cmangos uses WorldState as a per-tick state registry;
+// Penqle keeps the equivalent in World.cpp + GameEventMgr. PlayerbotAIConfig.cpp
+// and RandomPlayerbotMgr.cpp #include this unconditionally; the call sites
+// resolve against substitutes in the compat shim.

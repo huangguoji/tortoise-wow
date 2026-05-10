@@ -293,7 +293,7 @@ namespace ai
                 creators["hand of sacrifice"] = [](PlayerbotAI* ai) { return new HandOfSacrificeTrigger(ai); };
                 creators["blessing of sacrifice"] = [](PlayerbotAI* ai) { return new BlessingOfSacrificeTrigger(ai); };
                 creators["crusader strike"] = [](PlayerbotAI* ai) { return new CrusaderStrikeTrigger(ai); };
-                // TurtleWoW Holy Paladin Daybreak target-prioritization (sprint10):
+                // TurtleWoW Holy Paladin Daybreak target-prioritization:
                 creators["party member has daybreak"] = [](PlayerbotAI* ai) { return new PartyMemberHasDaybreakTrigger(ai); };
             }
         };
@@ -303,7 +303,7 @@ namespace ai
         public:
             ValueFactoryInternal()
             {
-                // TurtleWoW Holy Paladin Daybreak target-prioritization (sprint10):
+                // TurtleWoW Holy Paladin Daybreak target-prioritization:
                 creators["party member with daybreak"] = [](PlayerbotAI* ai) { return new PartyMemberWithDaybreakValue(ai); };
             }
         };

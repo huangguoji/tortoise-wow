@@ -1,28 +1,21 @@
-// cmangos/playerbots → Penqle/tortoise-wow compatibility shim
+// cmangos/playerbots → Penqle/tortoise-wow compatibility shim.
 //
-// Sprint 10 cmangos/playerbots port (see ../../bot-deployment-sprint-plan.md).
+// Provides the cmangos-side names/constants the vendored bot module references
+// but Penqle either names differently or doesn't expose. Included by botpch.h
+// as the first header in the PCH chain so all bot TUs see it.
 //
-// This header provides the cmangos-side names/constants that the vendored
-// playerbots module references but Penqle either names differently or doesn't
-// expose at all. It is included by botpch.h as the FIRST include in the
-// precompiled-header chain, so all bot-module translation units see it.
+// What's here:
+//   - Type renames / typedef forwards
+//   - Define mappings (cmangos constants → Penqle equivalents)
+//   - Standard-library headers cmangos uses without explicit include
 //
-// Categories captured here (Wave 1 / Wave 4):
-//   - Type renames (typedefs)
-//   - Define mappings (cmangos-specific constants → Penqle equivalents)
-//   - Standard-library headers cmangos's bot uses without explicit include
-//
-// Categories NOT captured here (handled by per-call-site bot-source patches
-// in Wave 2 / Wave 4 because they require contextual rewrites, not simple
-// name remapping):
-//   - DBC-store global renames (sMapStore vs Penqle's sMapStorage architecture)
+// What's NOT here (handled by per-call-site rewrites because they need
+// contextual changes, not name remapping):
+//   - DBC-store globals (sMapStore ↔ sMapStorage architecture)
 //   - WorldPacket move-only assignment sites
 //   - CreatureData::id (single field) vs Penqle's creature_id (array)
 //   - PlayerbotAI internal signature mismatches
 //   - GuidPosition diamond-inheritance ambiguity
-//
-// See bot-deployment-sprint-plan.md Phase 3 for the full categorization and
-// per-wave breakdown.
 
 #pragma once
 
@@ -89,7 +82,7 @@ enum DistanceCalculation { DIST_CALC_NONE = 0, DIST_CALC_BOUNDING_RADIUS = 1, DI
 
 // cmangos has UNIT_FLAG_CLIENT_CONTROL_LOST. Penqle may use a different name
 // or omit it entirely. Define as 0 so the bit-flag operations parse, even if
-// they're effectively no-ops at runtime (Wave 5 candidate to wire properly).
+// they're effectively no-ops at runtime
 #ifndef UNIT_FLAG_CLIENT_CONTROL_LOST
 #define UNIT_FLAG_CLIENT_CONTROL_LOST 0
 #endif
@@ -298,7 +291,7 @@ struct CmangosFactionStoreProxy
 {
     template<typename T = FactionEntry>
     T const* LookupEntry(uint32 id) const { return sObjectMgr.GetFactionEntry(id); }
-    uint32 GetNumRows() const { return 100; } // stub upper-bound; real impl deferred to Wave 5+
+    uint32 GetNumRows() const { return 100; } // stub upper-bound
 };
 inline CmangosFactionStoreProxy sFactionStore;
 
@@ -313,7 +306,7 @@ inline CmangosCreatureStorageProxy sCreatureStorage;
 
 // === Helpers ===
 // strstri overload: bot's PlayerbotAI.cpp forward-declares strstri(std::string, std::string).
-// Penqle's playerbot/Helpers.cpp now provides the implementation (added Wave 1).
+// Penqle's playerbot/Helpers.cpp now provides the implementation (added).
 // Re-declare here for visibility at all bot TUs.
 char* strstri(std::string const& s1, std::string const& s2);
 
@@ -502,7 +495,7 @@ namespace Taxi {
 #endif
 
 // === sScriptDevAIMgr (cmangos has ScriptDevAI; Penqle uses sScriptMgr) ===
-// Stub so symbol resolves; bot's calls are no-ops in Wave 1.
+// Stub so symbol resolves; bot's calls are no-ops
 struct CmangosScriptDevAIMgrStub {
     template<typename... Args>
     bool OnGossipHello(Args... /*args*/) { return false; }
@@ -713,7 +706,7 @@ typedef std::map<uint32, TransportAnimationNode*> TransportPathContainer;
 // === sLootMgr stub (cmangos global; Penqle has LootStore but no equivalent singleton) ===
 // Bot calls sLootMgr.GetLoot(player[, guid]) to fetch the loot the player is currently looking at.
 // Penqle stores Loot directly on Creature/GameObject. Stub returns nullptr; loot UI bot logic is a
-// Wave 5+ candidate — for Wave 1 we just need the symbol to resolve.
+// stub: symbol needs to resolve, value never actually consulted.
 struct CmangosLootMgrStub
 {
     Loot* GetLoot(Player* /*player*/, ObjectGuid /*guid*/ = ObjectGuid()) const { return nullptr; }
@@ -721,15 +714,15 @@ struct CmangosLootMgrStub
 inline CmangosLootMgrStub sLootMgr;
 
 // === Map::GetHitPosition forwarder (cmangos name) ===
-// Penqle uses GetLosHitPosition. Provide an inline-method-style wrapper via class extension is infeasible;
-// bot module patched in Wave 4 sites where this comes up (TravelMgr.cpp / WorldPosition.h).
+// Penqle uses GetLosHitPosition. The bot module's call sites were patched at
+// the source level (TravelMgr.cpp / WorldPosition.h).
 
 // === FormationSlotData / SpawnGroupFormationSlotType (cmangos formation system) ===
-// Penqle has no formation system; these are Wave 5+ candidates if we want bot squads.
+// Penqle has no formation system; these are stubs; flesh out if we want bot squads.
 struct FormationSlotData {
     uint32 slotId = 0;
     FormationSlotData() = default;
-    // Sprint 10 cmangos/playerbots port — bot calls make_shared<FormationSlotData>(int, ObjectGuid, nullptr, uint32).
+    // bot calls make_shared<FormationSlotData>(int, ObjectGuid, nullptr, uint32).
     // Stub ctor accepts those 4 args; only slotId tracked.
     FormationSlotData(int /*idx*/, ObjectGuid const& /*guid*/, void* /*nullptr*/, uint32 slotId_)
         : slotId(slotId_) {}
@@ -786,9 +779,9 @@ inline AreaEntry const* GetAreaEntryByMapId(uint32 mapId) {
 typedef std::vector<MeetingStoneInfo> MeetingStoneSet;
 
 // === CharSections (cmangos-only DBC) ===
-// Penqle has no CharSections.dbc loader. Stub the types with an empty static map so
-// bot's randomization code compiles. Wave 5+ candidate to wire up appearance randomization
-// (bot picks skin/hair/face from these).
+// Penqle has no CharSections.dbc loader. The types are stubbed with an empty
+// static map so the bot's character-randomization code compiles. The factory
+// falls back to a default appearance when the map is empty.
 // SECTION_TYPE_* (cmangos CharSection types)
 enum CharSectionType {
     SECTION_TYPE_SKIN = 0,

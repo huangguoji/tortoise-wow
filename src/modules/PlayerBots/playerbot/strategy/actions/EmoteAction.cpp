@@ -669,7 +669,7 @@ bool EmoteAction::Execute(Event& event)
         p.rpos(0);
         p >> source >> text_emote >> emote_num >> namlen;
         if (namlen > 1) {
-            // Sprint 10 cmangos/playerbots port — Penqle ByteBuffer::read takes uint8*, not std::string.
+            // Penqle's ByteBuffer::read takes uint8*, not std::string.
             std::vector<char> buf(namlen);
             p.read((uint8*)buf.data(), namlen);
             nam.assign(buf.data(), namlen);

@@ -158,7 +158,7 @@ class CreatureAI
 
         virtual uint32 GetData(uint32 /*type*/) { return 0; }
 
-        // Sprint 10 cmangos/playerbots port — cmangos puts ReactState on AI; Penqle on Creature.
+        // cmangos puts ReactState on AI; Penqle on Creature.
         // Forward through m_creature.
         ReactStates GetReactState() const;
         void SetReactState(ReactStates st);
@@ -282,7 +282,7 @@ class CreatureAI
         // Does the creature melee attack.
         bool IsMeleeAttackEnabled() const { return m_bMeleeAttack; }
 
-        // Sprint 10 cmangos/playerbots port — bot's healer logic checks if a creature is a ranged caster.
+        // bot's healer logic checks if a creature is a ranged caster.
         // cmangos has a flag set per-AI; Penqle has none. Default to false (treat as melee).
         virtual bool IsRangedUnit() const { return false; }
 

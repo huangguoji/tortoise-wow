@@ -240,9 +240,9 @@ namespace ai
         virtual std::string Format() override
         {
             CreatureDataPair const* creatureDataPair = this->Calculate();
-            // Sprint 10 cmangos→Penqle: cmangos has CreatureData::id; Penqle has creature_id[] array.
+            // cmangos has CreatureData::id; Penqle has creature_id[] array.
             // CreatureInfo's display name is `name` (lowercase) in Penqle, `Name` in cmangos.
-            // Also: GetCreatureTemplate is non-static in Penqle's ObjectMgr; access via singleton.
+            // GetCreatureTemplate is non-static in Penqle's ObjectMgr; access via singleton.
             CreatureInfo const* bmTemplate = sObjectMgr.GetCreatureTemplate(creatureDataPair->second.creature_id[0]);
             return creatureDataPair ? bmTemplate->name.c_str() : "<none>";
         }

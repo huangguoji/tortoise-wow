@@ -62,8 +62,8 @@ using performanceMetricMap = std::map<PerformanceMetric, performanceMap>;
 using performanceInstanceMap = std::map<uint32, performanceMetricMap>;
 using performanceMapMap = std::map<uint32, performanceInstanceMap>;
 
-// Sprint 10 cmangos/playerbots port — Penqle has its own PerformanceMonitor class in src/game/PerformanceMonitor.h.
-// Wrap the bot's class in the `bot_perf` namespace to avoid name collision.
+// Penqle has its own PerformanceMonitor class in src/game/PerformanceMonitor.h, so wrap
+// the bot's class in the `bot_perf` namespace to avoid name collision.
 namespace bot_perf {
 class PerformanceMonitor
 {

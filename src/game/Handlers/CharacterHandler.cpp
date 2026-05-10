@@ -59,7 +59,7 @@ enum CinematicsSkipMode
 };
 
 
-// Sprint 10 cmangos/playerbots port — LoginQueryHolder class moved to Handlers/LoginQueryHolder.h
+// LoginQueryHolder class moved to Handlers/LoginQueryHolder.h
 // so the bot module can construct holders for synthetic bot logins. Initialize() definition stays here.
 
 bool LoginQueryHolder::Initialize()
@@ -568,8 +568,8 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
             return;
         }
 
-        // SoloCommander (sc-overnight 2026-05-07): if this character is
-        // currently in-world as a bot (PlayerbotAI attached), cleanly detach
+        // If this character is currently in-world as a bot (PlayerbotAI
+        // attached), cleanly detach
         // the AI BEFORE transferring session ownership. Without this, the
         // bot's PlayerbotAI keeps ticking on what's now the real-player's
         // Player object via Player::UpdatePlayerbotHooks → fights with the
@@ -637,9 +637,10 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
     if (m_antiCheat)
         m_antiCheat->NewPlayer();
 
-    // Sprint 10 cmangos/playerbots port — Phase 3d: attach a PlayerbotMgr to real-player sessions.
-    // Bots (synthetic sessions with m_playerbotAI set during AddPlayerBot) skip this.
-    // Real players get a mgr so .bot commands work ("you cannot control bots yet" otherwise).
+    // Attach a PlayerbotMgr to real-player sessions. Bots (synthetic sessions
+    // with m_playerbotAI set during AddPlayerBot) skip this. Real players get
+    // a mgr so .bot commands work (otherwise the user hits "you cannot control
+    // bots yet").
     if (!pCurrChar->GetPlayerbotAI())
         pCurrChar->CreatePlayerbotMgr();
 

@@ -86,7 +86,7 @@ struct LFGGroupQueueInfo
     uint32 groupTimer;
 };
 
-// Sprint 10 cmangos/playerbots port — cmangos LFG meeting-stone descriptor.
+// cmangos LFG meeting-stone descriptor.
 // Penqle has no equivalent. Defined here (not in shim) so both host and bot module see complete type.
 struct MeetingStoneInfo {
     uint32 dungeonId = 0;
@@ -112,7 +112,7 @@ class LFGQueue
         // CalculateTalentRoles / GetPriority (cmangos LFG matchmaking).
         ClassRoles CalculateTalentRoles(class Player* /*player*/) const { return LFG_ROLE_NONE; }
         RolesPriority GetPriority(Classes /*classId*/, ClassRoles /*roles*/) const { return LFG_PRIORITY_NONE; }
-        // Sprint 10 cmangos/playerbots port — bot calls these forms.
+        // bot calls these forms.
         bool IsGroupInQueue(uint32 groupId) const { return m_QueuedGroups.find(groupId) != m_QueuedGroups.end(); }
         void GetGroupQueueInfo(LFGGroupQueueInfo* info, uint32 groupId) const {
             auto it = m_QueuedGroups.find(groupId);

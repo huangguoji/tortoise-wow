@@ -35,11 +35,10 @@
 #include "Maps/GridNotifiersImpl.h"
 #include "Maps/CellImpl.h"
 
-// Sprint 10 cmangos/playerbots port — cmangos→Penqle compatibility shim.
-// Must come AFTER Penqle's core headers (so the shim's proxy methods can
-// inline sSpellMgr.GetSpellEntry(...) etc.) and BEFORE the bot's own headers
-// (which reference the shim's typedefs like GuidSet, AreaTableEntry, GenericTransport).
-// See ../../bot-deployment-sprint-plan.md Phase 3.
+// cmangos -> Penqle compatibility shim. Must come AFTER Penqle's core headers
+// (so the shim's proxy methods can inline-call sSpellMgr.GetSpellEntry(...) etc.)
+// and BEFORE the bot module's own headers (which reference the shim's typedefs
+// like GuidSet, AreaTableEntry, GenericTransport).
 #include "cmangos-compat-shim.h"
 
 // Boost headers (used across multiple files)

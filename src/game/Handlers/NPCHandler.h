@@ -60,7 +60,7 @@ struct NpcTextOption
 {
     float Probability;
     uint32 BroadcastTextID;
-    // Sprint 10 cmangos/playerbots port — bot expects Text_0/Text_1 fields. Stub strings.
+    // bot expects Text_0/Text_1 fields. Stub strings.
     std::string Text_0;
     std::string Text_1;
 };
@@ -70,7 +70,7 @@ struct NpcText
     NpcTextOption Options[8];
 };
 
-// Sprint 10 cmangos/playerbots port — bot uses GossipText typedef for NpcText.
+// bot uses GossipText typedef for NpcText.
 typedef NpcText GossipText;
 
 #endif

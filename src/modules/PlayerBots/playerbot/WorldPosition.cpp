@@ -449,7 +449,7 @@ WorldPosition WorldPosition::getDisplayLocation() const
 
 AreaTableEntry const* WorldPosition::GetArea() const
 {
-    // Sprint 10 cmangos/playerbots port — Penqle uses areaId not areaFlag.
+    // Penqle uses areaId not areaFlag.
     return AreaEntry::GetById(getAreaFlag());
 }
 
@@ -832,7 +832,7 @@ std::vector<WorldPosition> WorldPosition::frommGridPair(const mGridPair& gridPai
 
 bool WorldPosition::isVmapLoaded(uint32 /*mapId*/, int /*x*/, int /*y*/)
 {
-    // Sprint 10 cmangos/playerbots port — Penqle has no IsTileLoaded; assume true (Wave 5+ wires properly).
+    // Penqle has no IsTileLoaded equivalent; assume true.
     return true;
 }
 

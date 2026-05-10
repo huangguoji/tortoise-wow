@@ -215,7 +215,7 @@ class Group
         uint32 GetId() const { return m_Id; }
         bool IsFull() const { return (m_groupType==GROUPTYPE_NORMAL) ? (m_memberSlots.size()>=MAX_GROUP_SIZE) : (m_memberSlots.size()>=MAX_RAID_SIZE); }
         bool isRaidGroup() const { return m_groupType==GROUPTYPE_RAID; }
-        // Sprint 10 cmangos/playerbots port — bot uses PascalCase IsRaidGroup.
+        // bot uses PascalCase IsRaidGroup.
         bool IsRaidGroup() const { return isRaidGroup(); }
         bool isBGGroup()   const { return m_bgGroup != nullptr; }
         bool IsCreated()   const { return GetMembersCount() > 0; }
@@ -223,7 +223,7 @@ class Group
         const char * GetLeaderName() const { return m_leaderName.c_str(); }
         LootMethod    GetLootMethod() const { return m_lootMethod; }
         ObjectGuid GetLooterGuid() const { return m_looterGuid; }
-        // Sprint 10 cmangos/playerbots port — cmangos uses GetMasterLooterGuid (separate role; Penqle has only one looter slot).
+        // cmangos uses GetMasterLooterGuid (separate role; Penqle has only one looter slot).
         ObjectGuid GetMasterLooterGuid() const { return m_looterGuid; }
         ItemQualities GetLootThreshold() const { return m_lootThreshold; }
 
@@ -318,7 +318,7 @@ class Group
 
         void SetTargetIcon(uint8 id, ObjectGuid targetGuid);
         void ClearTargetIcon(ObjectGuid targetGuid);
-        // Sprint 10 cmangos/playerbots port — bot calls grp->GetTargetIcon(id) returning the GUID stored at slot.
+        // bot calls grp->GetTargetIcon(id) returning the GUID stored at slot.
         ObjectGuid GetTargetIcon(uint8 id) const { return id < TARGET_ICON_COUNT ? m_targetIcons[id] : ObjectGuid(); }
         uint16 InInstance();
         bool InCombatToInstance(uint32 instanceId);
@@ -332,7 +332,7 @@ class Group
         void BroadcastGroupUpdate();
                                                             // ignore: GUID of player that will be ignored
         void BroadcastPacket(WorldPacket *packet, bool ignorePlayersInBGRaid, int group=-1, ObjectGuid ignore = ObjectGuid());
-        // Sprint 10 cmangos/playerbots port — bot passes by value/reference.
+        // bot passes by value/reference.
         void BroadcastPacket(WorldPacket& packet, bool ignorePlayersInBGRaid, int group=-1, ObjectGuid ignore = ObjectGuid()) { BroadcastPacket(&packet, ignorePlayersInBGRaid, group, ignore); }
         void BroadcastReadyCheck(WorldPacket *packet);
         void OfflineReadyCheck();

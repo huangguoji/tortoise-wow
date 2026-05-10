@@ -182,7 +182,7 @@ enum CreatureStateFlag : uint16
 // from `creature_template` table
 struct CreatureInfo
 {
-    // Sprint 10 cmangos/playerbots port — anonymous unions provide cmangos-style
+    // anonymous unions provide cmangos-style
     // PascalCase aliases sharing storage with Penqle's snake_case fields. Existing
     // code keeps using the snake_case names; vendored bot module sees PascalCase.
     union { uint32 entry = 0; uint32 Entry; };
@@ -231,7 +231,7 @@ struct CreatureInfo
     union { uint32  loot_id = 0; uint32 LootId; };
     union { uint32  pickpocket_loot_id = 0; uint32 PickpocketLootId; };
     union { uint32  skinning_loot_id = 0; uint32 SkinningLootId; };
-    // Sprint 10 cmangos/playerbots port — placeholder; flags_extra is below; this field is referenced by bot.
+    // placeholder; flags_extra is below; this field is referenced by bot.
     // (Anonymous union with flags_extra below is the actual storage; this comment marks the name expectation.)
     int32   holy_res = 0;
     int32   fire_res = 0;
@@ -261,7 +261,7 @@ struct CreatureInfo
     union { uint32  flags_extra = 0; uint32 ExtraFlags; };
     uint32  phase_quest_id = 0;
     uint32  script_id = 0;
-    // Sprint 10 cmangos/playerbots port — bot uses CorpseDelay; not in Penqle's CreatureInfo.
+    // bot uses CorpseDelay; not in Penqle's CreatureInfo.
     uint32  CorpseDelay = 0;
 
     // helpers
@@ -277,7 +277,7 @@ struct CreatureInfo
         return type == CREATURE_TYPE_BEAST && beast_family != 0 && type_flags & CREATURE_TYPEFLAGS_TAMEABLE;
     }
 
-    // Sprint 10 cmangos/playerbots port — cmangos shorthand: which loot skill is required.
+    // cmangos shorthand: which loot skill is required.
     // Tortoise uses skinning_loot_id; if non-zero, skin is required.
     uint32 GetRequiredLootSkill() const {
         if (skinning_loot_id) return SKILL_SKINNING;
@@ -454,7 +454,7 @@ struct TrainerSpell
         : spell(_spell), spellCost(_spellCost), reqSkill(_reqSkill), reqSkillValue(_reqSkillValue), reqLevel(_reqLevel)
     {}
 
-    // Sprint 10 cmangos/playerbots port — bot uses learnedSpell. In cmangos this is
+    // bot uses learnedSpell. In cmangos this is
     // the spell taught by training; in pre-3.x this is the same as `spell`. Alias via union.
     union { uint32 spell; uint32 learnedSpell; };
     uint32 spellCost;
@@ -620,7 +620,7 @@ class Creature : public Unit
         bool IsCorpse() const { return GetDeathState() ==  CORPSE; }
         bool IsDespawned() const { return GetDeathState() ==  DEAD; }
         void SetCorpseDelay(uint32 delay) { m_corpseDelay = delay; }
-        // Sprint 10 cmangos/playerbots port — cmangos has SetCorpseAccelerationDelay; Penqle has only SetCorpseDelay.
+        // cmangos has SetCorpseAccelerationDelay; Penqle has only SetCorpseDelay.
         void SetCorpseAccelerationDelay(uint32 delay) { m_corpseDelay = delay; }
         // IsCritter: cmangos shorthand for type == CREATURE_TYPE_CRITTER.
         bool IsCritter() const { return GetCreatureInfo() && GetCreatureInfo()->type == CREATURE_TYPE_CRITTER; }
@@ -768,7 +768,7 @@ class Creature : public Unit
         static void DeleteFromDB(uint32 lowguid, CreatureData const* data);
 
         Loot loot;
-        // Sprint 10 cmangos/playerbots port — bot accesses creature->m_loot like a pointer.
+        // bot accesses creature->m_loot like a pointer.
         // Initialized to &loot so bot's nullable check + dereference compiles correctly.
         Loot* const m_loot = &loot;
         bool lootForPickPocketed;
@@ -854,7 +854,7 @@ class Creature : public Unit
 
         uint32 GetRespawnDelay() const { return m_respawnDelay; }
         void SetRespawnDelay(uint32 delay) { m_respawnDelay = delay; }
-        // Sprint 10 cmangos/playerbots port — cmangos's 2-arg form (second flag ignored).
+        // cmangos's 2-arg form (second flag ignored).
         void SetRespawnDelay(uint32 delay, bool /*notify*/) { m_respawnDelay = delay; }
 
         float GetWanderDistance() const { return m_wanderDistance; }

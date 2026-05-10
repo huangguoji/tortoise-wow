@@ -3995,8 +3995,8 @@ void Spell::cancel()
 
 void Spell::cast(bool skipCheck)
 {
-    // Sprint12 (sc-overnight) bot logging suite — hook cast start.
-    // Logged BEFORE the MAX_SPELL_ID guard so even rejected casts show up.
+    // BotActionLog hook: cast start. Logged BEFORE the MAX_SPELL_ID guard
+    // so even rejected casts show up.
     {
         extern void BotActionLog_LogCastStart(WorldObject* caster, uint32 spellId, uint64 targetGuidRaw, uint32 castTimeMs);
         ObjectGuid tgt = m_targets.getUnitTargetGuid();
@@ -4012,25 +4012,6 @@ void Spell::cast(bool skipCheck)
         return;
 
     SetExecutedCurrently(true);
-
-    // Flame Guidance (Shaman 51396): casting Flame Shock causes the player's
-    // active Searing Totem to focus on the Flame Shock target.
-    if (m_casterUnit && m_casterUnit->IsPlayer() &&
-        m_casterUnit->HasAura(51396) &&
-        m_spellInfo->IsFitToFamily<SPELLFAMILY_SHAMAN, CF_SHAMAN_FLAME_SHOCK>())
-    {
-        if (Unit* fsTarget = m_targets.getUnitTarget())
-        {
-            if (Totem* searing = m_casterUnit->GetTotem(TOTEM_SLOT_FIRE))
-            {
-                if (searing->GetEntry() == 2523)  // Searing Totem creature entry
-                {
-                    searing->SetInFront(fsTarget);
-                    searing->Attack(fsTarget, false);
-                }
-            }
-        }
-    }
 
     if (!m_caster->CheckAndIncreaseCastCounter())
     {
@@ -4799,17 +4780,6 @@ void Spell::HandleAddTargetTriggerAuras()
             int32 auraBasePoints = targetTrigger->GetBasePoints();
             int32 chance = m_casterUnit->CalculateSpellDamage(target, auraSpellInfo, auraSpellIdx, &auraBasePoints);
 
-            // Qiraji Recuperation (Druid Tortoise patch9 idol passive 52697) —
-            // tooltip: "X% chance per combo point spent". The bp on the aura
-            // is bp_per_cp; multiply by the player's combo points at finisher
-            // time to get the actual proc rate. Caps at 100.
-            if (auraSpellInfo->Id == 52697 && m_casterUnit->IsPlayer())
-            {
-                uint8 const cp = ((Player*)m_casterUnit)->GetComboPoints();
-                if (cp > 0)
-                    chance = std::min<int32>(100, (auraBasePoints + 1) * int32(cp));
-            }
-
             if ((m_casterUnit->IsPlayer() && m_casterUnit->ToPlayer()->HasOption(PLAYER_CHEAT_ALWAYS_PROC)) || roll_chance_i(chance))
                 m_casterUnit->CastSpell(target, triggerSpellInfo, true, nullptr, targetTrigger);
         }
@@ -4828,8 +4798,8 @@ void Spell::finish(bool ok)
 
     m_spellState = SPELL_STATE_FINISHED;
 
-    // Sprint12 (sc-overnight) bot logging suite — hook cast result. `ok`
-    // is true on success, false on cancel/interrupt/fail.
+    // BotActionLog hook: cast result. `ok` is true on success,
+    // false on cancel/interrupt/fail.
     {
         extern void BotActionLog_LogCastResult(WorldObject* caster, uint32 spellId, uint8 result, const char* phase);
         BotActionLog_LogCastResult(m_caster, m_spellInfo->Id, ok ? 0 : 1, "finish");
@@ -5963,17 +5933,7 @@ SpellCastResult Spell::CheckCast(bool strict)
 
         if (strict && m_casterUnit)
         {
-            // Untamed Trapper (51586): bypass NonCombatSpell guard for Hunter
-            // trap launcher spells (SUMMON_OBJECT_WILD effect).
-            bool bypassCombat = false;
-            if (m_spellInfo->IsNonCombatSpell() &&
-                m_spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER &&
-                m_spellInfo->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_SUMMON_OBJECT_WILD &&
-                m_casterUnit->HasAura(51586))
-            {
-                bypassCombat = true;
-            }
-            if (m_casterUnit && m_casterUnit->IsInCombat() && m_spellInfo->IsNonCombatSpell() && !bypassCombat)
+            if (m_casterUnit && m_casterUnit->IsInCombat() && m_spellInfo->IsNonCombatSpell())
                 return SPELL_FAILED_AFFECTING_COMBAT;
 
             // only check at first call, Stealth auras are already removed at second call
@@ -6756,7 +6716,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                 }
 
                 // Penqle's GetSession()->GetBot() guard removed (stub binned).
-                // cmangos's isRealPlayer() check lands here in Phase 3 if needed.
+                // cmangos's bot guard relies on isRealPlayer(); not needed here.
                 if (plrCaster->GetPetGuid() || plrCaster->GetCharmGuid() ||
                     sCharacterDatabaseCache.GetCharacterPetByOwner(plrCaster->GetGUIDLow()))
                 {
@@ -7532,20 +7492,7 @@ SpellCastResult Spell::CheckPetCast(Unit* target)
         return SPELL_FAILED_SPELL_IN_PROGRESS;
 
     if (m_casterUnit->IsInCombat() && m_spellInfo->IsNonCombatSpell())
-    {
-        // Untamed Trapper (51586): bypass for Hunter trap launchers when
-        // owner has the talent (pets and hunters share the cast path here).
-        bool bypassCombat = false;
-        if (m_spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER &&
-            m_spellInfo->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_SUMMON_OBJECT_WILD)
-        {
-            Unit* owner = m_casterUnit->GetOwner();
-            if ((owner && owner->HasAura(51586)) || m_casterUnit->HasAura(51586))
-                bypassCombat = true;
-        }
-        if (!bypassCombat)
-            return SPELL_FAILED_AFFECTING_COMBAT;
-    }
+        return SPELL_FAILED_AFFECTING_COMBAT;
 
     if (m_casterUnit->IsCreature() && (((Creature*)m_casterUnit)->IsPet() || m_casterUnit->IsCharmed()))
     {

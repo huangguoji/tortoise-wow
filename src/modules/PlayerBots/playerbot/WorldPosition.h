@@ -63,7 +63,7 @@ namespace ai
         WorldPosition(const uint32 mapid, const float x, const float y, const float z = 0, float orientation = 0) : WorldLocation(mapid, x, y, z, orientation) {}
         WorldPosition(const uint32 mapId, const Position& pos) : WorldLocation(mapId, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetPositionO()) {}
         WorldPosition(const WorldObject* wo) { if (wo) { set(WorldLocation(wo->GetMapId(), wo->GetPositionX(), wo->GetPositionY(), wo->GetPositionZ(), wo->GetOrientation())); } }
-        // Sprint 10 cmangos→Penqle port: Penqle EMBEDS WorldLocation as `position` member; cmangos has flat fields.
+        // Penqle EMBEDS WorldLocation as `position` member; cmangos has flat fields.
         WorldPosition(const CreatureDataPair* cdPair) { if (cdPair) { set(cdPair->second.position); } }
         WorldPosition(const GameObjectDataPair* cdPair) { if (cdPair) { set(cdPair->second.position); } }
         WorldPosition(const uint32 mapId, const GuidPosition& guidP, uint32 instanceId);
@@ -217,18 +217,18 @@ namespace ai
         }
 
         //Map functions. Player independent.
-        // Sprint 10 cmangos→Penqle: cmangos uses sMapStore (DBCStorage<MapEntry>);
+        // cmangos uses sMapStore (DBCStorage<MapEntry>);
         // Penqle uses sMapStorage (SQLStorage) with templated LookupEntry.
         const MapEntry* getMapEntry() const { return sMapStorage.LookupEntry<MapEntry>(mapid); }
         uint32 getFirstInstanceId() const { for (auto& map : sMapMgr.Maps()) { if (map.second->GetId() == getMapId()) return map.second->GetInstanceId(); }; return 0; }
 
         // Penqle has no sObjectMgr.GetInstanceTemplate; stub returns nullptr.
-        // Real implementation in Wave 5 if any caller needs it.
+        // Real implementation if any caller needs it.
         InstanceTemplate const* getInstanceTemplate() { return nullptr; }
         Map* getMap(uint32 instanceId) const { if (!*this) return nullptr; loadMapAndVMap(instanceId); return sMapMgr.FindMap(mapid, instanceId ? instanceId : (getMapEntry()->Instanceable() ? getFirstInstanceId() : 0)); }
         const TerrainInfo* getTerrain() const { return getMap(getFirstInstanceId()) ? getMap(getFirstInstanceId())->GetTerrain() : sTerrainMgr.LoadTerrain(getMapId()); }
         bool isDungeon() { return getMapEntry()->IsDungeon(); }
-        // Sprint 10 cmangos→Penqle: Penqle's AreaEntry uses Flags (capital F); cmangos uses flags.
+        // Penqle's AreaEntry uses Flags (capital F); cmangos uses flags.
         bool isCity() { return GetArea() && GetArea()->Flags & (AREA_FLAG_CITY | AREA_FLAG_SLAVE_CAPITAL); }
         float getVisibilityDistance() { return getMap(0) ? getMap(0)->GetVisibilityDistance() : (isOverworld() ? World::GetMaxVisibleDistanceOnContinents() : World::GetMaxVisibleDistanceInInstances()); }
 
@@ -237,7 +237,7 @@ namespace ai
         bool IsInLineOfSight(WorldPosition pos, float heightMod = 0.5f) const { return mapid == pos.mapid && getMap(getFirstInstanceId()) && getMap(getFirstInstanceId())->IsInLineOfSight(coord_x, coord_y, coord_z + heightMod, pos.coord_x, pos.coord_y, pos.coord_z + heightMod, 0, true); }
         bool GetHitPosition(WorldPosition& pos) const { return getMap(getFirstInstanceId())->GetHitPosition(coord_x, coord_y, coord_z, pos.coord_x, pos.coord_y, pos.coord_z,0, 0.0f);};
 #else
-        // Sprint 10 cmangos→Penqle: Penqle uses lowercase isInLineOfSight (cmangos uppercase IsInLineOfSight).
+        // Penqle uses lowercase isInLineOfSight (cmangos uppercase IsInLineOfSight).
         bool IsInLineOfSight(WorldPosition pos, float heightMod = 0.5f) const { return mapid == pos.mapid && getMap(getFirstInstanceId()) && getMap(getFirstInstanceId())->isInLineOfSight(coord_x, coord_y, coord_z + heightMod, pos.coord_x, pos.coord_y, pos.coord_z + heightMod, true); }
         // Penqle's equivalent of cmangos's GetHitPosition is GetLosHitPosition (signature: srcX,Y,Z, destX,Y,Z, modifyDist).
         bool GetHitPosition(WorldPosition& pos) { return getMap(getFirstInstanceId())->GetLosHitPosition(coord_x, coord_y, coord_z, pos.coord_x, pos.coord_y, pos.coord_z, 0.0f);};
@@ -251,10 +251,10 @@ namespace ai
         const float getHeight(bool swim = false) const { if(getMap(getFirstInstanceId())) return getMap(getFirstInstanceId())->GetHeight(0, coord_x, coord_y, coord_z, swim); return 0.0;}
         float GetHeightInRange(float maxSearchDist = 4.0f) const { float z = coord_z;  return getMap(getFirstInstanceId()) ? (getMap(getFirstInstanceId())->GetHeightInRange(0, coord_x, coord_y, z, maxSearchDist) ? z : coord_z) : coord_z; }
 #else
-        // Sprint 10 cmangos→Penqle: Penqle's Map::GetHeight signature is (x, y, z, vmap=true, maxSearchDist=...).
+        // Penqle's Map::GetHeight signature is (x, y, z, vmap=true, maxSearchDist=...).
         // Bot's `swim` parameter doesn't map directly; pass `true` for vmap (most common bot use case is on-map height).
         float getHeight(bool swim = false) const { return getMap(getFirstInstanceId()) ? getMap(getFirstInstanceId())->GetHeight(coord_x, coord_y, coord_z, true) : coord_z; }
-        // Penqle has no GetHeightInRange method. Approximate with GetHeight (loses range-search behavior — Wave 5 candidate for proper backport).
+        // Penqle has no GetHeightInRange method. Approximate with GetHeight (loses range-search behavior).
         float GetHeightInRange(float maxSearchDist = 4.0f) const { return getMap(getFirstInstanceId()) ? getMap(getFirstInstanceId())->GetHeight(coord_x, coord_y, coord_z, true, maxSearchDist) : coord_z; }
 #endif
 
@@ -312,8 +312,8 @@ namespace ai
             return isValid() && isVmapLoaded() ? sTerrainMgr.GetAreaFlag(getMapId(), coord_x, coord_y, coord_z) : 0; };
         AreaTableEntry const* GetArea() const;
         std::string getAreaName(const bool fullName = true, const bool zoneName = false) const;
-        // Sprint 10 cmangos→Penqle: Penqle's TerrainInfo has no AreaNameInfo or GetAreaName method.
-        // Stub to empty string (loses WMO area-override lookup; Wave 5 candidate for proper Penqle equivalent).
+        // Penqle's TerrainInfo has no AreaNameInfo or GetAreaName method.
+        // Stub to empty string (loses WMO area-override lookup; would need a Penqle-side equivalent).
         std::string getAreaOverride() const { return ""; }
         int32 getAreaLevel() const;
 

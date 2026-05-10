@@ -58,7 +58,7 @@ namespace ai
         static uint32 parseSlot(const std::string& text);
 
         static std::string formatSpell(SpellEntry const *sInfo);
-        // Sprint 10 cmangos→Penqle: Penqle uses sSpellMgr.GetSpellEntry() instead of cmangos's sSpellTemplate.LookupEntry<SpellEntry>().
+        // Penqle uses sSpellMgr.GetSpellEntry() instead of cmangos's sSpellTemplate.LookupEntry<SpellEntry>().
         static std::string formatSpell(uint32 spellId) {SpellEntry const* spellInfo = sSpellMgr.GetSpellEntry(spellId); if (!spellInfo) return ""; return formatSpell(spellInfo);};
         uint32 parseSpell(std::string& text);
 

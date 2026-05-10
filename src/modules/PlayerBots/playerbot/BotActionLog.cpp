@@ -14,14 +14,15 @@
 #include "Spells/SpellMgr.h"
 #include "Log.h"
 
-#include <ctime>
+#include <chrono>
 #include <cstdarg>
-#include <sstream>
+#include <cstring>
+#include <ctime>
 #include <iomanip>
+#include <sstream>
 #include <sys/stat.h>
 
-#ifdef WIN32
-#include <windows.h>
+#ifdef _WIN32
 #include <direct.h>
 #endif
 
@@ -29,22 +30,26 @@ namespace ai { namespace botdiag {
 
 std::unordered_map<uint32, std::FILE*> BotActionLog::sFiles;
 
+static void MakeDirIdempotent(const char* path)
+{
+#ifdef _WIN32
+    _mkdir(path);
+#else
+    mkdir(path, 0755);
+#endif
+}
+
 void BotActionLog::EnsureLogDir()
 {
-    // Try `..\logs\bots` first (mangosd CWD is bin/, logs/ is its sibling)
-    // then `logs\bots` (mangosd at root layout). Idempotent.
-    const char* candidates[] = { "..\\logs", "logs", nullptr };
-    for (int i = 0; candidates[i]; ++i)
+    // Try `../logs/bots` first (mangosd CWD is bin/, logs/ is its sibling)
+    // then `logs/bots` (mangosd at root layout). Idempotent — silently
+    // ignores EEXIST.
+    const char* roots[] = { "../logs", "logs", nullptr };
+    for (int i = 0; roots[i]; ++i)
     {
-#ifdef WIN32
-        CreateDirectoryA(candidates[i], nullptr);
-        std::string sub = std::string(candidates[i]) + "\\bots";
-        CreateDirectoryA(sub.c_str(), nullptr);
-#else
-        mkdir(candidates[i], 0755);
-        std::string sub = std::string(candidates[i]) + "/bots";
-        mkdir(sub.c_str(), 0755);
-#endif
+        MakeDirIdempotent(roots[i]);
+        std::string sub = std::string(roots[i]) + "/bots";
+        MakeDirIdempotent(sub.c_str());
     }
 }
 
@@ -53,22 +58,23 @@ std::string BotActionLog::BuildPath(Player* bot)
     if (!bot)
         return "";
 
-    // Filename: <botname>_<sessionId>_<YYYYMMDD-HHMMSS>.log. The session
-    // id segment lets us distinguish multiple summons of the same bot in
-    // a single mangosd lifetime — a bounce-and-resummon writes a new file
-    // rather than appending to the old one.
-    SYSTEMTIME st;
-    GetLocalTime(&st);
+    // Filename: <botname>_acc<sessionId>_<YYYYMMDD-HHMMSS>.log. The timestamp
+    // distinguishes multiple summons of the same bot within one mangosd run:
+    // a bounce-and-resummon writes a fresh file rather than appending.
+    std::time_t now = std::time(nullptr);
+    std::tm lt{};
+#ifdef _WIN32
+    localtime_s(&lt, &now);
+#else
+    localtime_r(&now, &lt);
+#endif
     char tsBuf[32];
-    snprintf(tsBuf, sizeof(tsBuf), "%04d%02d%02d-%02d%02d%02d",
-             st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+    std::strftime(tsBuf, sizeof(tsBuf), "%Y%m%d-%H%M%S", &lt);
 
     uint32 sessionId = bot->GetSession() ? bot->GetSession()->GetAccountId() : 0u;
 
     std::ostringstream oss;
-    // Try the parent-logs path first; the file will land there if the
-    // bin/ → ..\logs\ layout is in use (it always is for our launcher).
-    oss << "..\\logs\\bots\\"
+    oss << "../logs/bots/"
         << bot->GetName() << "_acc" << sessionId << "_" << tsBuf << ".log";
     return oss.str();
 }
@@ -92,15 +98,20 @@ std::FILE* BotActionLog::Open(PlayerbotAI* ai)
     std::string path = BuildPath(bot);
     if (path.empty()) return nullptr;
 
-    FILE* f = fopen(path.c_str(), "w");
+    // Append rather than truncate: BuildPath embeds a timestamp so collisions
+    // are unlikely, but append is the right default if one ever happens
+    // (e.g. clock-skew, manual file resurrection).
+    FILE* f = fopen(path.c_str(), "a");
     if (!f)
     {
-        // Fallback path
+        // Fallback: mangosd may have been launched from the layout root rather
+        // than from bin/, in which case ../logs/bots/ doesn't exist but
+        // logs/bots/ does. Retry with the bare path.
+        const char* prefix = "../logs/bots/";
         std::string alt = path;
-        size_t pos = alt.find("..\\logs\\bots\\");
-        if (pos != std::string::npos)
-            alt = alt.substr(0, pos) + "logs\\bots\\" + alt.substr(pos + 13);
-        f = fopen(alt.c_str(), "w");
+        if (alt.compare(0, std::strlen(prefix), prefix) == 0)
+            alt = alt.substr(3); // drop the "../"
+        f = fopen(alt.c_str(), "a");
         if (f) path = alt;
     }
     if (!f)
@@ -159,11 +170,18 @@ std::FILE* BotActionLog::GetHandle(PlayerbotAI* ai)
 
 static std::string TimestampWithMs()
 {
-    SYSTEMTIME st;
-    GetLocalTime(&st);
+    auto now = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+    std::tm lt{};
+#ifdef _WIN32
+    localtime_s(&lt, &t);
+#else
+    localtime_r(&t, &lt);
+#endif
     char buf[32];
-    snprintf(buf, sizeof(buf), "%04d-%02d-%02d %02d:%02d:%02d.%03d",
-             st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+    int n = (int)std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &lt);
+    snprintf(buf + n, sizeof(buf) - n, ".%03d", (int)ms.count());
     return buf;
 }
 
@@ -218,7 +236,7 @@ void BotActionLog::LogState(PlayerbotAI* ai, const char* reason)
           bot->GetMapId(), bot->GetZoneId(),
           tgtName, (unsigned long long)(tgt ? tgt->GetObjectGuid().GetRawValue() : 0));
 
-    // SoloCommander aura snapshot (sc-overnight 2026-05-07): dump every aura currently
+    // Aura snapshot: dump every aura currently
     // on the bot from m_spellAuraHolders. This lets us correlate what the user *sees*
     // in the client buff bar with what's actually in the server-side aura state. The
     // AURA_ATTEMPT hook only fires when a holder is being added; this dump shows the
@@ -302,15 +320,6 @@ void BotActionLog::LogAuraRemove(PlayerbotAI* ai, uint32 spellId, ObjectGuid cas
           (unsigned long long)casterGuid.GetRawValue());
 }
 
-void BotActionLog::LogTargetChange(PlayerbotAI* ai, ObjectGuid oldTarget, ObjectGuid newTarget, const char* reason)
-{
-    Write(ai, "TARGET",
-          "old=0x%llx new=0x%llx reason=%s",
-          (unsigned long long)oldTarget.GetRawValue(),
-          (unsigned long long)newTarget.GetRawValue(),
-          reason ? reason : "?");
-}
-
 }}  // namespace ai::botdiag — close so wrappers below are at global
     // scope where the host's forward-declarations expect them.
 
@@ -350,20 +359,6 @@ void BotActionLog_LogAuraAttempt(Unit* target, uint32 spellId, int32 durationMs,
     SpellEntry const* info = sSpellMgr.GetSpellEntry(spellId);
     const char* spellName = info ? info->SpellName[0].c_str() : "?";
     BotActionLog::Write(ai, "AURA_ATTEMPT",
-                        "spell=%s(%u) duration=%dms caster=0x%llx",
-                        spellName, spellId, durationMs,
-                        (unsigned long long)casterGuidRaw);
-}
-
-// AURA_REFRESH: hook in SpellAuraHolder::Refresh. Fires when a re-cast of the same spell
-// extends/replaces an existing holder's duration without creating a new holder.
-void BotActionLog_LogAuraRefresh(Unit* target, uint32 spellId, int32 durationMs, uint64 casterGuidRaw)
-{
-    PlayerbotAI* ai = AiFor(target);
-    if (!ai) return;
-    SpellEntry const* info = sSpellMgr.GetSpellEntry(spellId);
-    const char* spellName = info ? info->SpellName[0].c_str() : "?";
-    BotActionLog::Write(ai, "AURA_REFRESH",
                         "spell=%s(%u) duration=%dms caster=0x%llx",
                         spellName, spellId, durationMs,
                         (unsigned long long)casterGuidRaw);
@@ -424,28 +419,3 @@ void BotActionLog_LogDamage(Unit* attacker, Unit* victim, uint32 damage, uint32 
     }
 }
 
-void BotActionLog_LogTargetChange(Unit* bot, uint64 oldTargetRaw, uint64 newTargetRaw, const char* reason)
-{
-    PlayerbotAI* ai = AiFor(bot);
-    if (!ai) return;
-    BotActionLog::LogTargetChange(ai, ObjectGuid(oldTargetRaw), ObjectGuid(newTargetRaw), reason);
-}
-
-// Re-open namespace for CloseAll definition (member of ai::botdiag::BotActionLog).
-namespace ai { namespace botdiag {
-
-void BotActionLog::CloseAll()
-{
-    for (auto& kv : sFiles)
-    {
-        if (kv.second)
-        {
-            fprintf(kv.second, "# end-of-log (CloseAll — server shutdown)\n");
-            fflush(kv.second);
-            fclose(kv.second);
-        }
-    }
-    sFiles.clear();
-}
-
-}}  // namespace ai::botdiag

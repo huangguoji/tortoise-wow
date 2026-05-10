@@ -88,7 +88,8 @@ Pet::~Pet()
     --PerfStats::g_totalPets;
 }
 
-// Sprint 10 cmangos/playerbots port — IsSpellReady forwarder out-of-line (SpellEntry needs complete type).
+// cmangos compat: vendored bot module calls IsSpellReady(SpellEntry const&). Out-of-line
+// because SpellEntry's complete type isn't visible at the declaration in Pet.h.
 bool Pet::IsSpellReady(SpellEntry const& spellInfo) const { return !HasSpellCooldown(spellInfo.Id); }
 
 void Pet::AddToWorld()
@@ -1091,9 +1092,6 @@ uint32 Pet::GetSkillIdForPetTraining() const
             return SKILL_PET_OWL;
         case CREATURE_FAMILY_WIND_SERPENT:
             return SKILL_PET_WIND_SERPENT;
-        // Hunter Sprint 5.6 — patch9 Pet Moth scaffolding.
-        case CREATURE_FAMILY_MOTH:
-            return SKILL_PET_MOTH;
     }
 
     return 0;

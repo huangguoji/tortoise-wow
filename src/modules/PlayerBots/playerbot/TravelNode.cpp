@@ -18,7 +18,7 @@
 using namespace ai;
 using namespace MaNGOS;
 
-// Sprint 10 cmangos/playerbots port — instantiate Singleton<TravelNodeMap> static members.
+// Penqle's Singleton<> requires an explicit instantiation in a .cpp file.
 INSTANTIATE_SINGLETON_1(ai::TravelNodeMap);
 
 //TravelNodePath(float distance = 0.1f, float extraCost = 0, TravelNodePathType pathType = TravelNodePathType::walk, uint64 pathObject = 0, bool calculated = false, std::vector<uint8> maxLevelCreature = { 0,0,0 }, float swimDistance = 0)

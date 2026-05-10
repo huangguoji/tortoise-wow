@@ -60,9 +60,9 @@ class PathInfo
 {
     public:
         PathInfo(Unit const* owner);
-        // Sprint 10 cmangos/playerbots port — bot calls PathFinder(mapId, instanceId) for global map paths.
+        // bot calls PathFinder(mapId, instanceId) for global map paths.
         PathInfo(uint32 /*mapId*/, uint32 /*instanceId*/) : PathInfo((Unit const*)nullptr) {}
-        // Sprint 10 cmangos/playerbots port — bot calls PathFinder(player, true) for transport pathing.
+        // bot calls PathFinder(player, true) for transport pathing.
         PathInfo(Unit const* owner, bool /*offsets*/) : PathInfo(owner) {}
         ~PathInfo();
 
@@ -72,7 +72,7 @@ class PathInfo
 
         void setUseStrightPath(bool useStraightPath) { m_useStraightPath = useStraightPath; };
         void setPathLengthLimit(float distance);
-        // Sprint 10 cmangos/playerbots port — bot calls these to tweak path cost.
+        // bot calls these to tweak path cost.
         // Penqle has no area-cost support; stubs are no-ops.
         void setArea(uint32 /*area*/) {}
         void setAreaCost(uint32 /*area*/, float /*cost*/) {}

@@ -812,12 +812,11 @@ void Engine::LogAction(const char* format, ...)
 
         sLog.outDetail( "%s %s", bot->GetName(), buf);
 
-        // BotActionLog tee (sc-overnight 2026-05-05): every PUSH:/A:/Tick
-        // line ALSO goes into this bot's per-bot log file at logs/bots/.
-        // No-op if the file isn't open (bot wasn't summoned via the
-        // SoloCommander OnBotSummoned hook). Tag heuristic: extract the
-        // first colon-prefix from buf so the per-bot log gets useful tags
-        // (PUSH / A / T / etc.) instead of all "ACTION".
+        // BotActionLog tee: every PUSH/A/Tick line also lands in the bot's
+        // per-bot file under logs/bots/ when AiPlayerbot.EnableActionLog=1.
+        // Tag heuristic extracts the first colon-prefix from `buf` so the
+        // per-bot log gets useful tags (PUSH / A / T / etc.) instead of
+        // a single "ACTION".
         const char* tag = "ENGINE";
         if (strncmp(buf, "PUSH:", 5) == 0)             tag = "PUSH";
         else if (strncmp(buf, "A:", 2) == 0)           tag = "ACTION";

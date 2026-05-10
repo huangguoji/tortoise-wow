@@ -323,7 +323,7 @@ void TestRegistry::GenerateBossWalkTest()
 
             GuidPosition entry;
 
-            // Sprint 10 cmangos/playerbots port — Penqle's MapEntry::name is a single char* (not localized array).
+            // Penqle's MapEntry::name is a single char* (not a localized array).
             std::string mapName = mapEntry->name ? mapEntry->name : "";
 
             if (!ParseLocation(mapName, entry))

@@ -58,7 +58,7 @@ void HolyPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
         "party member almost full health",
         NextAction::array(0, new NextAction("flash of light on party", ACTION_LIGHT_HEAL), NULL)));
 
-    // TurtleWoW build override (sprint10): Seal of Wisdom over Seal of Light
+    // TurtleWoW build override: Seal of Wisdom over Seal of Light
     // (party mana-regen utility via Judgement of Wisdom; Seal of Light's
     // direct heal-on-swing is redundant with our 5 healing buttons)
     triggers.push_back(new TriggerNode(
@@ -599,7 +599,7 @@ void HolyPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
         "party member almost full health",
         NextAction::array(0, new NextAction("flash of light on party", ACTION_LIGHT_HEAL), NULL)));
 
-    // TurtleWoW build override (sprint10): Seal of Wisdom over Seal of Light
+    // TurtleWoW build override: Seal of Wisdom over Seal of Light
     // (party mana-regen utility via Judgement of Wisdom; Seal of Light's
     // direct heal-on-swing is redundant with our 5 healing buttons)
     triggers.push_back(new TriggerNode(

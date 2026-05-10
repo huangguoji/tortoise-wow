@@ -745,7 +745,7 @@ class GameObject : public WorldObject
             m_respawnDelayTime = respawn;
         }
         void Respawn();
-        // Sprint 10 cmangos/playerbots port — bot module uses uppercase IsSpawned.
+        // bot module uses uppercase IsSpawned.
         bool IsSpawned() const { return isSpawned(); }
         bool isSpawned() const
         {
@@ -788,7 +788,7 @@ class GameObject : public WorldObject
         void Use(Unit* user);
 
         LootState getLootState() const { return m_lootState; }
-        // Sprint 10 cmangos/playerbots port — cmangos uses PascalCase.
+        // cmangos uses PascalCase.
         LootState GetLootState() const { return m_lootState; }
         void SetLootState(LootState s);
         // cmangos shorthand: GO is being interacted with.
@@ -825,7 +825,7 @@ class GameObject : public WorldObject
         void SaveRespawnTime() override;
 
         Loot loot;
-        // Sprint 10 cmangos/playerbots port — bot accesses go->m_loot like a pointer.
+        // bot accesses go->m_loot like a pointer.
         Loot* const m_loot = &loot;
         // GetLinkedTrap: cmangos accesses linked-trap GO. Stub returns nullptr.
         GameObject* GetLinkedTrap() { return nullptr; }

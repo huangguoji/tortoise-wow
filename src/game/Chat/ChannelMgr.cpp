@@ -71,7 +71,7 @@ Channel *ChannelMgr::GetOrCreateChannel(std::string const& name, bool allowAreaD
     return channels[wname];
 }
 
-// Sprint 10 cmangos/playerbots port — bot passes Player*; convert via PlayerWrapper.
+// bot passes Player*; convert via PlayerWrapper.
 Channel* ChannelMgr::GetChannel(std::string const& name, Player* p, bool sendPacket)
 {
     return GetChannel(name, PlayerPointer(p ? new PlayerWrapper<Player>(p) : nullptr), sendPacket);

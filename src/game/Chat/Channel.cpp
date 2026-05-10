@@ -642,7 +642,7 @@ void Channel::Moderate(ObjectGuid guid)
     SendToAll(&data);
 }
 
-// Sprint 10 cmangos/playerbots port — Player* overload forwards to ObjectGuid form.
+// Player* overload forwards to ObjectGuid form.
 void Channel::Say(Player const* player, const char* what, uint32 lang, bool skipCheck)
 {
     if (player) Say(player->GetObjectGuid(), what, lang, skipCheck);

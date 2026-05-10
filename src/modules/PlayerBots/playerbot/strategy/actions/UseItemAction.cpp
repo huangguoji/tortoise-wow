@@ -19,7 +19,7 @@ constexpr std::string_view LOS_GOS_PARAM = "los gos";
 
 SpellCastResult BotUseItemSpell::ForceSpellStart(SpellCastTargets const* targets, Aura* triggeredByAura)
 {
-    // Sprint12 (sc-overnight) 2026-05-07 USE-AFTER-FREE FIX.
+    // USE-AFTER-FREE FIX.
     //
     // Original bug: this method pre-queued a `SpellEvent` (lines 37-38 in
     // the prior code) and then called `Prepare()`, which calls

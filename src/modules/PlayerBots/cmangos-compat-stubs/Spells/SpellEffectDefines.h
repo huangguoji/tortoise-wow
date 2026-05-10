@@ -1,6 +1,5 @@
-// cmangos/playerbots compat stub — Penqle has no SpellEffectDefines.h.
-// cmangos's bot ahbot/TradeCategory.cpp pulls this inside #ifdef CMANGOS;
-// Penqle keeps spell-effect names in SharedDefines.h/SpellMgr.h instead.
-// Phase 3: if TradeCategory needs specific effect-id symbols, port them here
-// (or rewrite TradeCategory.cpp to use Penqle's SharedDefines.h).
 #pragma once
+
+// Intentionally empty. cmangos exposes spell-effect symbolic names from a
+// dedicated header; Penqle keeps the same data in SharedDefines.h/SpellMgr.h.
+// The ahbot module's TradeCategory.cpp pulls this include under #ifdef CMANGOS.
