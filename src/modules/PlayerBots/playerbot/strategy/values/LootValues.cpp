@@ -5,11 +5,11 @@
 
 using namespace ai;
 
-// Sprint 10 cmangos/playerbots port — instantiate Singleton<SharedObjectContext> static members.
+// Penqle's Singleton<> requires an explicit instantiation in a .cpp file.
 INSTANTIATE_SINGLETON_1(ai::SharedObjectContext);
 
-// Sprint 10 cmangos/playerbots port — LootAccess methods now read from the wrapped Loot*
-// (proper accessor-based access; old layout-cheat reinterpret_cast pattern removed).
+// LootAccess methods read from the wrapped Loot* (proper accessor-based
+// access; the original layout-cheat reinterpret_cast pattern was removed).
 
 // Empty static fallbacks used when LootAccess wraps a null Loot* (defensive).
 static const std::set<ObjectGuid> s_emptyGuidSet;
@@ -419,7 +419,7 @@ bool ShouldLootObject::Calculate()
 	if (!object)
 		return false;
 
-	// Sprint 10 cmangos/playerbots port — Penqle has m_loot only on Creature/GameObject; check via cast.
+	// Penqle has m_loot only on Creature/GameObject; check via cast.
 	Loot* objLoot = nullptr;
 	if (object->IsCreature()) objLoot = ((Creature*)object)->m_loot;
 	else if (object->IsGameObject()) objLoot = ((GameObject*)object)->m_loot;
@@ -456,14 +456,14 @@ bool ShouldLootObject::Calculate()
 		return true;				
     }
 
-	// Sprint 10 cmangos/playerbots port — dispatch via cast to access m_loot.
+	// Dispatch via cast to access m_loot (lives on Creature/GameObject only).
 	Loot* objLoot2 = nullptr;
 	if (object->IsCreature()) objLoot2 = ((Creature*)object)->m_loot;
 	else if (object->IsGameObject()) objLoot2 = ((GameObject*)object)->m_loot;
 	if (objLoot2 && objLoot2->GetGoldAmount() > 0)
 		return true;
 
-	// Sprint 10: LootAccess wraps Loot* now.
+	// LootAccess wraps a Loot* now.
 	if (!objLoot2)
 		return false;
 

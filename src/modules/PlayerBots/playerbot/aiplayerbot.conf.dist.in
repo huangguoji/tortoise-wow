@@ -6,15 +6,15 @@
 ConfVersion=2020072501
 
 # Enable or disable AI Playerbot
-# Sprint 10 deploy default: 0. The bot subsystem is built into mangosd but inert
+# The bot subsystem is built into mangosd but inert
 # unless this is flipped to 1 + the user knows what they're doing. Flip when you
 # want to test/play with bots; flip back when you want guaranteed clean live play.
 AiPlayerbot.Enabled = 0
 
 # Enable random bot system
-# Sprint 10 deploy default: 0. Single-bot manual-add (`.bot add <name>`) is the
+# Single-bot manual-add (`.bot add <name>`) is the
 # recommended starting point. Random bots auto-spawn dozens of characters and
-# need DB schema + tuned class probabilities — defer to Sprint 11+ work.
+# need DB schema + tuned class probabilities — defer this.
 AiPlayerbot.RandomBotAutologin = 0
 
 # Log on all random bots on start
@@ -242,6 +242,12 @@ AiPlayerbot.RandomBotQuestIds = 7848,3802,5505,6502,7761,9378
 
 # Bots will chat in say/guild when they invite other bots to groups/raids/guilds
 # AiPlayerbot.InviteChat = 1
+
+# Enable per-bot action log files (logs/bots/<botname>_acc<id>_<timestamp>.log)
+# and "[BOT]" prefixed structured log lines in the server log. Useful for
+# diagnosing bot lifecycle issues; off in production. The crash handler also
+# reads a thread-local "last phase" tag set by SC_PHASE when this is on.
+# AiPlayerbot.EnableActionLog = 0
 
 # The summon command can be used without restriction by non-gms.
 # AiPlayerbot.NonGmFreeSummon = 0

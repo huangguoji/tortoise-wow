@@ -63,8 +63,8 @@ char *strstri(const char *haystack, const char *needle)
     return 0;
 }
 
-// Sprint 10 cmangos/playerbots port — bot's PlayerbotAI.cpp forward-declares strstri(std::string, std::string).
-// Provide implementation that forwards to the const char* version.
+// PlayerbotAI.cpp forward-declares strstri(std::string, std::string).
+// Provide an implementation that forwards to the const char* version.
 char* strstri(std::string const& s1, std::string const& s2)
 {
     return strstri(s1.c_str(), s2.c_str());

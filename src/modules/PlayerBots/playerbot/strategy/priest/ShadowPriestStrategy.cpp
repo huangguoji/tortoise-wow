@@ -56,7 +56,7 @@ void ShadowPriestStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
         "no mana",
         NextAction::array(0, new NextAction("shoot", ACTION_NORMAL), NULL)));
 
-    // TurtleWoW build additions (sprint10):
+    // TurtleWoW build additions:
     //
     // Vampiric Touch (Shadow 5/2, 2/2): debuff that boosts Vampiric Embrace
     // healing and adds party mana feedback (% of Shadow damage as mana).
@@ -87,7 +87,7 @@ void ShadowPriestStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
         "inner focus",
         NextAction::array(0, new NextAction("inner focus", ACTION_HIGH + 1), NULL)));
 
-    // TurtleWoW Shadow redesign awareness (sprint10):
+    // TurtleWoW Shadow redesign awareness:
     //
     // Shadow Weaving rebuild: when target is missing the Shadow Vulnerability
     // debuff (e.g. just after a target swap / boss phase change), prioritize

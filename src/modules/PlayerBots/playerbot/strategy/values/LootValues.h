@@ -21,13 +21,14 @@ namespace ai
         LootGroups        Groups;                           // groups have own (optimized) processing, grouped entries go there
     };
 
-    // Sprint 10 cmangos/playerbots port — LootAccess was originally a "cheat-class" that
-    // mirrored cmangos's Loot layout and was reached via reinterpret_cast<LootAccess*>(loot).
-    // Penqle's Loot has a totally different field layout, so the cast trick reads garbage.
+    // LootAccess was originally a "cheat-class" that mirrored cmangos's Loot
+    // layout and was reached via reinterpret_cast<LootAccess*>(loot). Penqle's
+    // Loot has a totally different field layout, so the cast trick reads garbage.
     //
-    // Reshape: LootAccess now holds a Loot* and exposes cmangos-style accessors as methods.
-    // Call sites that previously used reinterpret_cast construct via LootAccess(loot) instead.
-    // Call sites that previously read `lootAccess->m_X` use the matching accessor method.
+    // Reshape: LootAccess holds a Loot* and exposes cmangos-style accessors as
+    // methods. Call sites that previously used reinterpret_cast construct via
+    // LootAccess(loot) instead; sites that read `lootAccess->m_X` use the
+    // matching accessor method.
     class LootAccess
     {
     public:

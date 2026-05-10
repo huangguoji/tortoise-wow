@@ -472,7 +472,7 @@ class Unit : public WorldObject
         uint32 GetPower(   Powers power) const { return GetUInt32Value(UNIT_FIELD_POWER1   +power); }
         uint32 GetMaxPower(Powers power) const { return GetUInt32Value(UNIT_FIELD_MAXPOWER1+power); }
         float GetPowerPercent(Powers power) const { return GetMaxPower(power) ? ((GetPower(power)*100.0f) / GetMaxPower(power)) : 100.0f; }
-        // Sprint 10 cmangos/playerbots port — cmangos's 0-arg form uses unit's primary power type.
+        // cmangos's 0-arg form uses unit's primary power type.
         float GetPowerPercent() const { return GetPowerPercent(GetPowerType()); }
         void SetPower(   Powers power, uint32 val);
         void SetMaxPower(Powers power, uint32 val);
@@ -584,9 +584,8 @@ class Unit : public WorldObject
         uint8 GetClass() const { return GetByteValue(UNIT_FIELD_BYTES_0, 1); }
         uint32 GetClassMask() const { return GetClass() ? 1 << (GetClass()-1) : 0x0; }
         uint8 GetGender() const final { return GetByteValue(UNIT_FIELD_BYTES_0, 2); }
-        // Sprint 10 cmangos/playerbots port — camelCase aliases (cmangos style).
+        // camelCase aliases (cmangos style).
         // Penqle uses PascalCase; bot module uses camelCase. Inline forwarders keep
-        // both names available with zero runtime cost. See bot-deployment-sprint-plan.md.
         uint32 getLevel() const { return GetLevel(); }
         uint8 getRace() const { return GetRace(); }
         uint32 getRaceMask() const { return GetRaceMask(); }
@@ -597,7 +596,7 @@ class Unit : public WorldObject
         void clearUnitState(uint32 f) { ClearUnitState(f); }
         void addUnitState(uint32 f) { AddUnitState(f); }
         bool hasUnitState(uint32 f) const { return HasUnitState(f); }
-        // Sprint 10 cmangos/playerbots port — bot uses cmangos shorthand IsStunned/HasMana/IsInTeam.
+        // bot uses cmangos shorthand IsStunned/HasMana/IsInTeam.
         bool IsStunned() const { return HasUnitState(UNIT_STAT_STUNNED); }
         bool HasMana() const { return GetPowerType() == POWER_MANA; }
         // IsInTeam: cmangos checks faction team; Penqle has Player::GetTeam only.
@@ -614,7 +613,7 @@ class Unit : public WorldObject
         // Penqle's WorldObject::HasInArc takes (target, arc, offset). Map distance→ignore.
         bool isInFront(WorldObject const* target, float arc = 3.14159265358979323846f) const { return HasInArc(target, arc); }
         bool isInFront(WorldObject const* target, float /*distance*/, float arc) const { return HasInArc(target, arc); }
-        // Sprint 10 cmangos/playerbots port — bot reads target->GetSelectionGuid() on Unit*.
+        // bot reads target->GetSelectionGuid() on Unit*.
         // Penqle Unit::GetTargetGuid is the same concept (current selection target).
         ObjectGuid const& GetSelectionGuid() const { return GetTargetGuid(); }
         // GetAttackDistance: cmangos has it on Unit; Penqle only on Creature. Forward when possible.
@@ -962,7 +961,7 @@ class Unit : public WorldObject
         void AddGameObject(GameObject* pGo);
         void RemoveGameObject(GameObject* pGo, bool del);
         void RemoveGameObject(uint32 spellid, bool del);
-        // Sprint 10 cmangos/playerbots port — cmangos's 3-arg form (third bool ignored).
+        // cmangos's 3-arg form (third bool ignored).
         void RemoveGameObject(GameObject* pGo, bool del, bool /*notify*/) { RemoveGameObject(pGo, del); }
         void RemoveAllGameObjects();
         ObjectGuid m_ObjectSlotGuid[4];
@@ -1100,7 +1099,7 @@ class Unit : public WorldObject
         void CooldownEvent(SpellEntry const *spellInfo, uint32 itemId = 0, Spell* spell = nullptr);
         void AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 itemId, Spell* spell = nullptr, bool infinityCooldown = false);
         void RemoveSpellCooldown(uint32 spell_id, bool update = false);
-        // Sprint 10 cmangos/playerbots port — bot passes SpellEntry; forward to ID-based version.
+        // bot passes SpellEntry; forward to ID-based version.
         void RemoveSpellCooldown(SpellEntry const& spellInfo, bool update = false);  // impl in Unit.cpp
         void RemoveAllSpellCooldown();
         void RemoveAllArenaSpellCooldown();
@@ -1319,7 +1318,7 @@ class Unit : public WorldObject
 
         // Returns the Unit::m_attackers, that stores the units that are attacking you
         AttackerSet const& GetAttackers() const { return m_attackers; }
-        // Sprint 10 cmangos/playerbots port — bot uses camelCase getAttackers.
+        // bot uses camelCase getAttackers.
         AttackerSet const& getAttackers() const { return m_attackers; }
 
         // Returns the victim that this unit is currently attacking
@@ -1341,7 +1340,7 @@ class Unit : public WorldObject
         void DeleteThreatList();
         ThreatManager& GetThreatManager() { return m_ThreatManager; }
         ThreatManager const& GetThreatManager() const { return m_ThreatManager; }
-        // Sprint 10 cmangos/playerbots port — camelCase alias for the bot module.
+        // camelCase alias for the bot module.
         ThreatManager& getThreatManager() { return m_ThreatManager; }
         ThreatManager const& getThreatManager() const { return m_ThreatManager; }
 
@@ -1349,7 +1348,7 @@ class Unit : public WorldObject
         void RemoveHatedBy(HostileReference* /*pHostileReference*/) { /* nothing to do yet */ }
         HostileRefManager& GetHostileRefManager() { return m_HostileRefManager; }
         HostileRefManager const& GetHostileRefManager() const { return m_HostileRefManager; }
-        // Sprint 10 cmangos/playerbots port — camelCase alias for the bot module.
+        // camelCase alias for the bot module.
         HostileRefManager& getHostileRefManager() { return m_HostileRefManager; }
         HostileRefManager const& getHostileRefManager() const { return m_HostileRefManager; }
 
@@ -1442,7 +1441,7 @@ class Unit : public WorldObject
         bool IsPassiveToHostile() const { return HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC); }
 
         void SetTargetGuid(ObjectGuid targetGuid) { SetGuidValue(UNIT_FIELD_TARGET, targetGuid); }
-        // Sprint 10 cmangos/playerbots port — cmangos's SetTarget(Unit*) form.
+        // cmangos's SetTarget(Unit*) form.
         void SetTarget(Unit const* target) { SetTargetGuid(target ? target->GetObjectGuid() : ObjectGuid()); }
         ObjectGuid const& GetTargetGuid() const { return GetGuidValue(UNIT_FIELD_TARGET); }
         void ClearTarget() { SetTargetGuid(ObjectGuid()); }
@@ -1458,7 +1457,7 @@ class Unit : public WorldObject
         ObjectGuid const& GetOwnerGuid() const { return  GetGuidValue(UNIT_FIELD_SUMMONEDBY); }
         void SetOwnerGuid(ObjectGuid owner) { SetGuidValue(UNIT_FIELD_SUMMONEDBY, owner); ForceValuesUpdateAtIndex(UNIT_FIELD_HEALTH); ForceValuesUpdateAtIndex(UNIT_FIELD_MAXHEALTH); }
         ObjectGuid const& GetCreatorGuid() const { return GetGuidValue(UNIT_FIELD_CREATEDBY); }
-        // Sprint 10 cmangos/playerbots port — bot calls GetCreator() returning Unit*.
+        // bot calls GetCreator() returning Unit*.
         Unit* GetCreator() const;
         void SetCreatorGuid(ObjectGuid creator) { SetGuidValue(UNIT_FIELD_CREATEDBY, creator); }
         
@@ -1605,7 +1604,7 @@ class Unit : public WorldObject
         void SetSpeedRateReal(UnitMoveType mtype, float rate);
         void UpdateSpeed(UnitMoveType mtype, bool forced, float ratio = 1.0f);
         float GetSpeed(UnitMoveType mtype) const;
-        // Sprint 10 cmangos/playerbots port — bot uses GetSpeedInMotion (current speed); Penqle uses GetSpeed(MOVE_RUN).
+        // bot uses GetSpeedInMotion (current speed); Penqle uses GetSpeed(MOVE_RUN).
         float GetSpeedInMotion() const { return GetSpeed(MOVE_RUN); }
         // GetCombinedCombatReach: cmangos returns this+other reach; Penqle has no equivalent. Stub returns approximation.
         float GetCombinedCombatReach(Unit const* /*pVictim*/ = nullptr, bool /*forMeleeRange*/ = true, float /*flat_mod*/ = 0.0f) const { return GetObjectBoundingRadius() * 2.0f; }

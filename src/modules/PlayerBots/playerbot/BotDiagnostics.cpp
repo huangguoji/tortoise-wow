@@ -2,8 +2,8 @@
 #include "PlayerbotAIConfig.h"
 
 namespace ai { namespace botdiag {
-    __declspec(thread) const char* gLastPhaseTag     = nullptr;
-    __declspec(thread) const char* gLastPhaseBotName = nullptr;
+    thread_local const char* gLastPhaseTag     = nullptr;
+    thread_local const char* gLastPhaseBotName = nullptr;
 
     bool IsActionLogEnabled()
     {

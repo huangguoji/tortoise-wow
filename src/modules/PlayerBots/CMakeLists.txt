@@ -124,7 +124,7 @@ if (BUILD_PLAYERBOTS)
 endif()
 
 # Define Core
-# Sprint 10 cmangos/playerbots port — Penqle's project name is "TurtleWoW", not "CMaNGOS" or "MaNGOS".
+# Penqle's project name is "TurtleWoW", not "CMaNGOS" or "MaNGOS".
 # Define CMANGOS so bot's #ifdef CMANGOS branches activate. We adapt cmangos-style int/uint32 triggered
 # flags via shim TRIGGERED_* defines (mapped to bool literals). Without this, both branches skip and
 # bot misses critical code paths.
@@ -172,7 +172,7 @@ endif()
 
 target_include_directories(${LIBRARY_NAME}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-  # Sprint 10 cmangos/playerbots port — include paths for transitive Penqle headers
+  # include paths for transitive Penqle headers
   # (MapNodes/AbstractPlayer.h, Detour navmesh, framework Network).
   PRIVATE ${CMAKE_SOURCE_DIR}/src/game/MapNodes
   PRIVATE ${CMAKE_SOURCE_DIR}/dep/recastnavigation

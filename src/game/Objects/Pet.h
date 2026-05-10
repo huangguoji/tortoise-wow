@@ -162,7 +162,7 @@ class Pet : public Creature
         bool CreateBaseAtCreature(Creature* creature);
         bool LoadPetFromDB( Player* owner,uint32 petentry = 0,uint32 petnumber = 0, bool current = false );
         void SavePetToDB(PetSaveMode mode);
-        // Sprint 10 cmangos/playerbots port — cmangos's 2-arg form (player ignored).
+        // cmangos's 2-arg form (player ignored).
         void SavePetToDB(PetSaveMode mode, Player* /*owner*/) { SavePetToDB(mode); }
         void Unsummon(PetSaveMode mode, Unit* owner = nullptr);
         void DelayedUnsummon(uint32 timeMSToDespawn, PetSaveMode mode);
@@ -242,7 +242,7 @@ class Pet : public Creature
 
         bool AddSpell(uint32 spell_id,ActiveStates active = ACT_DECIDE, PetSpellState state = PETSPELL_NEW, PetSpellType type = PETSPELL_NORMAL);
         bool LearnSpell(uint32 spell_id);
-        // Sprint 10 cmangos/playerbots port — cmangos camelCase alias.
+        // cmangos camelCase alias.
         bool learnSpell(uint32 spell_id) { return LearnSpell(spell_id); }
         // IsSpellReady: cmangos checks pet spell cooldown.
         bool IsSpellReady(uint32 spellId) const { return !HasSpellCooldown(spellId); }
@@ -256,7 +256,7 @@ class Pet : public Creature
         void CleanupActionBar();
 
         PetSpellMap     m_petSpells;
-        // Sprint 10 cmangos/playerbots port — bot uses m_spells (cmangos name).
+        // bot uses m_spells (cmangos name).
         PetSpellMap&    m_spells = m_petSpells;
         TeachSpellMap   m_teachspells;
         AutoSpellList   m_autospells;

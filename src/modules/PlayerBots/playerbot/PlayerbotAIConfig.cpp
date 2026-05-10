@@ -22,7 +22,7 @@
 
 std::vector<std::string> ConfigAccess::GetValues(const std::string& name) const
 {
-    // Sprint 10 cmangos/playerbots port — original cmangos impl iterates m_entries
+    // The original cmangos implementation iterates m_entries
     // (unordered_map populated by cmangos's own Config parser). Penqle's Config (which
     // ConfigAccess is reinterpret_cast'd onto) has a totally different layout — that
     // map doesn't exist at this offset, and iterating it segfaults.

@@ -82,7 +82,7 @@ uint32 SpellIdValue::Calculate()
 
         if (ids.empty())
         {
-            // Sprint 10 cmangos/playerbots port — Penqle's SpellName is std::string[8].
+            // Penqle's SpellName is std::string[8].
             std::string const& spellName = pSpellInfo->SpellName[loc];
             if (!useByItem && (tolower(spellName[0]) != firstSymbol || spellName.size() != spellLength || !Utf8FitTo(spellName.c_str(), wnamepart)))
                 continue;
@@ -115,7 +115,7 @@ uint32 SpellIdValue::Calculate()
 
             if (ids.empty())
             {
-                // Sprint 10 cmangos/playerbots port — Penqle's SpellName is std::string[8].
+                // Penqle's SpellName is std::string[8].
                 std::string const& spellName = pSpellInfo->SpellName[loc];
                 if (tolower(spellName[0]) != firstSymbol || spellName.size() != spellLength || !Utf8FitTo(spellName.c_str(), wnamepart))
                     continue;

@@ -6,7 +6,7 @@
 
 using namespace ai;
 
-// TurtleWoW Holy Paladin: Daybreak target finder predicate (sprint10).
+// TurtleWoW Holy Paladin: Daybreak target finder predicate.
 // Match a party member who has the Daybreak buff (spell 51322 specifically;
 // other "Daybreak" entries 50931 / 51323 are different mechanics — talent
 // passive and old vanilla effect respectively) AND HP < 95% (so the heal

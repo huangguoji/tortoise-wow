@@ -1,24 +1,18 @@
 #!/usr/bin/env perl
-# rewrite-includes.pl — Sprint 10 cmangos/playerbots include-path reconciliation
+# rewrite-includes.pl — cmangos/playerbots → Penqle include-path reconciliation.
 #
-# Vendored cmangos/playerbots uses cmangos's directory-prefixed #include style
-# (`Entities/Player.h`, `Groups/Group.h`, ...). Penqle's directory layout
-# differs (`Objects/Player.h`, `Group/Group.h`, ...). This script rewrites
-# the qualified #include lines in src/modules/PlayerBots/ to match Penqle's
-# layout.
+# The vendored playerbots module uses cmangos's directory-prefixed #include style
+# (`Entities/Player.h`, `Groups/Group.h`, ...). Penqle's layout differs
+# (`Objects/Player.h`, `Group/Group.h`, ...). This script rewrites the
+# directory-prefixed includes in src/modules/PlayerBots/ to match Penqle.
 #
-# The mapping was built empirically: for each prefixed include in the
-# vendored module, we located the matching basename in Penqle's src/ tree
-# and recorded the actual path. 58 rewrites total, 18 exact matches (no
-# rewrite needed), 13 missing-from-Penqle entries (handled separately —
-# most are TBC/WotLK content gated by MANGOSBOT_ONE/TWO ifdefs at use site).
+# Use case: re-vendoring a fresh snapshot of cmangos/playerbots. Drop the
+# new vendor tree under src/modules/PlayerBots/ and run this script to
+# reconcile include paths.
 #
-# Idempotent: running twice yields the same result. Re-run after re-vendoring
-# cmangos/playerbots upstream.
+# Idempotent — running twice yields the same tree.
 #
 # Usage: perl tools/port/rewrite-includes.pl [--dry-run]
-#
-# See bot-deployment-sprint-plan.md Phase 2c for context.
 
 use strict;
 use warnings;

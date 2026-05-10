@@ -1004,7 +1004,6 @@ enum CreatureFamily
     CREATURE_FAMILY_OWL            = 26,
     CREATURE_FAMILY_WIND_SERPENT   = 27,
     CREATURE_FAMILY_REMOTE_CONTROL = 28,
-    CREATURE_FAMILY_MOTH           = 39,  // patch9 Pet Moth scaffolding
 };
 
 enum CreatureTypeFlags
@@ -1232,7 +1231,6 @@ enum SkillType
     SKILL_PET_HYENA                = 654,
     SKILL_PET_OWL                  = 655,
     SKILL_PET_WIND_SERPENT         = 656,
-    SKILL_PET_MOTH                 = 1011,  // patch9 Pet Moth scaffolding
     SKILL_LANG_GUTTERSPEAK         = 673,
     SKILL_RIDING_KODO              = 713,
     SKILL_RACIAL_TROLL             = 733,

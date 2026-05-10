@@ -1284,7 +1284,7 @@ bool DebugAction::HandleGY(Event& event, Player* requester, const std::string& t
         if (!map)
             continue;
 
-        // Sprint 10 cmangos/playerbots port — Penqle uses GraveyardManagerStub on Map.
+        // Penqle exposes GraveyardManagerStub on Map.
         Map::GraveyardManagerStub* gy = &map->GetGraveyardManager();
 
         if (!gy)

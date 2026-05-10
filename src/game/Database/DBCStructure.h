@@ -54,9 +54,9 @@ struct AreaTriggerEntry
     float     box_y;                                        // 7 extent y edge
     float     box_z;                                        // 8 extent z edge
     float     box_orientation;                              // 9 extent rotation by about z axis
-    // Sprint 10 cmangos/playerbots port — cmangos AreaTriggerEntry has teleport-destination fields.
+    // cmangos AreaTriggerEntry has teleport-destination fields.
     // Penqle stores teleport targets in a separate AreaTriggerTeleport table; bot uses these as
-    // simple sentinel zeroes (no teleport). Stubs are 0; real impl deferred to Wave 5+.
+    // simple sentinel zeroes (no teleport). Stubs are 0; real impl deferred to
     uint32    target_mapId = 0;
     float     target_X = 0.0f;
     float     target_Y = 0.0f;
@@ -106,7 +106,7 @@ struct ChatChannelsEntry
     uint32 nameFlags;
     std::string shortcut[8];
     uint32 shortcutFlags;
-    // Sprint 10 cmangos/playerbots port — bot accesses pattern[locale]. Stub uses array of c_str()s.
+    // bot accesses pattern[locale]. Stub uses array of c_str()s.
     char const* pattern[8] = { "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s" };
 };
 
@@ -330,7 +330,7 @@ struct FactionEntry
     {
         return reputationListID >= 0;
     }
-    // Sprint 10 cmangos/playerbots port — cmangos's HasReputation alias.
+    // cmangos's HasReputation alias.
     bool HasReputation() const { return CanHaveReputation(); }
 };
 
@@ -339,7 +339,7 @@ struct FactionTemplateEntry
     uint32      ID;                                         // 0
     uint32      faction;                                    // 1
     uint32      factionFlags;                               // 2 specific flags for that faction
-    // Sprint 10 cmangos/playerbots port — bot uses cmangos names: factionGroupMask = ourMask,
+    // bot uses cmangos names: factionGroupMask = ourMask,
     // friendGroupMask = friendlyMask, enemyGroupMask = hostileMask.
     union { uint32  ourMask;       uint32 factionGroupMask; };
     union { uint32  friendlyMask;  uint32 friendGroupMask; };
@@ -582,7 +582,7 @@ struct SpellRangeEntry
     uint32    ID;                                           // 0        m_ID
     float     minRange;                                     // 1        m_rangeMin
     float     maxRange;                                     // 2        m_rangeMax
-    // Sprint 10 cmangos/playerbots port — bot reads ->Flags & SPELL_RANGE_FLAG_MELEE/RANGED.
+    // bot reads ->Flags & SPELL_RANGE_FLAG_MELEE/RANGED.
     // Penqle's DBC format string doesn't load Flags (it's marked 'x' = skipped), and adding
     // a real field would grow sizeof(SpellRangeEntry) past the format string's 12 bytes,
     // failing the DBCStorage size assertion. Use static constexpr so `entry->Flags` syntax
@@ -824,7 +824,7 @@ struct TaxiPathNodePtr
     TaxiPathNodeEntry const* i_ptr;
 
     operator TaxiPathNodeEntry const& () const { return *i_ptr; }
-    // Sprint 10 cmangos/playerbots port — bot uses p->mapid pointer-style.
+    // bot uses p->mapid pointer-style.
     TaxiPathNodeEntry const* operator->() const { return i_ptr; }
 };
 

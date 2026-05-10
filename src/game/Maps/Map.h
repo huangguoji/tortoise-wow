@@ -85,7 +85,7 @@ namespace VMAP
 
 struct MapEntry
 {
-    // Sprint 10 cmangos/playerbots port — bot uses MapID (cmangos); Penqle uses id.
+    // bot uses MapID (cmangos); Penqle uses id.
     union { uint32 id; uint32 MapID; };
     uint32 parent;
     uint32 mapType;
@@ -113,7 +113,7 @@ static AreaFlagByMapId sAreaFlagByMapId;
 
 struct AreaEntry
 {
-    // Sprint 10 cmangos/playerbots port — anonymous unions provide cmangos
+    // anonymous unions provide cmangos
     // field-name aliases (area_level↔AreaLevel, area_name↔Name) sharing storage
     // with Penqle's PascalCase names. Penqle code unchanged; bot module can use
     // either name. Struct size unchanged.
@@ -445,7 +445,7 @@ class Map : public GridRefManager<NGridType>
         bool IsRaid() const { return i_mapEntry && i_mapEntry->IsRaid(); }
         bool IsBattleGround() const { return i_mapEntry && i_mapEntry->IsBattleGround(); }
         bool IsContinent() const { return i_mapEntry && i_mapEntry->IsContinent(); }
-        // Sprint 10 cmangos/playerbots port — bot calls Map::IsMountAllowed.
+        // bot calls Map::IsMountAllowed.
         bool IsMountAllowed() const { return i_mapEntry && i_mapEntry->IsMountAllowed(); }
         // GetReachableRandomPointOnGround: cmangos has it; Penqle doesn't. Stub returns false.
         bool GetReachableRandomPointOnGround(uint32 /*phase*/, float /*x*/, float /*y*/, float /*z*/, float /*dist*/, bool /*walk*/ = true) const { return false; }
@@ -593,7 +593,7 @@ class Map : public GridRefManager<NGridType>
         bool isInLineOfSight(float x1, float y1, float z1, float x2, float y2, float z2, bool checkDynLos = true) const;
         // First collision with object
         bool GetLosHitPosition(float srcX, float srcY, float srcZ, float& destX, float& destY, float& destZ, float modifyDist) const;
-        // Sprint 10 cmangos/playerbots port — cmangos calls this GetHitPosition.
+        // cmangos calls this GetHitPosition.
         bool GetHitPosition(float srcX, float srcY, float srcZ, float& destX, float& destY, float& destZ, uint32 /*phasemask*/ = 0, float modifyDist = -0.5f) const {
             return GetLosHitPosition(srcX, srcY, srcZ, destX, destY, destZ, modifyDist);
         }

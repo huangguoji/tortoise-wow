@@ -10,7 +10,7 @@ namespace ai
 
         virtual void ExternalEvent(WorldPacket &packet, Player* owner = NULL) override
         {
-            // Sprint 10 cmangos→Penqle: WorldPacket copy operator= deleted; copy-construct + move-assign.
+            // Penqle's WorldPacket has a deleted copy operator=; copy-construct + move-assign instead.
             this->packet = WorldPacket(packet);
             this->owner = owner;
             triggered = true;

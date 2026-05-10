@@ -56,9 +56,9 @@ class SqlResultQueue;
 class QueryResult;
 class World;
 class ChannelBroadcaster;
-// Sprint 10 cmangos/playerbots port — forward-decl so World::GetLFGQueue() return type compiles.
+// forward-decl so World::GetLFGQueue() return type compiles.
 class LFGQueue;
-// Sprint 10 cmangos/playerbots port — forward-decl GraveYardData (defined in ObjectMgr.h)
+// forward-decl GraveYardData (defined in ObjectMgr.h)
 // so World::WorldGraveyardManagerStub method signature parses without needing the full type.
 struct GraveYardData;
 namespace DiscordBot
@@ -901,11 +901,11 @@ class World
         World();
         ~World();
 
-        // Sprint 10 cmangos/playerbots port — bot calls sWorld.GetLFGQueue() and sWorld.GetCurrentMSTime().
+        // bot calls sWorld.GetLFGQueue() and sWorld.GetCurrentMSTime().
         // Penqle's LFGQueue lives in LFG/LFGMgr.h. Forward to sLFGMgr.
         // Forward-declare LFGQueue at this scope to avoid requiring full LFGMgr.h include.
         class LFGQueue& GetLFGQueue();
-        // Sprint 10 cmangos/playerbots port — Phase 3d Wave 2 host hook.
+        // host hook.
         // Implementation in src/modules/PlayerBots/playerbot/HostHooks.cpp dispatches to bot mgrs.
         void UpdatePlayerbotsTick(uint32 diff);
         // One-shot startup hook (called from World::SetInitialWorldSettings) — loads bot config + mgrs.

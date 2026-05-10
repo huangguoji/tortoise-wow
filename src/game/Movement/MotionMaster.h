@@ -129,7 +129,7 @@ class MotionMaster : std::stack<MovementGenerator *>
         void MoveRandom(bool use_current_position = false, float wander_distance = 0.0f, uint32 expire_time = 0);
         void MoveTargetedHome();
         void MoveFollow(Unit* target, float dist, float angle);
-        // Sprint 10 cmangos/playerbots port — bot's 5-arg form (extra flags ignored).
+        // bot's 5-arg form (extra flags ignored).
         void MoveFollow(Unit* target, float dist, float angle, bool /*forceTarget*/, bool /*useAngle*/) { MoveFollow(target, dist, angle); }
         void MoveChase(Unit* target, float dist = 0.0f, float angle = 0.0f);
         void MoveConfused();
@@ -149,9 +149,9 @@ class MotionMaster : std::stack<MovementGenerator *>
         void MoveDistance(Unit* target, float distance);
         void ReInitializePatrolMovement();
 
-        // Sprint 10 cmangos/playerbots port — bot calls MovePath with a vector of points.
-        // Stubbed for Wave 1; full implementation deferred to Wave 5+ (path-based movement
-        // generator). For now, no-op so the bot module compiles.
+        // The bot module calls MovePath with a vector of points. Stubbed
+        // out — full implementation (path-based movement generator) is
+        // future work. No-op so the bot module compiles.
         template<typename PointPath>
         void MovePath(PointPath const& /*pointPath*/, uint32 /*moveMode*/, bool /*flying*/, bool /*walk*/ = false) {}
         // MoveFall: cmangos returns bool. Stub returns false.

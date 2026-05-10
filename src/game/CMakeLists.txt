@@ -189,7 +189,7 @@ set (game_SRCS
     OutdoorPvP/Register.cpp
     PacketBroadcast/MovementBroadcaster.cpp
     PacketBroadcast/PlayerBroadcaster.cpp
-    # PlayerBots/PlayerBot{AI,Mgr}.cpp removed - Penqle stub binned for Sprint 10 cmangos port.
+    # PlayerBots/PlayerBot{AI,Mgr}.cpp removed - Penqle stub binned
     Protocol/Opcodes.cpp
     Protocol/WorldSocket.cpp
     Protocol/WorldSocketMgr.cpp
@@ -382,7 +382,7 @@ set (game_SRCS
     OutdoorPvP/OutdoorPvPSI.h
     PacketBroadcast/MovementBroadcaster.h
     PacketBroadcast/PlayerBroadcaster.h
-    # PlayerBots/PlayerBot{AI,Mgr}.h removed - Penqle stub binned for Sprint 10 cmangos port.
+    # PlayerBots/PlayerBot{AI,Mgr}.h removed - Penqle stub binned
     Protocol/Opcodes.h
     Protocol/WorldSocket.h
     Protocol/WorldSocketMgr.h
@@ -524,7 +524,7 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/Objects
   ${CMAKE_CURRENT_SOURCE_DIR}/OutdoorPvP
   ${CMAKE_CURRENT_SOURCE_DIR}/PacketBroadcast
-  # PlayerBots include dir removed - Penqle stub binned for Sprint 10 cmangos port.
+  # PlayerBots include dir removed - Penqle stub binned
   ${CMAKE_CURRENT_SOURCE_DIR}/Protocol
   ${CMAKE_CURRENT_SOURCE_DIR}/Spells
   ${CMAKE_CURRENT_SOURCE_DIR}/Threat
@@ -593,7 +593,7 @@ source_group("HttpApi"
 )
 
 
-# Sprint 10 - playerbots host-hook stubs for non-bot builds.
+# playerbots host-hook stubs for non-bot builds.
 # When BUILD_PLAYERBOTS=OFF, the host-hook call sites need stub implementations.
 # With BUILD_PLAYERBOTS=ON, real implementations are in playerbots.lib.
 if(NOT BUILD_PLAYERBOTS)

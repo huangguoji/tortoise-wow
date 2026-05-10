@@ -391,10 +391,11 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket & recv_data)
         }
     }
 
-    // Sprint 10 cmangos/playerbots port — Wave 10: dispatch chat to master's own bots so
-    // they can react to /party, /raid, /guild, /say, /yell, and whispers. cmangos hooks here
-    // (in HandleMessagechatOpcode after validation, before broadcast). Implementation in
-    // src/modules/PlayerBots/playerbot/HostHooks.cpp. No-op when m_playerbotMgr is null.
+    // Dispatch chat to the master's own bots so they can react to /party,
+    // /raid, /guild, /say, /yell, and whispers. cmangos hooks here (in
+    // HandleMessagechatOpcode, after validation and before broadcast).
+    // Implementation lives in src/modules/PlayerBots/playerbot/HostHooks.cpp.
+    // No-op when m_playerbotMgr is null.
     if (_player && _player->GetPlayerbotMgr())
         Player_DispatchBotChatCommand(_player, type, msg, lang);
 
@@ -1190,20 +1191,11 @@ bool WorldSession::HandleTurtleAddonMessages(uint32 lang, uint32 type, std::stri
             {
                 std::string categories = "Categories:";
 
-                // patch7-A live client (Turtle_ShopUI.lua:151-159) expects
-                // each entry as "id=parentID=name=icon;" — parentID was
-                // missing in the pre-fix server output, causing
-                // `parentID = tonumber(catEx[2])` to be nil → the comparison
-                // `if parentID > 0` at line 159 throws "compare number with nil".
-                // Server has no parent/subcategory data per category (8 flat
-                // categories); always send parentID=0 so all categories render
-                // as top-level. Future polish can extend shop_categories with
-                // a parent_id column if subcategory grouping is wanted.
                 for (auto& itr : sObjectMgr.GetShopCategoriesList())
                     if (sWorld.getConfig(CONFIG_BOOL_SEA_NETWORK))
-                        categories += std::to_string(itr.first) + "=0=" + itr.second.Name_loc4 + "=" + itr.second.Icon + ";";
+                        categories += std::to_string(itr.first) + "=" + itr.second.Name_loc4 + "=" + itr.second.Icon + ";";
                     else
-                        categories += std::to_string(itr.first) + "=0=" + itr.second.Name + "=" + itr.second.Icon + ";";
+                        categories += std::to_string(itr.first) + "=" + itr.second.Name + "=" + itr.second.Icon + ";";
 
                 _player->SendAddonMessage(prefix, categories);
                 return true;

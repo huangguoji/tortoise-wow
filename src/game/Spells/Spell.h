@@ -233,8 +233,8 @@ class Spell
     friend void WorldObject::SetCurrentCastedSpell(Spell* pSpell );
     friend void WorldObject::MoveChannelledSpellWithCastTime(Spell* pSpell);
     public:
-        // Sprint 10 cmangos/playerbots port — bot sets spell->m_clientCast = true on spells it queues.
-        // Penqle has no equivalent; stub field is never read. Wave 5 candidate to wire up if needed.
+        // bot sets spell->m_clientCast = true on spells it queues.
+        // Penqle has no equivalent; stub field is never read.
         bool m_clientCast = false;
         // SpellStart: cmangos returns SpellCastResult; Penqle uses prepare().
         SpellCastResult SpellStart(SpellCastTargets const* targets, Aura* triggeredByAura = nullptr) {
@@ -507,7 +507,7 @@ class Spell
         bool IsTriggeredByAura() const { return m_triggeredByAuraSpell; }
         bool IsTriggeredByProc() const;
         bool IsCastByItem() const { return m_CastItem; }
-        // Sprint 10 cmangos/playerbots port — bot calls GetCastItem.
+        // bot calls GetCastItem.
         Item* GetCastItem() const { return m_CastItem; }
         void SetCastItem(Item* item)
         {

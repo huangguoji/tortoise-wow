@@ -4,7 +4,7 @@
 
 namespace ai
 {
-    // TurtleWoW Holy Paladin: Daybreak target finder (sprint10).
+    // TurtleWoW Holy Paladin: Daybreak target finder.
     // Daybreak (talent 460, capstone) procs on critical heals, applying
     // buff "Daybreak" (spell 51322) to the healed ally for ~12 sec. The
     // buff increases healing taken from FoL/HL/HS + max HP.

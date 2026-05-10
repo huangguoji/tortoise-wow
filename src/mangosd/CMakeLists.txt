@@ -61,7 +61,7 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/src/game/Movement/spline
   ${CMAKE_SOURCE_DIR}/src/game/Objects
   ${CMAKE_SOURCE_DIR}/src/game/OutdoorPvP
-  # PlayerBots include dir removed - Penqle stub binned for Sprint 10 cmangos port.
+  # PlayerBots include dir removed - Penqle stub binned
   ${CMAKE_SOURCE_DIR}/src/game/Protocol
   ${CMAKE_SOURCE_DIR}/src/game/Spells
   ${CMAKE_SOURCE_DIR}/src/game/Threat
@@ -123,7 +123,7 @@ if(USE_DISCORD_BOT)
   )
 endif()
 
-# Sprint 10 - playerbots library link gated by BUILD_PLAYERBOTS.
+# playerbots library link gated by BUILD_PLAYERBOTS.
 if(BUILD_PLAYERBOTS)
   target_link_libraries(${EXECUTABLE_NAME} playerbots)
 endif()
@@ -132,9 +132,27 @@ target_link_libraries(${EXECUTABLE_NAME}
     libdeflate
 )
 
-# Sprint 10 cmangos/playerbots port - boost lib search path for transitive boost references.
-if(WIN32 AND DEFINED ENV{BOOST_ROOT})
-    target_link_directories(${EXECUTABLE_NAME} PRIVATE "$ENV{BOOST_ROOT}/lib64-msvc-14.3")
+# Boost lib search path for playerbots' transitive boost references.
+# Boost's prebuilt Windows binaries live under lib64-msvc-<toolset> (or
+# BOOST_LIBRARYDIR if the user set it explicitly).
+if(WIN32 AND BUILD_PLAYERBOTS)
+    if(DEFINED ENV{BOOST_LIBRARYDIR})
+        target_link_directories(${EXECUTABLE_NAME} PRIVATE "$ENV{BOOST_LIBRARYDIR}")
+    elseif(DEFINED ENV{BOOST_ROOT})
+        # Map MSVC toolset version (e.g. 1930) to Boost's lib dir suffix
+        # ("14.3"). Falls back to 14.3 (matches Boost 1.86 prebuilt) if the
+        # heuristic doesn't resolve.
+        if(MSVC_TOOLSET_VERSION GREATER_EQUAL 143)
+            set(_boost_lib_suffix "14.3")
+        elseif(MSVC_TOOLSET_VERSION GREATER_EQUAL 142)
+            set(_boost_lib_suffix "14.2")
+        elseif(MSVC_TOOLSET_VERSION GREATER_EQUAL 141)
+            set(_boost_lib_suffix "14.1")
+        else()
+            set(_boost_lib_suffix "14.3")
+        endif()
+        target_link_directories(${EXECUTABLE_NAME} PRIVATE "$ENV{BOOST_ROOT}/lib64-msvc-${_boost_lib_suffix}")
+    endif()
 endif()
 
 

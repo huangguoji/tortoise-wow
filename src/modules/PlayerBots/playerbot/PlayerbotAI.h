@@ -324,7 +324,7 @@ public:
 private:
     std::map<uint16, std::string> handlers;
     std::map<uint16, bool> delay;
-    // Sprint 10 cmangos/playerbots port — Penqle WorldPacket is move-only; stack of values fails copy-assign.
+    // Penqle WorldPacket is move-only; stack of values fails copy-assign.
     // Use unique_ptr to keep the stack copyable-by-value-of-element.
     std::stack<std::unique_ptr<WorldPacket>> queue;
     std::mutex m_botPacketMutex;
@@ -517,7 +517,7 @@ public:
     float GetRange(std::string type);
 
     static ReputationRank GetFactionReaction(FactionTemplateEntry const* thisTemplate, FactionTemplateEntry const* otherTemplate);
-    // Sprint 10 cmangos→Penqle: cmangos uses sFactionTemplateStore.LookupEntry(N); Penqle uses sObjectMgr.GetFactionTemplateEntry(N).
+    // cmangos uses sFactionTemplateStore.LookupEntry(N); Penqle uses sObjectMgr.GetFactionTemplateEntry(N).
     static bool friendToAlliance(FactionTemplateEntry const* templateEntry) { return GetFactionReaction(templateEntry, sObjectMgr.GetFactionTemplateEntry(1)) >= REP_NEUTRAL; }
     static bool friendToHorde(FactionTemplateEntry const* templateEntry) { return GetFactionReaction(templateEntry, sObjectMgr.GetFactionTemplateEntry(2)) >= REP_NEUTRAL; }
     bool IsFriendlyTo(FactionTemplateEntry const* templateEntry) { return GetFactionReaction(bot->GetFactionTemplateEntry(), templateEntry) >= REP_NEUTRAL; }
@@ -568,18 +568,18 @@ public:
 	Player* GetBot() { return bot; }
     Player* GetMaster() { return master; }
 
-    // SoloCommander addon (sprint12) — accessor for the active engine so
-    // SoloCommander.cpp can build heartbeat / debug payloads without being
+    // accessor for the active engine so
+    // cpp can build heartbeat / debug payloads without being
     // a friend class. Read-only.
     Engine* GetCurrentEngine() { return currentEngine; }
 
-    // Heartbeat-cadence accumulator used by SoloCommander::TickHeartbeat.
+    // Heartbeat-cadence accumulator used by ::TickHeartbeat.
     // Public so the helper can advance it in-place every UpdateAI tick;
     // there's no behavior risk since it's a pure accumulator (no class
     // invariant tied to its value beyond "nonnegative").
     uint32 scboteHeartbeatAcc = 0;
 
-    // One-shot "needs Phase 1c level/gear sync" flag. Set by OnBotSummoned
+    // One-shot "needs level/gear sync" flag. Set by OnBotSummoned
     // when the bot logs in; cleared by TickHeartbeat after the sync runs.
     // Reason for the deferral: at OnBotLogin time the bot's master link is
     // not yet established (cmangos sets it later in the .bot create flow),
@@ -593,11 +593,11 @@ public:
     // typically not set at OnBotLogin time. Without this, bots summoned
     // via `.bot add` come online at their last logout position — often a
     // different continent than the master, so they can't be invited to
-    // group or interacted with normally. Sprint12 (sc-overnight) 2026-05-07.
+    // group or interacted with normally. .
     bool scboteTeleportPending = false;
 
     // Last raid-encounter creature ID we applied strategies for. Used by
-    // SoloCommander::TickEncounter to detect target-change transitions
+    // TickEncounter to detect target-change transitions
     // and add/remove the per-boss strategy bundles. 0 means "no encounter
     // strategies applied". A non-zero value that doesn't match the current
     // target's creature_id triggers a strategy reset for the new target.
@@ -619,8 +619,7 @@ public:
     // null-socket branch ignores the remote_ip parameter. Without the second
     // check, every bot was misclassified as a real player → HandleTeleportAck
     // early-return → cross-map far-teleport never completes → bot stuck mid-
-    // teleport forever (every Sdegfg / cross-continent bot). See sc-overnight
-    // 2026-05-07 root-cause investigation.
+    // teleport forever (every a bot / cross-continent bot). See     // 2026-05-07 root-cause investigation.
     bool IsRealPlayer()
     {
         std::string const& addr = bot->GetSession()->GetRemoteAddress();
@@ -676,9 +675,9 @@ public:
     // was destroyed (logout / disconnect) since SetMaster() was called,
     // FindPlayer(masterGuid) returns nullptr (or a different live Player)
     // and we null `master` BEFORE any deref. See RevalidateMasterPointer.
-    // Sprint12 (sc-overnight) crash fix 2026-05-05: bot crashed with
+    // 2026-05-05: bot crashed with
     // EXECUTE at 0x0 in UpdateAI's logout-cancel block right after the
-    // master (Qsfqf) disconnected — `if (master && IsInCombat(master))`
+    // master (the master) disconnected — `if (master && IsInCombat(master))`
     // dereferenced a freed Player. The `master &&` guard catches null
     // but not dangling.
     void SetMaster(Player* m)

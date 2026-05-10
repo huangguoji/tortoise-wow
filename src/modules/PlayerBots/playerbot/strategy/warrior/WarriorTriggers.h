@@ -148,7 +148,7 @@ namespace ai
     };
 
     // TurtleWoW Protection Warrior: Defensive Tactics 3/3 = 180% threat
-    // retention in non-Defensive stances when wearing a shield (sprint10).
+    // retention in non-Defensive stances when wearing a shield.
     //
     // At max rank, Berserker Stance retains MORE than 100% of Defiance's
     // +30% threat boost AND adds +10% damage. The bot wants Berserker

@@ -1,5 +1,5 @@
-// cmangos/playerbots compat stub — Penqle has no LFGDefines.h.
-// Penqle's LFG implementation is contained in LFGMgr.h (see src/game/LFG/).
-// Phase 3 host-hooks pass: if bot LFG functionality requires specific defines
-// from cmangos's LFGDefines, port them here or backport the cmangos header.
 #pragma once
+
+// Intentionally empty. cmangos's vendored bot module #includes "LFGDefines.h"
+// for queue-state constants; Penqle's LFGMgr.h owns that data directly. This
+// stub lets the include resolve so the surrounding TUs compile.

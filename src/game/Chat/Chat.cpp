@@ -992,7 +992,7 @@ ChatCommand * ChatHandler::getCommandTable()
         { "cleaninventory", SEC_DEVELOPER,       false, &ChatHandler::HandleCleanInventoryCommand,      "", nullptr},
         { "showborders",    SEC_DEVELOPER,       false, &ChatHandler::HandleShowBordersCommand,         "", nullptr },
         { "queststatuses",  SEC_PLAYER,           false, &ChatHandler::HandleQuestStatusesCommand,       "", nullptr},
-        // Sprint 10 cmangos/playerbots port — bot module commands.
+        // bot module commands.
         { "bot",            SEC_PLAYER,           false, &ChatHandler::HandlePlayerbotCommand,           "", nullptr },
         // Solo-project: lowered from SEC_MODERATOR to SEC_PLAYER so the
         // single player can manage their own RNDBOT pool from any character

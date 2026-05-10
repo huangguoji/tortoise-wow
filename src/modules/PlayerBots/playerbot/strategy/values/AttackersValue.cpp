@@ -257,7 +257,7 @@ void AttackersValue::AddTargetsOf(Player* player, std::set<Unit*>& targets, std:
         // Add the duel opponent (Only consider the owner bot)
         if (bot == player && bot->m_duel && bot->m_duel->opponent)
         {
-            // Sprint 10 cmangos/playerbots port — opponent is ObjectGuid; resolve to Unit*.
+            // Penqle's DuelInfo::opponent is an ObjectGuid; resolve to Unit*.
             if (Unit* opp = ObjectAccessor::GetUnit(*bot, bot->m_duel->opponent))
                 units.insert(opp);
         }

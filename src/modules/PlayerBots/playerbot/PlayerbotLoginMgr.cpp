@@ -6,7 +6,7 @@
 
 using namespace ai;
 
-// Sprint 10 cmangos/playerbots port — instantiate Singleton<PlayerBotLoginMgr> static members.
+// Penqle's Singleton<> requires an explicit instantiation in a .cpp file.
 INSTANTIATE_SINGLETON_1(ai::PlayerBotLoginMgr);
 
 class LoginQueryHolder : public SqlQueryHolder

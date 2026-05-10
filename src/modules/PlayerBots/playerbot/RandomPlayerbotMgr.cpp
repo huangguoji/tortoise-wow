@@ -648,7 +648,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)
     sMemoryMonitor.LogCount(sConfig.GetStringDefault("LogsDir") + "/" + "memory.csv");
 #endif
 
-    // Sprint12 (sc-overnight) 2026-05-07: tick random bots' sessions so
+    // tick random bots' sessions so
     // teleport ACKs (HandleTeleportAck) and queued packets get processed.
     // See PlayerbotMgr::UpdateAIInternal for the rationale — same call,
     // same purpose, applied to the random-bot pool.
@@ -2147,7 +2147,7 @@ bool RandomPlayerbotMgr::AddRandomBot(uint32 bot)
     uint32 loginEv = GetEventValue(bot, "login");
     SC_LOG("AddRandomBot guid=%u — IsInRandomAccountList OK, login event=%u", bot, loginEv);
 
-    // Sprint12 (sc-overnight) stale-event recovery: if login=1 is set but
+    // stale-event recovery: if login=1 is set but
     // we already proved (line ~2124, GetPlayerBot returned null) that no
     // actual session exists for this bot, the marker is stale — typically
     // because the previous mangosd crashed mid-tick before the bot's
@@ -3319,7 +3319,7 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, std::string event)
             do
             {
                 Field* fields = results->Fetch();
-                // Sprint 10 cmangos/playerbots port — Wave 11: defensive null-handling.
+                // defensive null-handling.
                 // Penqle's Field::GetString() returns the bare pointer without null-check;
                 // constructing std::string from nullptr is UB and segfaults. The bot's
                 // ai_playerbot_random_bots table has `data` column nullable, and most rows

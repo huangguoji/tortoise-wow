@@ -1,33 +1,11 @@
 #pragma once
 //
-// BotActionLog — per-bot detailed action log.
-//
-// Sprint12 (sc-overnight) 2026-05-05. Built to support iterative bot-AI
-// debugging: every bot we `.bot add` or `.rndbot add` opens its own log
-// file at `logs/bots/<botname>_<sessionId>_<date>.log` and writes a
-// timestamped event stream covering lifecycle, ticks, actions, spells,
-// state changes, target changes, aura changes. The user can then grep
-// a single bot's behavior post-session without untangling it from the
-// main server log.
-//
-// Wire format: one event per line, `[timestamp] [TAG] key=val key=val`.
-// Tags are uppercase fixed labels so `grep -E "\[CAST_"` etc. is easy.
-//
-// Hook points (where we call BotActionLog::* from):
-//   - SoloCommander::OnBotSummoned       → Open + LIFECYCLE LOGIN
-//   - PlayerbotMgr::LogoutPlayerBot      → LIFECYCLE LOGOUT + Close
-//   - SoloCommander::TickHeartbeat       → periodic STATE snapshot
-//   - Engine::LogAction                  → tee existing PUSH:/A: lines
-//   - PlayerbotAI::CastSpell             → CAST_START
-//   - PlayerbotAI::HandleCastFailed      → CAST_FAIL with reason
-//   - Player::AddAura / RemoveAura       → AURA_APPLY / AURA_REMOVE
-//                                          (filtered: skip <3s buffs +
-//                                           combat-passive auras to keep
-//                                           the file readable)
-//
-// Files are auto-flushed on every line so a crash doesn't lose the trail.
-// Runtime cost: ~1-2 µs/line + the file-write itself; acceptable for
-// debug-mode work, off in production via aiplayerbot.conf flag.
+// BotActionLog — opt-in per-bot detailed action log. Each bot summoned while
+// AiPlayerbot.EnableActionLog=1 gets its own file under logs/bots/, with a
+// timestamped event stream covering lifecycle, casts, auras, state and target
+// changes. One event per line, `[timestamp] [TAG] key=val key=val`. Files are
+// fflush()'d on every write so a crash doesn't lose the trail. Gated behind
+// the runtime config flag; ~zero cost when disabled.
 //
 
 #include "Common.h"
@@ -79,13 +57,6 @@ public:
     // `force=true` to always log.
     static void LogAuraApply(PlayerbotAI* ai, uint32 spellId, int32 durationMs, ObjectGuid casterGuid, bool force = false);
     static void LogAuraRemove(PlayerbotAI* ai, uint32 spellId, ObjectGuid casterGuid, bool force = false);
-
-    // Convenience: log a target change with optional reason.
-    static void LogTargetChange(PlayerbotAI* ai, ObjectGuid oldTarget, ObjectGuid newTarget, const char* reason);
-
-    // Close ALL open bot logs. Called from World shutdown to flush
-    // cleanly on graceful stop.
-    static void CloseAll();
 
 private:
     // Map keyed by bot character GUID (low). Player* would be unsafe

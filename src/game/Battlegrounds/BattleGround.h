@@ -291,7 +291,7 @@ class BattleGround
         // Get methods:
         char const* GetName() const         { return m_Name; }
         BattleGroundTypeId GetTypeID() const { return m_TypeID; }
-        // Sprint 10 cmangos/playerbots port — cmangos uses GetTypeId (lowercase d).
+        // cmangos uses GetTypeId (lowercase d).
         BattleGroundTypeId GetTypeId() const { return m_TypeID; }
         bool IsArena() const { return GetTypeID() == BATTLEGROUND_BR ? true : false; }
         // cmangos generic flag carrier accessor — bot calls bg->GetFlagCarrierGuid(team_index).

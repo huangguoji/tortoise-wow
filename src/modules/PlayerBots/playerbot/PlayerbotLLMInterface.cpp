@@ -4,7 +4,7 @@
 
 #include "PlayerbotLLMInterface.h"
 
-// Sprint 10 cmangos/playerbots port — instantiate Singleton<PlayerbotLLMInterface> static members.
+// Penqle's Singleton<> requires an explicit instantiation in a .cpp file.
 INSTANTIATE_SINGLETON_1(PlayerbotLLMInterface);
 
 #include <iostream>

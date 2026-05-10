@@ -2917,7 +2917,7 @@ bool MovementAction::Flee(Unit *target)
 
         if (mm->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
         {
-            // Sprint 10 cmangos/playerbots port — Penqle's ChaseMovementGenerator is templated; safe defaults.
+            // Penqle's ChaseMovementGenerator is templated; ServerFacade returns safe defaults.
             if (sServerFacade.GetChaseTarget(bot) == target && sServerFacade.GetChaseOffset(bot) == distance)
                 return true;
         }

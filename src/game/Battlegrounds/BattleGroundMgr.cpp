@@ -1256,7 +1256,7 @@ BattleGround * BattleGroundMgr::GetBattleGroundTemplate(BattleGroundTypeId bgTyp
     return m_BattleGrounds[bgTypeId].empty() ? nullptr : m_BattleGrounds[bgTypeId].begin()->second;
 }
 
-// Sprint 10 cmangos/playerbots port — find the bracket id matching the player's level.
+// find the bracket id matching the player's level.
 // BG templates have a level range; loop the brackets and pick the one containing `level`.
 BattleGroundBracketId BattleGroundMgr::GetBattleGroundBracketIdFromLevel(BattleGroundTypeId bgTypeId, uint32 level)
 {

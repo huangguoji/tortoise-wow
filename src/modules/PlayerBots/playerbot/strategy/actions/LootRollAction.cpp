@@ -248,12 +248,12 @@ bool RollAction::RollOnItemInSlot(RollVote vote, ObjectGuid lootGuid, uint32 slo
     if (!proto)
         return false;
 
-    // Sprint 10 cmangos/playerbots port — Penqle has no GroupLootRoll system; stub returns nullptr.
+    // Penqle has no GroupLootRoll system; GetRollForSlot returns nullptr.
     void* lootRoll = loot->GetRollForSlot(slot);
     if (!lootRoll)
         return false;
 
-    bool didRoll = false; // Wave 5+ candidate to wire group roll properly
+    bool didRoll = false; // Wiring group-roll properly is future work.
 
     if (didRoll)
     {

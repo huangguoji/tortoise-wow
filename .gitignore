@@ -4,3 +4,4 @@
 /.vscode/
 *.kate-swp
 *.exe
+/src/shared/revision.h

@@ -13,7 +13,7 @@
 using namespace ai;
 using namespace MaNGOS;
 
-// Sprint 10 cmangos/playerbots port — instantiate Singleton<TravelMgr> static members for the linker.
+// Penqle's Singleton<> requires an explicit instantiation in a .cpp file.
 INSTANTIATE_SINGLETON_1(ai::TravelMgr);
 
 PlayerTravelInfo::PlayerTravelInfo(Player* player)

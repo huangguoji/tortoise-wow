@@ -84,7 +84,7 @@ void PacketHandlingHelper::Handle(ExternalEventHelper &helper)
     if (!m_botPacketMutex.try_lock()) //Packets do not have to be handled now. Handle them later.
         return;
 
-    // Sprint 10 cmangos/playerbots port — queue holds unique_ptr<WorldPacket> due to Penqle's move-only WorldPacket.
+    // queue holds unique_ptr<WorldPacket> due to Penqle's move-only WorldPacket.
     std::stack<std::unique_ptr<WorldPacket>> delayed;
 
     while (!queue.empty())
@@ -262,7 +262,7 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
 
     SC_PHASE("UpdateAI.entry", bot ? bot->GetName() : "(null)");
 
-    // Sprint12 (sc-overnight) 2026-05-05 crash fix: revalidate the
+    // revalidate the
     // cached master pointer against ObjectAccessor BEFORE any code
     // path can deref it. If the master Player was destroyed since
     // SetMaster() was called (typical when master logs out /
@@ -331,9 +331,9 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
                 if (lootObject.IsUnit())
                 {
                     Unit* unitTarget = (Unit*)loot->GetLootTarget();
-                    // Sprint 10 cmangos/playerbots port — Unit doesn't have m_loot; only Creature does.
+                    // Unit doesn't have m_loot; only Creature does.
                     Loot* utLoot = (unitTarget && unitTarget->GetTypeId() == TYPEID_UNIT) ? ((Creature*)unitTarget)->m_loot : nullptr;
-                    // Sprint 10: LootAccess wraps Loot* now (no more reinterpret_cast layout-cheat).
+                    // LootAccess wraps Loot* now (no more reinterpret_cast layout-cheat).
                     LootAccess lootAccess(utLoot);
                     if (utLoot && lootAccess.playersLooting().count(bot->GetObjectGuid()) == 0)
                     {
@@ -344,7 +344,7 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
                 else if (lootObject.IsGameObject())
                 {
                     GameObject* gameobjectTarget = (GameObject*)loot->GetLootTarget();
-                    // Sprint 10: LootAccess wraps Loot* now.
+                    // LootAccess wraps Loot* now.
                     LootAccess lootAccess(gameobjectTarget ? gameobjectTarget->m_loot : nullptr);
                     if (!lootAccess.playersLooting().count(bot->GetObjectGuid()))
                     {
@@ -1993,7 +1993,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
         return;
     }
 	default:
-		// Sprint12 (sc-overnight) 2026-05-07: log group invite arrivals so we
+		// log group invite arrivals so we
 		// can verify the auto-accept handler fires. If we see this line in
 		// the server log but no subsequent "AcceptInvitationAction" event,
 		// the strategy/trigger is registered but the action isn't being
@@ -2967,7 +2967,7 @@ const AreaTableEntry* PlayerbotAI::GetCurrentZone()
 */
 std::string PlayerbotAI::GetLocalizedAreaName(const AreaTableEntry* entry)
 {
-    // Sprint 10 cmangos/playerbots port — Penqle's area_name is single char* (no locale array).
+    // Penqle's area_name is single char* (no locale array).
     return entry && entry->area_name ? std::string(entry->area_name) : std::string();
 }
 
@@ -7181,7 +7181,7 @@ bool PlayerbotAI::HasQuestItemsInWOLootList(WorldObject* wo)
 
     LootItemList lootItemList = {};
 
-    // Sprint 10 cmangos/playerbots port — Penqle's loot is on Creature/GameObject; dispatch via cast.
+    // Penqle's loot is on Creature/GameObject; dispatch via cast.
     Loot* woLoot = nullptr;
     if (wo->IsCreature()) woLoot = ((Creature*)wo)->m_loot;
     else if (wo->IsGameObject()) woLoot = ((GameObject*)wo)->m_loot;
@@ -7747,7 +7747,7 @@ void PlayerbotAI::AccelerateRespawn(Creature* creature, float accelMod)
 
     if (!m_corpseAccelerationDecayDelay && creature->m_loot)
     {
-        // Sprint 10: LootAccess wraps Loot* now.
+        // LootAccess wraps Loot* now.
         LootAccess lootAccess(creature->m_loot);
 
         if (lootAccess.IsLootedForAll()) //No loot left. Just despawn the corpse.
@@ -8562,7 +8562,7 @@ bool PlayerbotAI::PlayAttackEmote(float chanceMultiplier)
 
 void PlayerbotAI::QueuePacket(WorldPacket& pkt)
 {
-    // Sprint 10 cmangos/playerbots port — Penqle WorldPacket has deleted copy-assign; copy-construct + move-assign.
+    // Penqle WorldPacket has deleted copy-assign; copy-construct + move-assign.
     std::unique_ptr<WorldPacket> packet(new WorldPacket(pkt));
     bot->GetSession()->QueuePacket(std::move(packet));
 }

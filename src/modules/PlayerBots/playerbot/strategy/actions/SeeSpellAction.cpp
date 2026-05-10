@@ -76,7 +76,7 @@ bool SeeSpellAction::Execute(Event& event)
     SpellCastTargets targets;
 
     p >> targets.ReadForCaster(requester);
-    // Sprint 10 cmangos/playerbots port — Penqle has getDestination instead of m_destPos.
+    // Penqle exposes getDestination() instead of m_destPos.
     float dx, dy, dz; targets.getDestination(dx, dy, dz);
     WorldPosition spellPosition(requester->GetMapId(), dx, dy, dz);
     SET_AI_VALUE(WorldPosition, "see spell location", spellPosition);

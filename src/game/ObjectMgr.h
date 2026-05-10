@@ -52,7 +52,7 @@ class Item;
 
 struct GameTele
 {
-    // Sprint 10 cmangos/playerbots port — bot uses position_x/y/z naming via anon unions.
+    // bot uses position_x/y/z naming via anon unions.
     union { float  x = 0.0f; float position_x; };
     union { float  y = 0.0f; float position_y; };
     union { float  z = 0.0f; float position_z; };
@@ -699,7 +699,7 @@ class ObjectMgr
 
         static Player* GetPlayer(const char* name) { return ObjectAccessor::FindPlayerByName(name);}
         static Player* GetPlayer(ObjectGuid guid) { return ObjectAccessor::FindPlayer(guid); }
-        // Sprint 10 cmangos/playerbots port — cmangos signature: GetPlayer(guid, inWorld).
+        // cmangos signature: GetPlayer(guid, inWorld).
         static Player* GetPlayer(ObjectGuid guid, bool /*inWorld*/) { return ObjectAccessor::FindPlayer(guid); }
 
         GameObjectInfo const* GetGameObjectInfo(uint32 id)
@@ -1308,7 +1308,7 @@ class ObjectMgr
 
         int GetIndexForLocale(LocaleConstant loc);
         LocaleConstant GetLocaleForIndex(int i);
-        // Sprint 10 cmangos/playerbots port — cmangos has GetStorageLocaleIndexFor; semantics same as GetIndexForLocale.
+        // cmangos has GetStorageLocaleIndexFor; semantics same as GetIndexForLocale.
         int GetStorageLocaleIndexFor(LocaleConstant loc) { return GetIndexForLocale(loc); }
         // GetGossipText: cmangos name; Penqle uses GetNpcText.
         NpcText const* GetGossipText(uint32 entry) const { return GetNpcText(entry); }
