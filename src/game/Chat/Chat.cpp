@@ -993,11 +993,10 @@ ChatCommand * ChatHandler::getCommandTable()
         { "cleaninventory", SEC_DEVELOPER,       false, &ChatHandler::HandleCleanInventoryCommand,      "", nullptr},
         { "showborders",    SEC_DEVELOPER,       false, &ChatHandler::HandleShowBordersCommand,         "", nullptr },
         { "queststatuses",  SEC_PLAYER,           false, &ChatHandler::HandleQuestStatusesCommand,       "", nullptr},
-        // bot module commands.
+        // Bot module commands. .rndbot is SEC_PLAYER so a single human can
+        // manage their own random-bot pool without keeping a GM alt logged in;
+        // a server operator who wants tighter control can raise it.
         { "bot",            SEC_PLAYER,           false, &ChatHandler::HandlePlayerbotCommand,           "", nullptr },
-        // Solo-project: lowered from SEC_MODERATOR to SEC_PLAYER so the
-        // single player can manage their own RNDBOT pool from any character
-        // without needing to keep a GM alt logged in.
         { "rndbot",         SEC_PLAYER,          true,  &ChatHandler::HandleRandomPlayerbotCommand,     "", nullptr },
         { "ahbot",          SEC_MODERATOR,       true,  &ChatHandler::HandleAhBotCommand,               "", nullptr },
         { "perfmon",        SEC_MODERATOR,       true,  &ChatHandler::HandlePerfMonCommand,             "", nullptr },
