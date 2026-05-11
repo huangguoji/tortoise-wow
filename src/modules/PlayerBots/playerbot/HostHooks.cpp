@@ -1,8 +1,15 @@
-// Host-side glue: Player::*Playerbot* / World::*Playerbot* / chat & packet
-// dispatchers. Lives in the bot module so it sees both the host headers and
-// the bot module's PlayerbotAI / PlayerbotMgr types — the host declares the
-// methods, but only the bot module has the full type info to satisfy the
-// linker.
+// Host-side glue for bot lifecycle and dispatch. Implements:
+//   - Player::{Create,Remove}Playerbot{AI,Mgr}, Player::isRealPlayer
+//   - Player::UpdatePlayerbotHooks (per-Player tick)
+//   - World::{Update,Init}Playerbots* (world-tick driver, startup init)
+//   - Player_DispatchBotOutgoing{Packet,ChatCommand} (free functions called
+//     from WorldSession; the bot-AI null-check happens here so the host
+//     call sites stay unconditional)
+//
+// Lives in the bot module so it sees both the host headers and the bot
+// module's full PlayerbotAI / PlayerbotMgr types — the host declares the
+// methods, only the bot module satisfies the linker with real bodies. The
+// matching BUILD_PLAYERBOTS=OFF stubs live in src/game/PlayerbotStubs.cpp.
 
 #include "playerbot/playerbot.h"
 #include "Objects/Player.h"

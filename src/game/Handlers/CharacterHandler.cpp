@@ -584,7 +584,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
         // just have to make sure the bot brain stops first.
         if (pCurrChar->GetPlayerbotAI())
         {
-            sLog.outInfo("[SC] HandlePlayerLogin: char %s (guid %u) currently running as a bot — "
+            sLog.outInfo("[BOT] HandlePlayerLogin: char %s (guid %u) currently running as a bot — "
                          "detaching PlayerbotAI before real-player session take-over",
                          pCurrChar->GetName(), playerGuid.GetCounter());
             pCurrChar->RemovePlayerbotAI();

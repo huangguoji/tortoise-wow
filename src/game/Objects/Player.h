@@ -2356,7 +2356,25 @@ class Player final: public Unit
         bool ChangeRace(uint8 newRace, uint8 newGender, uint32 playerbyte1, uint32 playerbyte2);
         void RemoveAI();
 
-        // Bot accessors.
+        // =========================================================================
+        // Bot host interface + cmangos compat aliases.
+        //
+        // Compiled unconditionally (no #ifdef BUILD_PLAYERBOTS). When bots are
+        // disabled, src/game/PlayerbotStubs.cpp provides empty bodies for the
+        // non-inline members so the host still links. The vendored playerbots
+        // module in src/modules/PlayerBots/ provides the real implementations.
+        //
+        // Three groups follow:
+        //   1. Bot-lifecycle hooks: Create/Remove PlayerbotAI/Mgr, accessors,
+        //      isRealPlayer, UpdatePlayerbotHooks.
+        //   2. cmangos camelCase / signature aliases — one-line forwarders to
+        //      the Penqle-named equivalent so the vendored bot source compiles
+        //      unmodified. Each is tagged with the cmangos name it shadows.
+        //   3. Stub no-ops for cmangos APIs Penqle doesn't have (SetCanFly,
+        //      OnTaxiFlightEject, GetCurrentCell, ...). Safe because the bot
+        //      module tolerates no-op behavior at these sites.
+        // =========================================================================
+
         // m_playerbotAI is set by CreatePlayerbotAI() during PlayerbotHolder::OnBotLogin.
         // m_playerbotMgr is set when a real Player logs in (mgr drives all their bots).
         PlayerbotAI* GetPlayerbotAI() const { return m_playerbotAI; }
@@ -2523,8 +2541,6 @@ class Player final: public Unit
         float GetAngleAt(float x, float y) const { return GetAngle(x, y); }
         // IsStunned: cmangos shorthand for HasUnitState(UNIT_STAT_STUNNED).
         bool IsStunned() const { return HasUnitState(UNIT_STAT_STUNNED); }
-        // duel field alias: bot uses bot->duel; Penqle has m_duel — keep an inline-method-style alias name (duel_) NOT used,
-        // bot module rewritten to m_duel directly.
 
         void ModPossessPet(Pet* pet, bool apply, AuraRemoveMode m_removeMode = AURA_REMOVE_BY_DEFAULT);
 

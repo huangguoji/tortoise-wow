@@ -68,7 +68,6 @@
 #ifdef WIN32
 #include <windows.h>
 #include <dbghelp.h>
-#include <signal.h>
 #include <new>          // _set_new_handler
 #include <cstdlib>      // _set_invalid_parameter_handler
 #include <stdlib.h>
@@ -76,9 +75,13 @@
 #pragma comment(lib, "dbghelp.lib")
 
 #ifdef BUILD_PLAYERBOTS
-// Crash-handler TLS readout. Forward-declared (not #included) so mangosd
-// avoids a transitive dep on the playerbots module headers. Written by
-// SC_PHASE in BotDiagnostics.h iff AiPlayerbot.EnableActionLog=1.
+// Forward-decl the SC_PHASE TLS into mangosd so the crash handler can read
+// it without #including any playerbots header (which would pull the whole
+// vendor tree's include chain into mangosd). Definitions live in
+// BotDiagnostics.cpp; writes happen in SC_PHASE iff AiPlayerbot.EnableActionLog=1.
+// The matching read site (Mangosd_WriteCrashDump) guards the read with
+// __try/__except so the TLS being corrupted by the crash we're trying to
+// dump can't crash the dump path itself.
 namespace ai { namespace botdiag {
     extern thread_local const char* gLastPhaseTag;
     extern thread_local const char* gLastPhaseBotName;
@@ -290,6 +293,12 @@ static LONG WINAPI MangosdUnhandledExceptionFilter(EXCEPTION_POINTERS* ep)
                             "SEH-unhandled");
     return EXCEPTION_EXECUTE_HANDLER;
 }
+
+// Synthetic exception codes used by the non-SEH crash paths below. Reusing
+// real NT status values means the .dmp opens in WinDbg / Visual Studio
+// without a "missing status code" warning, and the analyst sees a familiar
+// tag instead of zero. (0xC0000602 = STATUS_FAIL_FAST_EXCEPTION,
+// 0xC0000420 = STATUS_ASSERTION_FAILURE.)
 
 // std::terminate() — uncaught C++ exception, set_terminate target,
 // or std::terminate() called explicitly. Bypasses SEH entirely.

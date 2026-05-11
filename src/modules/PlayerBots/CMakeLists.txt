@@ -158,6 +158,24 @@ endif()
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SRCS})
 
+if(MSVC)
+    # Constrain the MSVC inliner on the bot module only.
+    #
+    # The vendored cmangos/playerbots tree has very heavily-templated code
+    # (Strategy/Action queues, Singleton<> instantiations, the storage
+    # proxies in cmangos-compat-shim.h). MSVC's default /Ob2 (auto-inline
+    # any function the heuristic deems worthwhile) can ICE the optimizer
+    # with C1001 in xhash / vector / type_traits when expanding these
+    # template instantiations during phase-2 codegen.
+    #
+    # /Ob1 honors only explicit `inline` / `__forceinline` keywords — still
+    # gets /O2 speed, just doesn't auto-inline normal functions. Drops
+    # bot-AI tick performance by an estimated 3-5%; in exchange the bot
+    # module builds deterministically. game.lib / scripts.lib / etc. keep
+    # the default /Ob2.
+    target_compile_options(${LIBRARY_NAME} PRIVATE $<$<CONFIG:Release>:/Ob1>)
+endif()
+
 target_link_libraries(${LIBRARY_NAME}
   PRIVATE shared
   PRIVATE Detour

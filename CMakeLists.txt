@@ -561,6 +561,14 @@ if (BUILD_PLAYERBOTS)
     message(STATUS "BUILD_PLAYERBOTS=ON - adding cmangos/playerbots vendored module at src/modules/PlayerBots/")
     set(PCH ${USE_PCH})
     add_subdirectory(src/modules/PlayerBots)
+    # Vendor-tree feature gates the playerbots source expects:
+    #   CMANGOS         - selects the cmangos codepath in vendored headers
+    #                     (vs. TrinityCore / MaNGOS-Zero alternates).
+    #   MANGOSBOT_ZERO  - Classic (1.12). Switches level caps, talent trees,
+    #                     spell ranges. Use MANGOSBOT_ONE for TBC,
+    #                     MANGOSBOT_TWO for WotLK if re-vendoring later.
+    #   ENABLE_PLAYERBOTS - turns the subsystem on inside the vendor tree's
+    #                       own ifdef walls.
     target_compile_definitions(playerbots PRIVATE CMANGOS MANGOSBOT_ZERO ENABLE_PLAYERBOTS)
     target_include_directories(playerbots PUBLIC
         ${CMAKE_SOURCE_DIR}/src/modules/PlayerBots/cmangos-compat-stubs

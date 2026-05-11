@@ -145,12 +145,18 @@ struct CmangosSpellTemplateProxy
 inline CmangosSpellTemplateProxy sSpellTemplate;
 
 // Singleton-like wrapper for cmangos's sItemStorage. Forwards to sObjectMgr.GetItemPrototype().
+// Iteration-upper-bound stubs (this proxy + CmangosCreatureStorageProxy,
+// CmangosGOStorageProxy, CmangosFactionStoreProxy, CmangosAreaTriggerStoreProxy
+// below): cmangos's stores expose GetMaxEntry/GetNumRows; Penqle's don't have
+// a tight maximum. The bot module only uses these as upper bounds for
+// `for (i=0; i<max; ++i) LookupEntry(i)` scans where LookupEntry returns
+// nullptr for unknown ids — so a generous overestimate is safe (a few thousand
+// wasted lookups during one-shot init). Bump if a future caller actually
+// depends on a tight bound.
 struct CmangosItemStorageProxy
 {
     template<typename T = ItemPrototype>
     T const* LookupEntry(uint32 id) const { return sObjectMgr.GetItemPrototype(id); }
-    // cmangos's DBCStorage exposes GetMaxEntry. Penqle's item store doesn't expose
-    // a direct max; stub returns a high constant for iteration upper bounds.
     uint32 GetMaxEntry() const { return 100000; }
 };
 inline CmangosItemStorageProxy sItemStorage;
@@ -495,7 +501,10 @@ namespace Taxi {
 #endif
 
 // === sScriptDevAIMgr (cmangos has ScriptDevAI; Penqle uses sScriptMgr) ===
-// Stub so symbol resolves; bot's calls are no-ops
+// Stub so symbol resolves; bot's calls are no-ops. The variadic template
+// absorbs whatever cmangos's OnGossipHello signature looks like in the
+// vendor tree — we don't care, we just need a callable returning false.
+// Penqle's own sScriptMgr is wired separately.
 struct CmangosScriptDevAIMgrStub {
     template<typename... Args>
     bool OnGossipHello(Args... /*args*/) { return false; }

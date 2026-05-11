@@ -11,6 +11,7 @@
 #include "Objects/Unit.h"
 #include "ObjectGuid.h"
 #include "ObjectMgr.h"
+#include "Spells/SpellAuraDefines.h"  // MAX_AURAS
 #include "Spells/SpellMgr.h"
 #include "Log.h"
 
@@ -41,9 +42,10 @@ static void MakeDirIdempotent(const char* path)
 
 void BotActionLog::EnsureLogDir()
 {
-    // Try `../logs/bots` first (mangosd CWD is bin/, logs/ is its sibling)
-    // then `logs/bots` (mangosd at root layout). Idempotent — silently
-    // ignores EEXIST.
+    // mangosd's CWD depends on how it was launched. The typical live-server
+    // layout puts it in bin/ (so logs/ is at ../logs), but CMake test-runs
+    // launch it from the build dir where logs/ is adjacent. Try both;
+    // MakeDirIdempotent silently ignores EEXIST.
     const char* roots[] = { "../logs", "logs", nullptr };
     for (int i = 0; roots[i]; ++i)
     {
@@ -260,7 +262,7 @@ void BotActionLog::LogState(PlayerbotAI* ai, const char* reason)
 
         std::string slots;
         slots.reserve(256);
-        for (uint32 slot = 0; slot < 48 /* MAX_AURAS */; ++slot)
+        for (uint32 slot = 0; slot < MAX_AURAS; ++slot)
         {
             uint32 sid = bot->GetUInt32Value(UNIT_FIELD_AURA + slot);
             if (sid)

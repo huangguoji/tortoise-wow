@@ -11,6 +11,10 @@
 // Both gated at runtime on AiPlayerbot.EnableActionLog (default off). When
 // off, each call is one branch on a global bool and the compiler typically
 // folds it away.
+//
+// The SC_ prefix is a holdover from the project's internal name for the bot
+// diagnostic harness ("SoloCommander"); kept as-is to avoid a churn rename
+// across ~80 call sites. Read SC_ as "bot diag".
 
 #include "Log.h"
 
