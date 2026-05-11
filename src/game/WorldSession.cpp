@@ -401,7 +401,8 @@ bool WorldSession::Update(PacketFilter& updater)
         ///- If necessary, log the player out
         time_t currTime = time(nullptr);
         // Bot-driven forceConnection / m_bot guards removed (Penqle stub binned).
-        // cmangos's bot session handling re-introduces equivalent guards         if ((!m_Socket || (ShouldLogOut(currTime) && !m_playerLoading)))
+        // cmangos's bot session handling re-introduces equivalent guards.
+        if ((!m_Socket || (ShouldLogOut(currTime) && !m_playerLoading)))
             LogoutPlayer(true);
 
         if (!m_Socket)
