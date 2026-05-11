@@ -1902,6 +1902,12 @@ struct Position
     float GetPositionY() const { return y; }
     float GetPositionZ() const { return z; }
     float GetPositionO() const { return o; }
+
+    // Returns the SQUARED 3D distance, matching cmangos convention. Callers
+    // must wrap in std::sqrt() to get the real distance. Kept as-is rather
+    // than renamed because the vendored bot code (e.g. PlayerbotAI.cpp:5334,
+    // strategy/actions/BattleGroundTactics.cpp:4109) calls it as `GetDistance`
+    // and already sqrt()s the result.
     float GetDistance(Position const& other) const {
         float dx = x - other.x, dy = y - other.y, dz = z - other.z;
         return dx*dx + dy*dy + dz*dz;

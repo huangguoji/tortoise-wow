@@ -20,6 +20,7 @@
 #include <cstring>
 #include <ctime>
 #include <iomanip>
+#include <mutex>
 #include <sstream>
 #include <sys/stat.h>
 
@@ -30,6 +31,12 @@
 namespace ai { namespace botdiag {
 
 std::unordered_map<uint32, std::FILE*> BotActionLog::sFiles;
+
+// sFiles is reachable from any map thread (Spell.cpp / Unit.cpp hooks fire
+// on whatever thread is updating that bot's map). Guard every read/write so
+// the unordered_map doesn't get torn under concurrent insert/erase. Only
+// engaged when AiPlayerbot.EnableActionLog=1; default-off path takes no lock.
+static std::mutex sFilesMutex;
 
 static void MakeDirIdempotent(const char* path)
 {
@@ -92,9 +99,12 @@ std::FILE* BotActionLog::Open(PlayerbotAI* ai)
 
     uint32 guid = bot->GetGUIDLow();
 
-    auto it = sFiles.find(guid);
-    if (it != sFiles.end() && it->second)
-        return it->second;
+    {
+        std::lock_guard<std::mutex> g(sFilesMutex);
+        auto it = sFiles.find(guid);
+        if (it != sFiles.end() && it->second)
+            return it->second;
+    }
 
     EnsureLogDir();
     std::string path = BuildPath(bot);
@@ -123,7 +133,18 @@ std::FILE* BotActionLog::Open(PlayerbotAI* ai)
         return nullptr;
     }
 
-    sFiles[guid] = f;
+    {
+        std::lock_guard<std::mutex> g(sFilesMutex);
+        // Another thread may have raced us through the open()+fopen window
+        // for the same guid. If so, close our handle and use theirs.
+        auto race = sFiles.find(guid);
+        if (race != sFiles.end() && race->second)
+        {
+            fclose(f);
+            return race->second;
+        }
+        sFiles[guid] = f;
+    }
     SC_LOG("BotActionLog opened bot=%s path=%s", bot->GetName(), path.c_str());
 
     // Header line: human-readable; subsequent lines are tag-prefixed
@@ -144,16 +165,20 @@ void BotActionLog::Close(PlayerbotAI* ai)
     if (!bot) return;
 
     uint32 guid = bot->GetGUIDLow();
-    auto it = sFiles.find(guid);
-    if (it == sFiles.end()) return;
-
-    if (it->second)
+    std::FILE* handle = nullptr;
     {
-        fprintf(it->second, "# end-of-log (Close called)\n");
-        fflush(it->second);
-        fclose(it->second);
+        std::lock_guard<std::mutex> g(sFilesMutex);
+        auto it = sFiles.find(guid);
+        if (it == sFiles.end()) return;
+        handle = it->second;
+        sFiles.erase(it);
     }
-    sFiles.erase(it);
+    if (handle)
+    {
+        fprintf(handle, "# end-of-log (Close called)\n");
+        fflush(handle);
+        fclose(handle);
+    }
     SC_LOG("BotActionLog closed bot=%s", bot->GetName());
 }
 
@@ -162,9 +187,12 @@ std::FILE* BotActionLog::GetHandle(PlayerbotAI* ai)
     if (!ai) return nullptr;
     Player* bot = ai->GetBot();
     if (!bot) return nullptr;
-    auto it = sFiles.find(bot->GetGUIDLow());
-    if (it != sFiles.end() && it->second)
-        return it->second;
+    {
+        std::lock_guard<std::mutex> g(sFilesMutex);
+        auto it = sFiles.find(bot->GetGUIDLow());
+        if (it != sFiles.end() && it->second)
+            return it->second;
+    }
     // Lazy-open on first use. Open() itself gates on AiPlayerbot.EnableActionLog,
     // returning nullptr (and not creating any file) when the flag is off.
     return Open(ai);

@@ -271,6 +271,13 @@ uint32 GetChatPacketProcessingType(ChatPacketHeader* header)
     return PACKET_PROCESS_WORLD;
 }
 
+/// Bot-side convenience overload: copy a (potentially stack-allocated) inline
+/// WorldPacket onto the heap so QueuePacket(WorldPacket*) can take ownership.
+void WorldSession::QueuePacket(WorldPacket const& new_packet)
+{
+    QueuePacket(new WorldPacket(new_packet));
+}
+
 /// Add an incoming packet to the queue
 void WorldSession::QueuePacket(WorldPacket* newPacket)
 {

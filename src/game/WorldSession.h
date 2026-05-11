@@ -422,8 +422,12 @@ class WorldSession
         void QueuePacket(WorldPacket* new_packet);
         // bot wraps packets in unique_ptr.
         void QueuePacket(std::unique_ptr<WorldPacket> new_packet) { QueuePacket(new_packet.release()); }
-        // Reference overload (bot sometimes constructs an inline WorldPacket).
-        void QueuePacket(WorldPacket& new_packet) { QueuePacket(&new_packet); }
+        // Const-reference overload (bot sometimes constructs an inline WorldPacket).
+        // Copies into a fresh heap WorldPacket so QueuePacket(WorldPacket*) — which
+        // takes ownership and may delete on the unknown-opcode path — never sees
+        // a non-owning pointer to a stack object. Body is out-of-line because
+        // this header only forward-declares WorldPacket.
+        void QueuePacket(WorldPacket const& new_packet);
 
         bool Update(PacketFilter& updater);
         /**
