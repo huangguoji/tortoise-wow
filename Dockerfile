@@ -9,10 +9,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     libace-dev \
     libmariadb-dev \
+    libmariadb-dev-compat \
     libssl-dev \
     libbz2-dev \
     zlib1g-dev \
     pkg-config \
+    && if [ ! -x /usr/bin/mysql_config ] && [ -x /usr/bin/mariadb_config ]; then ln -s /usr/bin/mariadb_config /usr/bin/mysql_config; fi \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
@@ -21,6 +23,8 @@ COPY . .
 RUN cmake -S . -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/opt/turtlewow/server \
+    -DMYSQL_INCLUDE_DIR=/usr/include/mariadb \
+    -DMYSQL_LIBRARY=/usr/lib/x86_64-linux-gnu/libmariadb.so \
     -DUSE_EXTRACTORS=OFF \
     -DUSE_REALMMERGE=OFF \
     -DUSE_LIBCURL=OFF
