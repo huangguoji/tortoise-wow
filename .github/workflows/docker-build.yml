@@ -1,11 +1,6 @@
-name: Build and Push Docker Images
+name: Build and Push Docker Images main
 
 on:
-  push:
-    branches: [ docker ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ docker ]
   workflow_dispatch:
 
 concurrency:
