@@ -74,8 +74,32 @@
 #include "Config/Config.h"
 #include "ZoneScript.h"
 #include "ZoneScriptMgr.h"
-#include "PlayerBotMgr.h"
-#include "PlayerBotAI.h"
+
+// Player-scoped variant of SC_PHASE — stamps the current thread's last-known
+// phase into TLS read by mangosd's crash handler. Symbols defined in
+// BotDiagnostics.cpp; flag check makes it ~free when diagnostics are off.
+#ifdef BUILD_PLAYERBOTS
+namespace ai { namespace botdiag {
+    bool IsActionLogEnabled();
+    extern thread_local const char* gLastPhaseTag;
+    extern thread_local const char* gLastPhaseBotName;
+}}
+#define SC_PHASE_PLAYER(tag) do { \
+    if (ai::botdiag::IsActionLogEnabled()) { \
+        ai::botdiag::gLastPhaseTag     = (tag); \
+        ai::botdiag::gLastPhaseBotName = GetName(); \
+    } \
+} while (0)
+#else
+#define SC_PHASE_PLAYER(tag) do {} while (0)
+#endif
+// PlayerBotMgr.h + PlayerBotAI.h removed (Penqle stub binned). The bot
+// module pulls in its own PlayerbotMgr.h / PlayerbotAI.h via the playerbots
+// vendor tree. PlayerAI.h is restored as a direct include (was previously
+// transitively included via PlayerBotAI.h). PlayerAI / PlayerControlledAI
+// are non-bot classes used for AI control of players (mind control, charm,
+// etc.) and are unrelated to the bot system.
+#include "AI/PlayerAI.h"
 #include "AccountMgr.h"
 #include "MoveSpline.h"
 #include "Anticheat/Anticheat.h"
@@ -1578,11 +1602,19 @@ void Player::Update(uint32 update_diff, uint32 p_time)
         i_AI->UpdateAI(p_time);
     SetCanDelayTeleport(false);
 
+    // per-Player bot tick.
+    // If this Player is a bot (has m_playerbotAI), tick its AI; if it's a real player driving bots
+    // (has m_playerbotMgr), tick the manager so its bots respond. Both call sites are no-ops if
+    // the corresponding pointer is null.
+    UpdatePlayerbotHooks(update_diff);
+    SC_PHASE_PLAYER("Player::Update.afterPlayerbotHooks");
+
     time_t now = time(nullptr);
 
     UpdatePvPFlagTimer(update_diff);
 
     UpdatePvPContestedFlagTimer(update_diff);
+    SC_PHASE_PLAYER("Player::Update.afterPvPFlags");
 
     // Delay delete duel
     if (m_duel && m_duel->finished)
@@ -1661,6 +1693,7 @@ void Player::Update(uint32 update_diff, uint32 p_time)
         }
     }
 
+    SC_PHASE_PLAYER("Player::Update.beforeMeleeAttackingState");
     if (HasUnitState(UNIT_STAT_MELEE_ATTACKING))
     {
         bool attacked = UpdateMeleeAttackingState();
@@ -1691,6 +1724,7 @@ void Player::Update(uint32 update_diff, uint32 p_time)
             m_weaponChangeTimer -= update_diff;
     }
 
+    SC_PHASE_PLAYER("Player::Update.beforeZoneUpdate");
     if (m_zoneUpdateTimer > 0)
     {
         if (update_diff >= m_zoneUpdateTimer)
@@ -1712,10 +1746,12 @@ void Player::Update(uint32 update_diff, uint32 p_time)
         else
             m_zoneUpdateTimer -= update_diff;
     }
+    SC_PHASE_PLAYER("Player::Update.afterZoneUpdate");
 
     if (m_cannotBeDetectedTimer > 0)
         m_cannotBeDetectedTimer -= update_diff;
 
+    SC_PHASE_PLAYER("Player::Update.beforeRegenerateAll");
     if (IsAlive())
     {
         m_regenTimer -= update_diff;
@@ -1742,6 +1778,7 @@ void Player::Update(uint32 update_diff, uint32 p_time)
     if (m_deathState == JUST_DIED)
         KillPlayer();
 
+    SC_PHASE_PLAYER("Player::Update.beforeSaveToDB");
     if (m_nextSave > 0)
     {
         if (update_diff >= m_nextSave)
@@ -1753,6 +1790,7 @@ void Player::Update(uint32 update_diff, uint32 p_time)
         else
             m_nextSave -= update_diff;
     }
+    SC_PHASE_PLAYER("Player::Update.afterSaveToDB");
 
     // Played time
     if (now > m_Last_tick)
@@ -1786,6 +1824,7 @@ void Player::Update(uint32 update_diff, uint32 p_time)
             m_deathTimer -= p_time;
     }
 
+    SC_PHASE_PLAYER("Player::Update.beforeUpdateEnchant");
     UpdateEnchantTime(update_diff);
     UpdateHomebindTime(update_diff);
 
@@ -1793,13 +1832,16 @@ void Player::Update(uint32 update_diff, uint32 p_time)
         UpdateCinematic(p_time);
 
     // group update
+    SC_PHASE_PLAYER("Player::Update.beforeSendUpdateToOutOfRangeGroupMembers");
     SendUpdateToOutOfRangeGroupMembers();
+    SC_PHASE_PLAYER("Player::Update.afterSendUpdateToOutOfRangeGroupMembers");
 
     if (IsHasDelayedTeleport())
         TeleportTo(m_teleport_dest, m_teleport_options);
     // Movement extrapolation & cheat computation - only if not already kicked!
     if (!GetSession()->IsConnected())
         return;
+    SC_PHASE_PLAYER("Player::Update.afterTeleportCheck");
 
     if (!IsTaxiFlying() && IsInWorld() && GetMap()->IsContinent() && !GetTransport() && !IsBeingTeleported())
     {
@@ -1810,6 +1852,7 @@ void Player::Update(uint32 update_diff, uint32 p_time)
                 sMapMgr.ScheduleInstanceSwitch(this, newInstanceId);
     }
 
+    SC_PHASE_PLAYER("Player::Update.beforeIsInWorldBlock");
     if (IsInWorld())
     {
         if (m_repopAtGraveyardPending && !HasPendingMovementChange())
@@ -1818,18 +1861,24 @@ void Player::Update(uint32 update_diff, uint32 p_time)
             return;
         }
 
+        SC_PHASE_PLAYER("Player::Update.beforeAreaCheck");
         if (m_areaCheckTimer)
         {
             if (m_areaCheckTimer <= p_time)
             {
+                SC_PHASE_PLAYER("Player::Update.UpdateTerainEnvironmentFlags");
                 UpdateTerainEnvironmentFlags();
+                SC_PHASE_PLAYER("Player::Update.CheckAreaExploreAndOutdoor");
                 CheckAreaExploreAndOutdoor();
+                SC_PHASE_PLAYER("Player::Update.LoadMapCellsAround");
                 LoadMapCellsAround(GetGridActivationDistance());
+                SC_PHASE_PLAYER("Player::Update.afterLoadMapCellsAround");
                 m_areaCheckTimer = 0;
             }
             else
                 m_areaCheckTimer -= p_time;
         }
+        SC_PHASE_PLAYER("Player::Update.afterAreaCheck");
 
         if (m_standStateTimer)
         {
@@ -1858,12 +1907,14 @@ void Player::Update(uint32 update_diff, uint32 p_time)
         }
 
         UpdateVelocity();
+        SC_PHASE_PLAYER("Player::Update.afterUpdateVelocity");
         // Anticheat sanction
        // std::stringstream reason;
        // uint32 cheatAction = GetCheatData()->Update(p_time, reason);
         //if (cheatAction)
         //    GetSession()->ProcessAnticheatAction("MovementAnticheat", reason.str().c_str(), cheatAction, sWorld.getConfig(CONFIG_UINT32_AC_MOVEMENT_BAN_DURATION));
     }
+    SC_PHASE_PLAYER("Player::Update.afterIsInWorldBlock");
 
     // Hardcore mode safe update
     if (IsHardcore())
@@ -1891,6 +1942,7 @@ void Player::Update(uint32 update_diff, uint32 p_time)
                 m_hardcoreSaveItemsTimer -= update_diff;
         }
     }
+    SC_PHASE_PLAYER("Player::Update.exit");
 }
 
 void Player::OnDisconnected()
@@ -2910,8 +2962,6 @@ void Player::AddToWorld()
 
     if (HasItemCount(ITEM_SHELL_COIN, 1, true))
         sWorld.AddShellCoinOwner(GetObjectGuid());
-
-    sPlayerBotMgr.OnPlayerInWorld(this);
 }
 
 void Player::RemoveFromWorld()
@@ -2945,7 +2995,12 @@ void Player::RemoveFromWorld()
     ///- The player should only be removed when logging out
     if (IsInWorld())
     {
-        GetSession()->GetAntiCheat()->LeaveWorld();
+        // GetAntiCheat() is null for
+        // synthetic bot sessions. See CheckAreaExploreAndOutdoor for the
+        // canonical write-up. This call site fires on bot logout —
+        // unguarded it would crash on every bot disconnect.
+        if (auto* anticheat = GetSession()->GetAntiCheat())
+            anticheat->LeaveWorld();
         GetCamera().ResetView();
     }
 
@@ -3901,11 +3956,8 @@ void Player::GiveLevel(uint32 level)
     if (Pet* pet = GetPet())
         pet->SynchronizeLevelWithOwner();
 
-    if (PlayerBotEntry* bot = GetSession()->GetBot())
-    {
-        if (bot->ai)
-            bot->ai->OnLevelUp();
-    }
+    // Penqle stub's OnLevelUp bot hook removed — cmangos's bot factory
+    // re-grants level-appropriate gear/talents via different mechanism.
 
     CheckInfernoInvite();
 
@@ -7534,6 +7586,7 @@ bool Player::HasAllZonesExplored()
 
 void Player::CheckAreaExploreAndOutdoor()
 {
+    SC_PHASE_PLAYER("CheckAreaExploreAndOutdoor.entry");
     if (!IsAlive())
         return;
 
@@ -7544,8 +7597,10 @@ void Player::CheckAreaExploreAndOutdoor()
     if (watching_cinematic_entry)
         return;
 
+    SC_PHASE_PLAYER("CheckAreaExploreAndOutdoor.GetTerrain");
     bool isOutdoor;
     uint16 areaFlag = GetTerrain()->GetAreaFlag(GetPositionX(), GetPositionY(), GetPositionZ(), &isOutdoor);
+    SC_PHASE_PLAYER("CheckAreaExploreAndOutdoor.afterGetAreaFlag");
 
     if (isOutdoor)
     {
@@ -7601,17 +7656,31 @@ void Player::CheckAreaExploreAndOutdoor()
 
     if (!(currFields & val))
     {
+        SC_PHASE_PLAYER("CheckAreaExploreAndOutdoor.newAreaDiscovered");
         SetUInt32Value(PLAYER_EXPLORED_ZONES_1 + offset, (uint32)(currFields | val));
 
+        SC_PHASE_PLAYER("CheckAreaExploreAndOutdoor.titleCheck");
         if (HasEarnedTitle(TITLE_CARTOGRAPHER))
             AwardTitle(TITLE_CARTOGRAPHER);
 
+        SC_PHASE_PLAYER("CheckAreaExploreAndOutdoor.areaEntryLookup");
         const auto *p = AreaEntry::GetByAreaFlagAndMap(areaFlag, GetMapId());
         if (!p)
             sLog.outError("PLAYER: Player %u discovered unknown area (x: %f y: %f map: %u", GetGUIDLow(), GetPositionX(), GetPositionY(), GetMapId());
         else
         {
-            GetSession()->GetAntiCheat()->OnExplore(p);
+            SC_PHASE_PLAYER("CheckAreaExploreAndOutdoor.anticheatOnExplore");
+            // GetAntiCheat() returns
+            // null for synthetic bot sessions (cmangos/playerbots constructs
+            // WorldSessions directly via NewSession, bypassing the WorldSocket
+            // auth handshake that calls InitAntiCheatSession). Other call
+            // sites in this codebase use `if (auto antiCheat = ...)` (see
+            // Unit.cpp:10584); the guard here was missing. Crash signature:
+            // NULL READ at 0x0, phase=CheckAreaExploreAndOutdoor.anticheatOnExplore,
+            // bot=<warlock random bot at Slaughtered Lamb>.
+            if (auto* anticheat = GetSession()->GetAntiCheat())
+                anticheat->OnExplore(p);
+            SC_PHASE_PLAYER("CheckAreaExploreAndOutdoor.afterAnticheatOnExplore");
             //GetCheatData()->OnExplore(p);
             uint32 area = p->Id;
             uint32 xp = 0;
@@ -7649,14 +7718,19 @@ void Player::CheckAreaExploreAndOutdoor()
                     }
 
                 }
+                SC_PHASE_PLAYER("CheckAreaExploreAndOutdoor.beforeGiveXP");
                 GiveXP(xp, nullptr);
+                SC_PHASE_PLAYER("CheckAreaExploreAndOutdoor.afterGiveXP");
             }
 
             // Exploration packet should be sent even if no XP is gained.
+            SC_PHASE_PLAYER("CheckAreaExploreAndOutdoor.SendExplorationExperience");
             SendExplorationExperience(area, xp);
+            SC_PHASE_PLAYER("CheckAreaExploreAndOutdoor.afterSendExplorationExperience");
             DETAIL_LOG("PLAYER: Player %u discovered a new area: %u", GetGUIDLow(), area);
         }
     }
+    SC_PHASE_PLAYER("CheckAreaExploreAndOutdoor.exit");
 }
 
 Team Player::TeamForRace(uint8 race)
@@ -16366,7 +16440,8 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder *holder)
 
     // check if the character's account in the db and the logged in account match.
     // player should be able to load/delete character only with correct account!
-    if (!GetSession()->GetBot() && dbAccountId != GetSession()->GetAccountId())
+    // (Penqle's !GetBot() bypass removed — cmangos bots use synthetic sessions.)
+    if (dbAccountId != GetSession()->GetAccountId())
     {
         sLog.outError("%s loading from wrong account (is: %u, should be: %u)",
                       guid.GetString().c_str(), GetSession()->GetAccountId(), dbAccountId);
@@ -16564,8 +16639,8 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder *holder)
         }
     }
 
-    if (PlayerBotEntry* e = GetSession()->GetBot())
-        e->ai->BeforeAddToMap(this);
+    // Penqle stub's BeforeAddToMap bot hook removed; cmangos's bot init is
+    // handled inside the bot module's BotFactory.
 
     // player bounded instance saves loaded in _LoadBoundInstances, group versions at group loading
     DungeonPersistentState* state = GetBoundInstanceSaveForSelfOrGroup(GetMapId());
@@ -17978,9 +18053,8 @@ bool Player::SaveToDB(bool online, bool force, bool direct)
     // delay auto save at any saves (manual, in code, or autosave)
     m_nextSave = sWorld.getConfig(CONFIG_UINT32_INTERVAL_SAVE);
 
-    // Pas de sauvegarde des bots
-    if (GetSession()->GetBot())
-        return false;
+    // Penqle stub's "skip save for bots" guard removed — cmangos's bot
+    // factory persists bot characters as normal Player rows; no save skip needed.
     if (m_DbSaveDisabled)
         return false;
 
@@ -18985,6 +19059,88 @@ void Player::TextEmote(std::string const& text) const
         GetSession()->SendPacket(&data);
     else
         SendMessageToSetInRange(&data, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_TEXTEMOTE), true, !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT));
+}
+
+// bot calls bot->Whisper(text, lang, target_guid).
+// Build a CHAT_MSG_WHISPER packet from this player and send to receiver's session.
+void Player::Whisper(const std::string& text, uint32 language, ObjectGuid receiver)
+{
+    Player* rPlayer = sObjectMgr.GetPlayer(receiver);
+    if (!rPlayer || !rPlayer->GetSession())
+        return;
+    WorldPacket data;
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_WHISPER, text.c_str(), Language(language), GetChatTag(), GetObjectGuid(), GetName());
+    rPlayer->GetSession()->SendPacket(&data);
+}
+
+// GetItemByEntry: linear search across inventory + equipment for first item matching entry.
+Item* Player::GetItemByEntry(uint32 itemEntry) const
+{
+    Item* found = nullptr;
+    std::function<void(Item*)> finder = [&found, itemEntry](Item* item)
+    {
+        if (!found && item && item->GetEntry() == itemEntry)
+            found = item;
+    };
+    const_cast<Player*>(this)->ApplyForAllItems(finder, false);
+    return found;
+}
+
+// GetMailBegin/End: forward to MasterPlayer's mail queue.
+std::deque<Mail*>::iterator Player::GetMailBegin()
+{
+    static std::deque<Mail*> s_emptyMail;
+    if (!GetSession()) return s_emptyMail.end();
+    MasterPlayer* mp = GetSession()->GetMasterPlayer();
+    if (!mp) return s_emptyMail.end();
+    return mp->GetMailBegin();
+}
+
+std::deque<Mail*>::iterator Player::GetMailEnd()
+{
+    static std::deque<Mail*> s_emptyMail;
+    if (!GetSession()) return s_emptyMail.end();
+    MasterPlayer* mp = GetSession()->GetMasterPlayer();
+    if (!mp) return s_emptyMail.end();
+    return mp->GetMailEnd();
+}
+
+Item* Player::GetMItem(uint32 id)
+{
+    if (!GetSession()) return nullptr;
+    MasterPlayer* mp = GetSession()->GetMasterPlayer();
+    return mp ? mp->GetMItem(id) : nullptr;
+}
+
+void Player::RemoveMail(uint32 id)
+{
+    if (!GetSession()) return;
+    MasterPlayer* mp = GetSession()->GetMasterPlayer();
+    if (mp) mp->RemoveMail(id);
+}
+
+Player* Player::GetMaster() const
+{
+    if (Group* g = const_cast<Player*>(this)->GetGroup())
+        return sObjectMgr.GetPlayer(g->GetLeaderGuid());
+    return nullptr;
+}
+
+// Player::Create/Remove Playerbot{AI,Mgr} and Player::UpdatePlayerbotHooks
+// — host hooks for bot lifecycle. Real implementations live in the
+// playerbots module (src/modules/PlayerBots/playerbot/HostHooks.cpp, where
+// PlayerbotAI is fully defined); stub implementations for BUILD_PLAYERBOTS=OFF
+// live in src/game/PlayerbotStubs.cpp.
+
+uint32 Player::GetMailSize()
+{
+    if (auto* s = GetSession()) if (auto* m = s->GetMasterPlayer()) return m->GetMailSize();
+    return 0;
+}
+
+void Player::RemoveMItem(uint32 id)
+{
+    if (auto* s = GetSession()) if (auto* m = s->GetMasterPlayer()) m->RemoveMItem(id);
 }
 
 void Player::PetSpellInitialize()

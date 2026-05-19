@@ -1896,19 +1896,40 @@ struct Position
     float y = 0.0f;
     float z = 0.0f;
     float o = 0.0f;
+
+    // cmangos/playerbots port - accessor methods that the bot module calls.
+    float GetPositionX() const { return x; }
+    float GetPositionY() const { return y; }
+    float GetPositionZ() const { return z; }
+    float GetPositionO() const { return o; }
+
+    // Returns the SQUARED 3D distance, matching cmangos convention. Callers
+    // must wrap in std::sqrt() to get the real distance. Kept as-is rather
+    // than renamed because the vendored bot code (e.g. PlayerbotAI.cpp:5334,
+    // strategy/actions/BattleGroundTactics.cpp:4109) calls it as `GetDistance`
+    // and already sqrt()s the result.
+    float GetDistance(Position const& other) const {
+        float dx = x - other.x, dy = y - other.y, dz = z - other.z;
+        return dx*dx + dy*dy + dz*dz;
+    }
 };
 
 struct WorldLocation
 {
-    uint32 mapId = 0;
-    float x = 0.0f;
-    float y = 0.0f;
-    float z = 0.0f;
-    float o = 0.0f;
+    // cmangos/playerbots port - anonymous unions provide cmangos-style field name
+    // aliases (mapid, coord_x/y/z, orientation) sharing storage with Penqle's
+    // mapId, x, y, z, o. Both names refer to the same memory.
+    union { uint32 mapId = 0;  uint32 mapid; };
+    union { float  x = 0.0f;   float  coord_x; };
+    union { float  y = 0.0f;   float  coord_y; };
+    union { float  z = 0.0f;   float  coord_z; };
+    union { float  o = 0.0f;   float  orientation; };
     explicit WorldLocation(uint32 _mapid = 0, float _x = 0, float _y = 0, float _z = 0, float _o = 0)
         : mapId(_mapid), x(_x), y(_y), z(_z), o(_o) {}
     WorldLocation(WorldLocation const& loc)
         : mapId(loc.mapId), x(loc.x), y(loc.y), z(loc.z), o(loc.o) {}
+    WorldLocation(uint32 _mapid, Position const& pos)
+        : mapId(_mapid), x(pos.x), y(pos.y), z(pos.z), o(pos.o) {}
 
     /**
        * \brief Copies values from another WorldLocation.

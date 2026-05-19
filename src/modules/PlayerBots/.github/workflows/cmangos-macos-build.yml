@@ -1,0 +1,99 @@
+name: macOS Build
+
+on: [push]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+  REPO_DIR : ${{github.workspace}}
+  BUILD_DIR: ${{github.workspace}}/bin/builddir
+  CORE_REPO_OWNER: ${{github.repository_owner}}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+
+    strategy:
+      matrix:
+        version: [classic, tbc, wotlk]
+        include:
+          - os: macos-14
+            EXTRA_BUILD: "-DBUILD_PLAYERBOTS=ON"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{github.repository_owner}}/mangos-${{matrix.version}}
+          ref: master
+          path: ${{env.REPO_DIR}}
+          submodules: true
+
+      - name: Install Dependencies
+        run: |
+          brew install mysql-client@8.4
+          brew install openssl
+          brew install boost
+          brew install icu4c
+          echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl)" >> $GITHUB_ENV
+          echo "MYSQL_HOME=$(brew --prefix mysql-client@8.4)" >> $GITHUB_ENV
+          echo "ICU_ROOT=$(brew --prefix icu4c)" >> $GITHUB_ENV
+          echo "LDFLAGS=-L$(brew --prefix icu4c)/lib" >> $GITHUB_ENV
+          echo "CPPFLAGS=-I$(brew --prefix icu4c)/include" >> $GITHUB_ENV
+
+      - name: Display CMake Version
+        run: cmake --version
+        
+      - name: Configure
+        env:
+          CMAKE_PREFIX_PATH: "/opt/homebrew/opt/icu4c;/opt/homebrew/opt/mysql-client@8.4;/opt/homebrew/opt/openssl;/opt/homebrew"
+          BOOST_ROOT: /opt/homebrew/opt/boost
+        run: |
+          cmake -DBoost_ARCHITECTURE=-x64 \
+            ${{matrix.EXTRA_BUILD}} \
+            -DCMAKE_INSTALL_PREFIX=/home/runner/work \
+            -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" \
+            -DICU_ROOT="$(brew --prefix icu4c)" \
+            -DCMAKE_EXE_LINKER_FLAGS="-L$(brew --prefix icu4c)/lib" \
+            -B ${{env.BUILD_DIR}} \
+            -S ${{env.REPO_DIR}}
+
+      - name: Build
+        env:
+          MAKEFLAGS: "-j8"
+        run: cmake --build ${{env.BUILD_DIR}} --config ${{env.BUILD_TYPE}}
+
+  notify:
+    permissions:
+      contents: none
+    name: Send Notification to Discord on Failure
+    runs-on: ubuntu-latest
+    needs: # make sure the notification is sent AFTER the jobs you want included have completed
+      - build
+    if: failure()
+
+    steps:
+      - name: Setup Environmental Variables
+        run: |
+          echo "GIT_BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+          echo "GIT_SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
+      - name: Notify
+        uses: rjstone/discord-webhook-notify@v2.2.1
+        with:
+          severity: error
+          description: |
+            **macOS Build Failed**
+          details: |
+            - **Branch:** ${{env.GIT_BRANCH}}
+            - **Pusher:** ${{github.event.pusher.name}}
+            - **Author:** ${{github.event.head_commit.author.name}}
+            - **Commit:** [${{github.repository}}/${{env.GIT_SHORT_SHA}}](${{github.server_url}}/${{ github.repository }}/commit/${{github.sha}})
+            - **Build Log:** [actions/runs/${{github.run_id}}](${{github.server_url}}/${{github.repository}}/actions/runs/${{github.run_id}})
+          footer: CMaNGOS Developers Notified!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}

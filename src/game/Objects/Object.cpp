@@ -316,6 +316,10 @@ void Object::SendCreateUpdateToPlayer(Player* player)
     upd.Send(player->GetSession());
 }
 
+// cmangos compat: vendored bot module calls IsFriend/IsEnemy on WorldObject*.
+bool WorldObject::IsFriend(WorldObject const* target) const { return target && IsFriendlyTo(target); }
+bool WorldObject::IsEnemy(WorldObject const* target) const { return target && IsHostileTo(target); }
+
 void WorldObject::DirectSendPublicValueUpdate(uint32 index, uint32 count)
 {
     // Do we need an update ?

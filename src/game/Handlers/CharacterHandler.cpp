@@ -29,6 +29,7 @@
 #include "World.h"
 #include "ObjectMgr.h"
 #include "Player.h"
+#include "Handlers/LoginQueryHolder.h"
 #include "Guild.h"
 #include "GuildMgr.h"
 #include "UpdateMask.h"
@@ -58,29 +59,8 @@ enum CinematicsSkipMode
 };
 
 
-class LoginQueryHolder : public SqlQueryHolder
-{
-private:
-    uint32 m_accountId;
-    ObjectGuid m_guid;
-public:
-    LoginQueryHolder(uint32 accountId, ObjectGuid guid)
-        : SqlQueryHolder(guid.GetCounter()), m_accountId(accountId), m_guid(guid) { }
-    ~LoginQueryHolder()
-    {
-        // Queries should NOT be deleted by user
-        DeleteAllResults();
-    }
-    ObjectGuid GetGuid() const
-    {
-        return m_guid;
-    }
-    uint32 GetAccountId() const
-    {
-        return m_accountId;
-    }
-    bool Initialize();
-};
+// LoginQueryHolder class moved to Handlers/LoginQueryHolder.h
+// so the bot module can construct holders for synthetic bot logins. Initialize() definition stays here.
 
 bool LoginQueryHolder::Initialize()
 {
@@ -587,6 +567,29 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
             m_playerLoading = false;
             return;
         }
+
+        // If this character is currently in-world as a bot (PlayerbotAI
+        // attached), cleanly detach
+        // the AI BEFORE transferring session ownership. Without this, the
+        // bot's PlayerbotAI keeps ticking on what's now the real-player's
+        // Player object via Player::UpdatePlayerbotHooks → fights with the
+        // login handshake, drives movement / casts / packets the client
+        // doesn't expect → loading screen never finishes (10+ min hang
+        // observed; client eventually gives up). Reproduces deterministically
+        // when:
+        //   1. Char A is being run as a bot
+        //   2. Master logs off
+        //   3. User immediately logs into Char A as a real player
+        // The take-over path below transfers the Player object cleanly; we
+        // just have to make sure the bot brain stops first.
+        if (pCurrChar->GetPlayerbotAI())
+        {
+            sLog.outInfo("[BOT] HandlePlayerLogin: char %s (guid %u) currently running as a bot — "
+                         "detaching PlayerbotAI before real-player session take-over",
+                         pCurrChar->GetName(), playerGuid.GetCounter());
+            pCurrChar->RemovePlayerbotAI();
+        }
+
         pCurrChar->GetSession()->SetPlayer(nullptr);
         pCurrChar->SetSession(this);
 
@@ -633,6 +636,13 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
     SetPlayer(pCurrChar);
     if (m_antiCheat)
         m_antiCheat->NewPlayer();
+
+    // Attach a PlayerbotMgr to real-player sessions. Bots (synthetic sessions
+    // with m_playerbotAI set during AddPlayerBot) skip this. Real players get
+    // a mgr so .bot commands work (otherwise the user hits "you cannot control
+    // bots yet").
+    if (!pCurrChar->GetPlayerbotAI())
+        pCurrChar->CreatePlayerbotMgr();
 
 
     //WE DO NOT NEED TO SEND ALL POSSIBLE TRANSMOGS TO ANY PLAYER ON LOGIN

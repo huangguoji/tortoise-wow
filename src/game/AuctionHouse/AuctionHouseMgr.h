@@ -82,6 +82,16 @@ struct AuctionEntry
     uint32 deposit;                                         // deposit can be calculated only when creating auction
     AuctionHouseEntry const* auctionHouseEntry;             // in AuctionHouse.dbc
 
+    // bot accesses itemRandomPropertyId / itemCount on AuctionEntry.
+    // Penqle stores these on the Item, not on AuctionEntry. Stub fields are 0/1
+    //
+    int32 itemRandomPropertyId = 0;
+    uint32 itemCount = 1;
+    // AuctionBidWinning: cmangos has it as a method (notify winner). Stub no-op.
+    void AuctionBidWinning(class Player* /*winner*/) const {}
+    // UpdateBid: cmangos has it (raise bid + notify). Stub no-op.
+    void UpdateBid(uint32 /*newbid*/, class Player* /*newbidder*/ = nullptr) {}
+
     // helpers
     uint32 GetHouseId() const { return auctionHouseEntry->houseId; }
     uint32 GetHouseFaction() const { return auctionHouseEntry->faction; }
@@ -118,10 +128,15 @@ class AuctionHouseObject
 
         typedef std::map<uint32, AuctionEntry*> AuctionEntryMap;
         typedef std::multimap<uint32, AuctionEntry*> AuctionMultiMap;
+        // bot uses bounds-style iteration.
+        typedef std::pair<AuctionEntryMap::iterator, AuctionEntryMap::iterator> AuctionEntryMapBounds;
+        AuctionEntryMapBounds GetAuctionsBounds() { return { AuctionsMap.begin(), AuctionsMap.end() }; }
 
         uint32 GetCount() { return AuctionsMap.size(); }
 
         AuctionEntryMap *GetAuctions() { return &AuctionsMap; }
+        // bot expects const ref via GetAuctions on a const AuctionHouseObject.
+        AuctionEntryMap const& GetAuctionsRef() const { return AuctionsMap; }
 
         void AddAuction(AuctionEntry *ah);
 
@@ -161,6 +176,8 @@ class AuctionHouseMgr
         typedef std::unordered_map<uint32, Item*> ItemMap;
 
         AuctionHouseObject* GetAuctionsMap(AuctionHouseEntry const* house);
+        // cmangos's AuctionHouseType-keyed lookup.
+        AuctionHouseObject* GetAuctionsMap(uint32 /*type*/) { return GetAuctionsMap((AuctionHouseEntry const*)nullptr); }
 
         Item* GetAItem(uint32 id)
         {

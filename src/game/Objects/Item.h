@@ -244,6 +244,9 @@ class Item : public Object
 
         Item();
         virtual ~Item();
+        // bot calls item->SetUsedInSpell(true) when queued.
+        // Penqle has no equivalent; stub no-op.
+        void SetUsedInSpell(bool /*used*/) {}
 
         virtual bool Create(uint32 guidlow, uint32 itemid, ObjectGuid ownerGuid = ObjectGuid());
         void RemoveFromWorld() override;
