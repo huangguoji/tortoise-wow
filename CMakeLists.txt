@@ -147,9 +147,21 @@ if(WIN32)
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 endif()
 
+if(WIN32)
+set(Boost_SYSTEM_NO_DEPRECATED ON)
+set(boost_system_FOUND TRUE)
+set(Boost_SYSTEM_FOUND TRUE)
+find_package(Platform REQUIRED)
+find_package(Git)
+find_package(Boost REQUIRED COMPONENTS filesystem thread)
+
+endif()
+
+if(UNIX)
 find_package(Platform REQUIRED)
 find_package(Git)
 find_package(Boost REQUIRED COMPONENTS system filesystem thread)
+endif()
 
 # Output description of this script
 message(STATUS

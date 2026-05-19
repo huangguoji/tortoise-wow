@@ -21,41 +21,41 @@
 
 namespace
 {
-std::vector<std::string> GetModuleNames(const std::string &moduleDir)
-{
-    ACE_DIR *dirp = ACE_OS::opendir(ACE_TEXT(moduleDir.c_str()));
-
-    std::vector<std::string> results;
-
-    if (dirp)
+    std::vector<std::string> GetModuleNames(const std::string& moduleDir)
     {
-        ACE_DIRENT *dp;
+        ACE_DIR* dirp = ACE_OS::opendir(ACE_TEXT(moduleDir.c_str()));
 
-        // look only for .bin files, and assume (for now) that the corresponding .key and .cr files exist
-        while (!!(dp = ACE_OS::readdir(dirp)))
+        std::vector<std::string> results;
+
+        if (dirp)
         {
-            if (strlen(dp->d_name) < 4)
-                continue;
+            ACE_DIRENT* dp;
 
-            if (!memcmp(&dp->d_name[strlen(dp->d_name) - 4], ".bin", 4))
-                results.emplace_back(moduleDir + "/" + dp->d_name);
-        }
+            // look only for .bin files, and assume (for now) that the corresponding .key and .cr files exist
+            while (!!(dp = ACE_OS::readdir(dirp)))
+            {
+                if (strlen(dp->d_name) < 4)
+                    continue;
+
+                if (!memcmp(&dp->d_name[strlen(dp->d_name) - 4], ".bin", 4))
+                    results.emplace_back(moduleDir + "/" + dp->d_name);
+            }
 
 #ifndef _WIN32
-        // this causes a crash on Windows, so just accept a minor memory leak for now
-        ACE_OS::closedir(dirp);
+            // this causes a crash on Windows, so just accept a minor memory leak for now
+            ACE_OS::closedir(dirp);
 #endif
-    }
+        }
 
-    return results;
-}
+        return results;
+    }
 }
 
 WardenModuleMgr sWardenModuleMgr;
 
 WardenModuleMgr::WardenModuleMgr()
 {
-    
+
 }
 
 void WardenModuleMgr::LoadWardenModules()
@@ -84,14 +84,16 @@ void WardenModuleMgr::LoadWardenModules()
     }
 }
 
-const WardenModule *WardenModuleMgr::GetWindowsModule() const
+const WardenModule* WardenModuleMgr::GetWindowsModule() const
 {
-    MANGOS_ASSERT(!_winModules.empty());
+    // MANGOS_ASSERT(!_winModules.empty());
+    if (_winModules.empty())
+        return nullptr;
 
     return &_winModules[urand(0, _winModules.size() - 1)];
 }
 
-const WardenModule *WardenModuleMgr::GetMacModule() const
+const WardenModule* WardenModuleMgr::GetMacModule() const
 {
     MANGOS_ASSERT(!_macModules.empty());
 

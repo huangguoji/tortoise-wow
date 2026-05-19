@@ -176,6 +176,7 @@ if(MSVC)
     target_compile_options(${LIBRARY_NAME} PRIVATE $<$<CONFIG:Release>:/Ob1>)
 endif()
 
+if(UNIX)
 target_link_libraries(${LIBRARY_NAME}
   PRIVATE shared
   PRIVATE Detour
@@ -185,12 +186,36 @@ target_link_libraries(${LIBRARY_NAME}
   PRIVATE Boost::thread
   PRIVATE Boost::filesystem
 )
+endif()
+
 if(WIN32)
   target_link_libraries(${LIBRARY_NAME}
+    PRIVATE shared
+    PRIVATE Detour
+    PRIVATE g3dlite
+    PRIVATE ${ZLIB_LIBRARIES}
+    PRIVATE Boost::headers
+    PRIVATE Boost::thread
+    PRIVATE Boost::filesystem  
     PRIVATE ws2_32
   )
 endif()
 
+if(WIN32)
+target_include_directories(${LIBRARY_NAME}
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  # include paths for transitive Penqle headers
+  # (MapNodes/AbstractPlayer.h, Detour navmesh, framework Network).
+  PRIVATE ${CMAKE_SOURCE_DIR}/src/game/MapNodes
+  PRIVATE ${CMAKE_SOURCE_DIR}/dep/recastnavigation
+  PRIVATE ${CMAKE_SOURCE_DIR}/src/framework/Network
+  ${ACE_INCLUDE_DIR}
+  ${MYSQL_INCLUDE_DIR}
+  ${OPENSSL_INCLUDE_DIR}
+)
+endif()
+
+if(UNIX)
 target_include_directories(${LIBRARY_NAME}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
   # include paths for transitive Penqle headers
@@ -199,6 +224,7 @@ target_include_directories(${LIBRARY_NAME}
   PRIVATE ${CMAKE_SOURCE_DIR}/dep/recastnavigation
   PRIVATE ${CMAKE_SOURCE_DIR}/src/framework/Network
 )
+endif()
 
 # Install config files
 if ( ${CMAKE_PROJECT_NAME} MATCHES "TurtleWoW")

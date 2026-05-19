@@ -5,3 +5,8 @@
 *.kate-swp
 *.exe
 /src/shared/revision.h
+/.vs
+/bin/Debug
+/out
+/tools/checkegglogs/obj/Debug/net8.0
+/tools/checkegglogs/obj/Release/net8.0

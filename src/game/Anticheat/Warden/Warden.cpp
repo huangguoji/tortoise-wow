@@ -40,7 +40,7 @@
 #include <algorithm>
 #include <memory>
 
-using CheatType = Anticheat::CheatType;
+    using CheatType = Anticheat::CheatType;
 using SessionAnticheat = Anticheat::SessionAnticheat;
 
 void Warden::LoadScriptedScans()
@@ -53,11 +53,13 @@ void Warden::LoadScriptedScans()
     sLog.outBasic("%u scripted Warden scans loaded from anticheat module.", sWardenScanMgr.Count() - start);
 }
 
-Warden::Warden(WorldSession *session, const WardenModule *module, const BigNumber &K, SessionAnticheatInterface *anticheat) :
+Warden::Warden(WorldSession* session, const WardenModule* module, const BigNumber& K, SessionAnticheatInterface* anticheat) :
     _session(session), _inputCrypto(KeyLength), _outputCrypto(KeyLength), _initialized(false), _module(module), _crk(nullptr),
-    _timeoutClock(0), _scanClock(0), _anticheat(reinterpret_cast<SessionAnticheat *>(anticheat)), _moduleSendPending(false)
+    _timeoutClock(0), _scanClock(0), _anticheat(reinterpret_cast<SessionAnticheat*>(anticheat)), _moduleSendPending(false)
 {
-    MANGOS_ASSERT(!!_module || session->GetPlatform() != CLIENT_PLATFORM_X86);
+    // MANGOS_ASSERT(!!_module || session->GetPlatform() != CLIENT_PLATFORM_X86);
+    if (session->GetPlatform() == CLIENT_PLATFORM_X86)
+        MANGOS_ASSERT(!!_module || !sConfig.GetBoolDefault("Warden.WinEnabled", false));
     MANGOS_ASSERT(!!_anticheat);
 
     auto const kBytes = K.AsByteArray();
@@ -115,7 +117,7 @@ void Warden::RequestChallenge()
     BeginTimeoutClock();
 }
 
-void Warden::HandleChallengeResponse(ByteBuffer &buff)
+void Warden::HandleChallengeResponse(ByteBuffer& buff)
 {
     buff.rpos(buff.wpos());
 
@@ -180,13 +182,13 @@ std::vector<std::shared_ptr<const Scan>> Warden::SelectScans(ScanFlags flags) co
     return std::move(sWardenScanMgr.GetRandomScans(static_cast<ScanFlags>(flags | GetScanFlags())));
 }
 
-void Warden::EnqueueScans(std::vector<std::shared_ptr<const Scan>> &&scans)
+void Warden::EnqueueScans(std::vector<std::shared_ptr<const Scan>>&& scans)
 {
     // append the requested scans to the queue
     _enqueuedScans.insert(_enqueuedScans.end(), scans.cbegin(), scans.cend());
 }
 
-void Warden::RequestScans(std::vector<std::shared_ptr<const Scan>> &&scans)
+void Warden::RequestScans(std::vector<std::shared_ptr<const Scan>>&& scans)
 {
     // start by appending the requested scans to the queue, which will usually be empty when this is called
     _enqueuedScans.insert(_enqueuedScans.end(), scans.cbegin(), scans.cend());
@@ -273,14 +275,14 @@ void Warden::RequestScans(std::vector<std::shared_ptr<const Scan>> &&scans)
     SendPacket(buff);
 }
 
-void Warden::ReadScanResults(ByteBuffer &buff)
+void Warden::ReadScanResults(ByteBuffer& buff)
 {
     // move the scans to the stack because the check handlers we call may enqueue additional scans
     auto const scans = std::move(_pendingScans);
 
     auto const inWorld = _session->GetPlayer() && _session->GetPlayer()->IsInWorld();
 
-    for (auto const &s : scans)
+    for (auto const& s : scans)
     {
         // checks return true when they have discovered a hack 
         if (s->Check(this, buff))
@@ -300,14 +302,14 @@ void Warden::ReadScanResults(ByteBuffer &buff)
         RequestScans({});
 }
 
-void Warden::SendPacket(const ByteBuffer &buff)
+void Warden::SendPacket(const ByteBuffer& buff)
 {
     WorldPacket pkt(SMSG_WARDEN_DATA, buff.wpos());
     pkt.append(buff);
 
     // we specifically append the packet copy, rather than the input copy, to avoid
     // creating side-effects for this function
-    EncryptData(const_cast<uint8 *>(pkt.contents()), pkt.wpos());
+    EncryptData(const_cast<uint8*>(pkt.contents()), pkt.wpos());
 
     _session->SendPacket(&pkt);
 }
@@ -355,15 +357,15 @@ uint32 Warden::BuildChecksum(const uint8* data, size_t size)
     uint32 checkSum = 0;
 
     for (auto i = 0u; i < sizeof(hash) / sizeof(uint32); ++i)
-        checkSum ^= *reinterpret_cast<uint32 *>(&hash[i * 4]);
+        checkSum ^= *reinterpret_cast<uint32*>(&hash[i * 4]);
 
     return checkSum;
 }
 
 void Warden::HandlePacket(WorldPacket& recvData)
 {
-	// initialize decrypt packet
-	DecryptData(const_cast<uint8*>(recvData.contents()), recvData.size());
+    // initialize decrypt packet
+    DecryptData(const_cast<uint8*>(recvData.contents()), recvData.size());
 
     uint8 opcode;
     recvData >> opcode;
@@ -379,113 +381,113 @@ void Warden::HandlePacket(WorldPacket& recvData)
 
     switch (opcode)
     {
-        case WARDEN_CMSG_MODULE_MISSING:
+    case WARDEN_CMSG_MODULE_MISSING:
+    {
+        if (!_module)
         {
-            if (!_module)
-            {
-                sLog.out(LOG_ANTICHEAT_BASIC, "WARDEN: Account %u IP %s requested module when none was offered.  Kicking.", _session->GetAccountId(), _session->GetRemoteAddress().c_str());
-                _session->KickPlayer();
-                break;
-            }
-
-            if (_moduleSendPending)
-            {
-                sLog.out(LOG_ANTICHEAT_BASIC, "WARDEN: Account %u IP %s failed to load module.  Kicking.", _session->GetAccountId(), _session->GetRemoteAddress().c_str());
-                _session->KickPlayer();
-                _moduleSendPending = false;
-                break;
-            }
-
-            sLog.out(LOG_ANTICHEAT_DEBUG, "WARDEN: Account - %u get opcode 00 - Load module failed or module is missing...", _session->GetAccountId());
-            SendModuleToClient();
+            sLog.out(LOG_ANTICHEAT_BASIC, "WARDEN: Account %u IP %s requested module when none was offered.  Kicking.", _session->GetAccountId(), _session->GetRemoteAddress().c_str());
+            _session->KickPlayer();
             break;
         }
 
-        case WARDEN_CMSG_MODULE_OK:
+        if (_moduleSendPending)
         {
-            if (!_module)
-            {
-                sLog.out(LOG_ANTICHEAT_BASIC, "WARDEN: Account %u IP %s loaded module without server request.  Kicking.", _session->GetAccountId(), _session->GetRemoteAddress().c_str());
-                _session->KickPlayer();
-                break;
-            }
-
+            sLog.out(LOG_ANTICHEAT_BASIC, "WARDEN: Account %u IP %s failed to load module.  Kicking.", _session->GetAccountId(), _session->GetRemoteAddress().c_str());
+            _session->KickPlayer();
             _moduleSendPending = false;
-            sLog.out(LOG_ANTICHEAT_DEBUG, "WARDEN: Account - %u get opcode 01 - Module has loaded. Recv answer....", _session->GetAccountId());
-            RequestChallenge();
             break;
         }
 
-        case WARDEN_CMSG_CHEAT_CHECKS_RESULT:
+        sLog.out(LOG_ANTICHEAT_DEBUG, "WARDEN: Account - %u get opcode 00 - Load module failed or module is missing...", _session->GetAccountId());
+        SendModuleToClient();
+        break;
+    }
+
+    case WARDEN_CMSG_MODULE_OK:
+    {
+        if (!_module)
         {
-            if (_session->GetOS() == CLIENT_OS_WIN)
+            sLog.out(LOG_ANTICHEAT_BASIC, "WARDEN: Account %u IP %s loaded module without server request.  Kicking.", _session->GetAccountId(), _session->GetRemoteAddress().c_str());
+            _session->KickPlayer();
+            break;
+        }
+
+        _moduleSendPending = false;
+        sLog.out(LOG_ANTICHEAT_DEBUG, "WARDEN: Account - %u get opcode 01 - Module has loaded. Recv answer....", _session->GetAccountId());
+        RequestChallenge();
+        break;
+    }
+
+    case WARDEN_CMSG_CHEAT_CHECKS_RESULT:
+    {
+        if (_session->GetOS() == CLIENT_OS_WIN)
+        {
+            // verify checksum integrity
+            uint16 length;
+            uint32 checksum;
+            recvData >> length >> checksum;
+
+            if (BuildChecksum(recvData.contents() + recvData.rpos(), length) != checksum)
             {
-                // verify checksum integrity
-                uint16 length;
-                uint32 checksum;
-                recvData >> length >> checksum;
-
-                if (BuildChecksum(recvData.contents() + recvData.rpos(), length) != checksum)
-                {
-                    recvData.rpos(recvData.wpos());
-                    _anticheat->RecordCheatInternal(CheatType::CHEAT_TYPE_WARDEN, "Packet checksum fail");
-                    _session->KickPlayer();
-                    return;
-                }
-            }
-
-            // this function will also act on the results
-            ReadScanResults(recvData);
-
-            StopTimeoutClock();
-            BeginScanClock();
-
-            break;
-        }
-
-        // FIXME: Find when/why/how this actually happens and how to handle it
-        case WARDEN_CMSG_MEM_CHECKS_RESULT:
-        {
-            sLog.out(LOG_ANTICHEAT_DEBUG, "WARDEN: Account - %u received opcode 03", _session->GetAccountId());
-            break;
-        }
-
-        case WARDEN_CMSG_HASH_RESULT:
-        {
-            sLog.out(LOG_ANTICHEAT_DEBUG, "WARDEN: Account - %u received opcode 04", _session->GetAccountId());
-
-            HandleChallengeResponse(recvData);
-
-            // if the challenge failed, this will still be set.  by now, the session will be closed.  do nothing further.
-            if (!!_crk)
+                recvData.rpos(recvData.wpos());
+                _anticheat->RecordCheatInternal(CheatType::CHEAT_TYPE_WARDEN, "Packet checksum fail");
+                _session->KickPlayer();
                 return;
-
-            // at this point the client has our module loaded.  send whatever packets are necessary to initialize Warden
-            InitializeClient();
-
-            // send any initial hack scans that the scan manager may have for us
-            RequestScans(SelectScans(ScanFlags::InitialLogin));
-
-            // begin the scan clock (note that even if the clock expires before any initial scans are answered, no new
-            // checks will be requested until the reply is received).
-            BeginScanClock();
-
-            break;
+            }
         }
 
-        case WARDEN_CMSG_MODULE_FAILED:
-        {
-            sLog.out(LOG_ANTICHEAT_BASIC, "WARDEN: Account - %u received opcode 05 - Module load failed!", _session->GetAccountId());
-            _session->KickPlayer();
-            break;
-        }
+        // this function will also act on the results
+        ReadScanResults(recvData);
 
-        default:
-        {
-            _anticheat->RecordCheatInternal(CheatType::CHEAT_TYPE_WARDEN, "Received unknown opcode %02X of size %u.", opcode, recvData.size() - 1);
-            _session->KickPlayer();
-            break;
-        }
+        StopTimeoutClock();
+        BeginScanClock();
+
+        break;
+    }
+
+    // FIXME: Find when/why/how this actually happens and how to handle it
+    case WARDEN_CMSG_MEM_CHECKS_RESULT:
+    {
+        sLog.out(LOG_ANTICHEAT_DEBUG, "WARDEN: Account - %u received opcode 03", _session->GetAccountId());
+        break;
+    }
+
+    case WARDEN_CMSG_HASH_RESULT:
+    {
+        sLog.out(LOG_ANTICHEAT_DEBUG, "WARDEN: Account - %u received opcode 04", _session->GetAccountId());
+
+        HandleChallengeResponse(recvData);
+
+        // if the challenge failed, this will still be set.  by now, the session will be closed.  do nothing further.
+        if (!!_crk)
+            return;
+
+        // at this point the client has our module loaded.  send whatever packets are necessary to initialize Warden
+        InitializeClient();
+
+        // send any initial hack scans that the scan manager may have for us
+        RequestScans(SelectScans(ScanFlags::InitialLogin));
+
+        // begin the scan clock (note that even if the clock expires before any initial scans are answered, no new
+        // checks will be requested until the reply is received).
+        BeginScanClock();
+
+        break;
+    }
+
+    case WARDEN_CMSG_MODULE_FAILED:
+    {
+        sLog.out(LOG_ANTICHEAT_BASIC, "WARDEN: Account - %u received opcode 05 - Module load failed!", _session->GetAccountId());
+        _session->KickPlayer();
+        break;
+    }
+
+    default:
+    {
+        _anticheat->RecordCheatInternal(CheatType::CHEAT_TYPE_WARDEN, "Received unknown opcode %02X of size %u.", opcode, recvData.size() - 1);
+        _session->KickPlayer();
+        break;
+    }
     }
 }
 
