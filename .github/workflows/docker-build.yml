@@ -2,7 +2,7 @@ name: Build and Push Docker Images main
 
 on:
   push:
-    branches: [ 1181dev ]
+    branches: [ docker ]
   workflow_dispatch:
 
 concurrency:
