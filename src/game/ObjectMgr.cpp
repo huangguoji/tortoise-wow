@@ -9550,7 +9550,6 @@ void ObjectMgr::LoadShop()
             // message mid-description and losing info[6]+ → entry.id = nil →
             // SetHyperlink("item:nil:0:0:0") fails as "Unknown link type" at
             // line 285. Send empty string at info[5] so the message fits.
-			int32 FormatResult = std::snprintf(CachedEntry.data(), 1024, "Entries:%u=%u=%s=%u==%u=%u=%u=%.02f=%.02f=%.02f=%.02f=%u",
                 Entry.Category,
                 0, // TODO: subcategory
                 ItemName.c_str(),

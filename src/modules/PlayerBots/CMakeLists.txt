@@ -180,7 +180,10 @@ target_link_libraries(${LIBRARY_NAME}
   PRIVATE shared
   PRIVATE Detour
   PRIVATE g3dlite
-  PRIVATE zlib
+  PRIVATE ${ZLIB_LIBRARIES}
+  PRIVATE Boost::system
+  PRIVATE Boost::thread
+  PRIVATE Boost::filesystem
 )
 if(WIN32)
   target_link_libraries(${LIBRARY_NAME}
@@ -198,7 +201,7 @@ target_include_directories(${LIBRARY_NAME}
 )
 
 # Install config files
-if ( ${CMAKE_PROJECT_NAME} MATCHES "Classic")
+if ( ${CMAKE_PROJECT_NAME} MATCHES "TurtleWoW")
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/playerbot/aiplayerbot.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist)
 endif()	
 if ( ${CMAKE_PROJECT_NAME} MATCHES "TBC")

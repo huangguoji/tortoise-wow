@@ -1,4 +1,4 @@
-# Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
+# Copyri/ht (C) 2005-2011 MaNGOS <http://getmangos.com/>
 # Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -149,6 +149,7 @@ endif()
 
 find_package(Platform REQUIRED)
 find_package(Git)
+find_package(Boost REQUIRED COMPONENTS system filesystem thread)
 
 # Output description of this script
 message(STATUS
