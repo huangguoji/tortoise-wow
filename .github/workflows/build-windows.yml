@@ -40,7 +40,7 @@ jobs:
         with:
           path: ${{ env.ACE_ROOT }}
           # Bump the suffix (v1 → v2 …) to force a rebuild when patches change.
-          key: ace-${{ env.ACE_VERSION }}-win64-release-v1
+          key: ace-${{ env.ACE_VERSION }}-win64-release-v2
 
       - name: Download ACE ${{ env.ACE_VERSION }}
         if: steps.cache-ace.outputs.cache-hit != 'true'
@@ -58,27 +58,32 @@ jobs:
         if: steps.cache-ace.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          # config.h is required on Windows; ACE ships config-win32.h but not a top-level config.h
+          # ── (1) config.h ────────────────────────────────────────────────────
+          # Required on Windows; ACE ships config-win32.h but not a top-level config.h.
           $configH = Join-Path $env:ACE_ROOT "ace\config.h"
           if (-not (Test-Path $configH)) {
             Set-Content -Path $configH -Value '#include "ace/config-win32.h"' -Encoding UTF8
             Write-Host "Created ace/config.h"
           }
 
-          # Add 'noexcept' to destructors / move members in Singleton to satisfy
-          # stricter C++17 rules enforced by VS 2022 / VS 2026.
-          foreach ($file in @("ace\Singleton.h", "ace\Singleton.inl", "ace\Singleton.cpp")) {
-            $path = Join-Path $env:ACE_ROOT $file
-            if (Test-Path $path) {
-              $content = Get-Content $path -Raw
-              # Append noexcept to bare destructor declarations that are missing it
-              $patched = $content `
-                -replace '(~\w+\s*\(\s*\))\s*(?!noexcept)\s*;', '$1 noexcept;' `
-                -replace '(~\w+\s*\(\s*\))\s*(?!noexcept)\s*\{', '$1 noexcept {'
-              if ($patched -ne $content) {
-                Set-Content -Path $path -Value $patched -Encoding UTF8 -NoNewline
-                Write-Host "Patched $file"
-              }
+          # ── (2) Cleanup.h: remove noexcept from ~ACE_Cleanup ────────────────
+          # Root cause of MSVC C2694:
+          #   ACE_Cleanup::~ACE_Cleanup is declared noexcept (strict).
+          #   ACE_Singleton<T>::~ACE_Singleton is compiler-generated — no explicit
+          #   declaration exists in Singleton.h, so patching that file is ineffective.
+          #   The compiler infers the generated dtor may throw (it calls delete instance_),
+          #   making its spec less restrictive than the base class → error C2694.
+          #   Fix: relax the base class by dropping noexcept from ~ACE_Cleanup so that
+          #   derived compiler-generated dtors remain compatible.
+          $cleanupH = Join-Path $env:ACE_ROOT "ace\Cleanup.h"
+          if (Test-Path $cleanupH) {
+            $content = Get-Content $cleanupH -Raw
+            $patched = $content -replace '(virtual\s+~ACE_Cleanup\s*\([^)]*\))\s+noexcept', '$1'
+            if ($patched -ne $content) {
+              Set-Content -Path $cleanupH -Value $patched -Encoding UTF8 -NoNewline
+              Write-Host "Patched Cleanup.h: removed noexcept from ~ACE_Cleanup"
+            } else {
+              Write-Host "Cleanup.h: pattern not found (already patched or different format)"
             }
           }
 
@@ -136,7 +141,10 @@ jobs:
             -DACE_ROOT="$env:ACE_ROOT" `
             -DUSE_STD_MALLOC=ON `
             -DUSE_SCRIPTS=ON `
-            -DUSE_EXTRACTORS=OFF
+            -DBUILD_FOR_HOST_CPU=OFF `
+            -DUSE_ANTICHEAT=OFF `
+            -DALLOW_TURTLE_ADDONS=ON `
+            -DUSE_EXTRACTORS=ON
 
       # ── 6. Build ──────────────────────────────────────────────────────────────
       - name: Build TurtleWoW (Release x64)
