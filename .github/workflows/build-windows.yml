@@ -40,7 +40,7 @@ jobs:
         with:
           path: ${{ env.ACE_ROOT }}
           # Bump the suffix (v1 → v2 …) to force a rebuild when patches change.
-          key: ace-${{ env.ACE_VERSION }}-win64-release-v2
+          key: ace-${{ env.ACE_VERSION }}-win64-release-v3
 
       - name: Download ACE ${{ env.ACE_VERSION }}
         if: steps.cache-ace.outputs.cache-hit != 'true'
@@ -66,24 +66,25 @@ jobs:
             Write-Host "Created ace/config.h"
           }
 
-          # ── (2) Cleanup.h: remove noexcept from ~ACE_Cleanup ────────────────
+          # ── (2) Cleanup.h: explicitly mark ~ACE_Cleanup noexcept(false) ─────
           # Root cause of MSVC C2694:
-          #   ACE_Cleanup::~ACE_Cleanup is declared noexcept (strict).
-          #   ACE_Singleton<T>::~ACE_Singleton is compiler-generated — no explicit
-          #   declaration exists in Singleton.h, so patching that file is ineffective.
-          #   The compiler infers the generated dtor may throw (it calls delete instance_),
-          #   making its spec less restrictive than the base class → error C2694.
-          #   Fix: relax the base class by dropping noexcept from ~ACE_Cleanup so that
-          #   derived compiler-generated dtors remain compatible.
+          #   In C++11+, destructors are *implicitly* noexcept — there is no keyword
+          #   to remove from the source.  ACE_Singleton<T> has no explicit destructor
+          #   declaration; the compiler generates one that may throw (calls delete on
+          #   instance_), making it less restrictive than the implicitly-noexcept base.
+          #   Fix: explicitly mark ~ACE_Cleanup as noexcept(false) to opt out of the
+          #   implicit noexcept, so derived compiler-generated dtors are compatible.
           $cleanupH = Join-Path $env:ACE_ROOT "ace\Cleanup.h"
           if (Test-Path $cleanupH) {
             $content = Get-Content $cleanupH -Raw
-            $patched = $content -replace '(virtual\s+~ACE_Cleanup\s*\([^)]*\))\s+noexcept', '$1'
+            # Match: virtual ~ACE_Cleanup (void); or virtual ~ACE_Cleanup();
+            # Replace with the same + noexcept(false)
+            $patched = $content -replace '(virtual\s+~ACE_Cleanup\s*\([^)]*\))\s*;', '$1 noexcept(false);'
             if ($patched -ne $content) {
               Set-Content -Path $cleanupH -Value $patched -Encoding UTF8 -NoNewline
-              Write-Host "Patched Cleanup.h: removed noexcept from ~ACE_Cleanup"
+              Write-Host "Patched Cleanup.h: added noexcept(false) to ~ACE_Cleanup"
             } else {
-              Write-Host "Cleanup.h: pattern not found (already patched or different format)"
+              Write-Host "Cleanup.h: pattern not matched — manual inspection needed"
             }
           }
 
