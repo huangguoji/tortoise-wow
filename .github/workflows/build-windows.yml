@@ -1,8 +1,6 @@
 name: Build Windows Server
 
 on:
-  push:
-    branches: ["docker"]
   workflow_dispatch:
 
 env:
@@ -236,16 +234,24 @@ jobs:
       - name: Copy ACE.dll
         shell: pwsh
         run: |
-          # On Windows the CMake project writes binaries to ${CMAKE_SOURCE_DIR}/bin
-          $binDir = "${{ github.workspace }}\bin"
+          # VS multi-config generator outputs to bin\Release\
+          $binDir = "${{ github.workspace }}\bin\Release"
+          if (-not (Test-Path $binDir)) {
+            # Fallback: maybe binaries are directly in bin\
+            $binDir = "${{ github.workspace }}\bin"
+          }
+          Write-Host "Binary dir: $binDir"
+          Write-Host "Contents:" ; Get-ChildItem $binDir -ErrorAction SilentlyContinue | Select-Object Name
+
+          # Find ACE.dll anywhere under ACE_ROOT (no subfolder filter)
           $aceDll = Get-ChildItem $env:ACE_ROOT -Recurse -Filter "ACE.dll" |
-                    Where-Object { $_.FullName -match "Release" } |
                     Select-Object -First 1
           if ($aceDll) {
             Copy-Item -Force $aceDll.FullName $binDir
             Write-Host "Copied $($aceDll.FullName) → $binDir"
           } else {
-            Write-Warning "ACE.dll not found – server may fail to start without it"
+            Write-Warning "ACE.dll not found under $env:ACE_ROOT"
+            Write-Host "ACE_ROOT contents:" ; Get-ChildItem $env:ACE_ROOT -Recurse -Filter "*.dll" | Select-Object FullName
           }
 
       # ── 8. Upload artifacts ───────────────────────────────────────────────────
@@ -254,10 +260,6 @@ jobs:
         with:
           name: turtlewow-server-win64-${{ github.sha }}
           path: |
-            ${{ github.workspace }}\bin\mangosd.exe
-            ${{ github.workspace }}\bin\realmd.exe
-            ${{ github.workspace }}\bin\ACE.dll
-            ${{ github.workspace }}\bin\*.dll
-            ${{ github.workspace }}\bin\*.conf.dist
+            ${{ github.workspace }}/bin/Release/
           if-no-files-found: warn
           retention-days: 30
