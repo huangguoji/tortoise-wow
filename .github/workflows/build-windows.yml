@@ -50,6 +50,14 @@ jobs:
             --branch 2023.04.15 --depth 1 --quiet
           C:\vcpkg_pinned\bootstrap-vcpkg.bat -disableMetrics
 
+      # pkg-config must exist before vcpkg builds ACE; otherwise the ACE port's
+      # vcpkg_fixup_pkgconfig step tries to download MSYS2 packages whose URLs
+      # are now 404 on all mirrors (the pinned vcpkg has stale package hashes).
+      - name: Install pkg-config (prevents vcpkg MSYS2 download)
+        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: choco install pkgconfiglite --no-progress -y
+
       - name: Install ACE 6.5.x via pinned vcpkg
         if: steps.vcpkg-cache.outputs.cache-hit != 'true'
         shell: pwsh
