@@ -40,7 +40,7 @@ jobs:
         with:
           path: ${{ env.ACE_ROOT }}
           # Bump the suffix (v1 → v2 …) to force a rebuild when patches change.
-          key: ace-${{ env.ACE_VERSION }}-win64-release-v3
+          key: ace-${{ env.ACE_VERSION }}-win64-release-v5
 
       - name: Download ACE ${{ env.ACE_VERSION }}
         if: steps.cache-ace.outputs.cache-hit != 'true'
@@ -58,34 +58,102 @@ jobs:
         if: steps.cache-ace.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          # ── (1) config.h ────────────────────────────────────────────────────
-          # Required on Windows; ACE ships config-win32.h but not a top-level config.h.
+          # config.h is required on Windows; ACE ships config-win32.h but not a top-level config.h.
           $configH = Join-Path $env:ACE_ROOT "ace\config.h"
           if (-not (Test-Path $configH)) {
             Set-Content -Path $configH -Value '#include "ace/config-win32.h"' -Encoding UTF8
             Write-Host "Created ace/config.h"
           }
 
-          # ── (2) Cleanup.h: explicitly mark ~ACE_Cleanup noexcept(false) ─────
-          # Root cause of MSVC C2694:
-          #   In C++11+, destructors are *implicitly* noexcept — there is no keyword
-          #   to remove from the source.  ACE_Singleton<T> has no explicit destructor
-          #   declaration; the compiler generates one that may throw (calls delete on
-          #   instance_), making it less restrictive than the implicitly-noexcept base.
-          #   Fix: explicitly mark ~ACE_Cleanup as noexcept(false) to opt out of the
-          #   implicit noexcept, so derived compiler-generated dtors are compatible.
-          $cleanupH = Join-Path $env:ACE_ROOT "ace\Cleanup.h"
-          if (Test-Path $cleanupH) {
-            $content = Get-Content $cleanupH -Raw
-            # Match: virtual ~ACE_Cleanup (void); or virtual ~ACE_Cleanup();
-            # Replace with the same + noexcept(false)
-            $patched = $content -replace '(virtual\s+~ACE_Cleanup\s*\([^)]*\))\s*;', '$1 noexcept(false);'
-            if ($patched -ne $content) {
-              Set-Content -Path $cleanupH -Value $patched -Encoding UTF8 -NoNewline
-              Write-Host "Patched Cleanup.h: added noexcept(false) to ~ACE_Cleanup"
-            } else {
-              Write-Host "Cleanup.h: pattern not matched — manual inspection needed"
+      # ── 3b. Fix MSVC C2694 in ACE Singleton headers (runs EVERY time) ───────
+      # This must run regardless of cache because a cached ACE might not have this fix.
+      - name: Fix ACE Singleton noexcept error (C2694)
+        shell: pwsh
+        run: |
+          $singletonH = Join-Path $env:ACE_ROOT "ace\Singleton.h"
+          if (-not (Test-Path $singletonH)) {
+            Write-Error "Singleton.h not found at $singletonH"
+            exit 1
+          }
+
+          $content = Get-Content $singletonH -Raw
+
+          # Skip if already patched
+          if ($content -match '~ACE_Singleton\s*\([^)]*\)\s*noexcept') {
+            Write-Host "Singleton.h: already has noexcept destructor — skipping"
+            exit 0
+          }
+
+          Write-Host "=== Singleton.h: first 15 lines for diagnostics ==="
+          Get-Content $singletonH -TotalCount 15 | ForEach-Object { Write-Host $_ }
+          Write-Host "=== end diagnostics ==="
+
+          # Strategy A: line-by-line — find "class ACE_Singleton ... ACE_Cleanup" then "public:"
+          $lines = Get-Content $singletonH
+          $output = [System.Collections.Generic.List[string]]::new()
+          $inSingletonClass = $false
+          $inserted = $false
+
+          foreach ($line in $lines) {
+            $output.Add($line)
+            if (-not $inserted) {
+              if ($line -match 'class\s+ACE_Singleton\b') {
+                $inSingletonClass = $true
+                Write-Host "Found class declaration: $line"
+              }
+              if ($inSingletonClass -and $line -match '^\s*public\s*:') {
+                $output.Add("  virtual ~ACE_Singleton (void) noexcept {}")
+                $inserted = $true
+                Write-Host "Strategy A: inserted destructor after 'public:'"
+              }
             }
+          }
+
+          # Strategy B (fallback): insert at line 107 (just before error line 108)
+          if (-not $inserted) {
+            Write-Host "Strategy A failed — using fallback (insert before line 108)"
+            $lines = Get-Content $singletonH
+            if ($lines.Count -ge 108) {
+              $before = $lines[0..106]
+              $after = $lines[107..($lines.Count - 1)]
+              $output = [System.Collections.Generic.List[string]]::new()
+              $before | ForEach-Object { $output.Add($_) }
+              $output.Add("  virtual ~ACE_Singleton (void) noexcept {}")
+              $after | ForEach-Object { $output.Add($_) }
+              $inserted = $true
+              Write-Host "Strategy B: inserted destructor at line 108"
+            }
+          }
+
+          # Strategy C (nuclear): replace the entire class closing brace pattern
+          if (-not $inserted) {
+            Write-Host "Strategy B failed — using nuclear option (raw regex on full content)"
+            $patched = $content -replace '(?m)(class\s+ACE_Singleton\b[^\n]*\n)', "`$1  virtual ~ACE_Singleton (void) noexcept {}`n"
+            if ($patched -ne $content) {
+              $content = $patched
+              $inserted = $true
+              Write-Host "Strategy C: inserted destructor after class declaration line"
+            }
+          }
+
+          if ($inserted) {
+            if ($output.Count -gt 0) {
+              Set-Content -Path $singletonH -Value ($output -join "`n") -Encoding UTF8 -NoNewline
+            } else {
+              Set-Content -Path $singletonH -Value $content -Encoding UTF8 -NoNewline
+            }
+            Write-Host "SUCCESS: Singleton.h patched"
+            # Verify
+            $check = Get-Content $singletonH -Raw
+            if ($check -match '~ACE_Singleton\s*\([^)]*\)\s*noexcept') {
+              Write-Host "VERIFIED: noexcept destructor present in file"
+            } else {
+              Write-Error "VERIFICATION FAILED: destructor not found after patching!"
+              exit 1
+            }
+          } else {
+            Write-Error "ALL STRATEGIES FAILED — cannot patch Singleton.h"
+            exit 1
           }
 
       - name: Build ACE (Release x64)
