@@ -1,155 +1,186 @@
-name: Build Windows
+name: Build Windows Server
 
 on:
   push:
-    branches: [ docker ]
-  #   tags:
-  #     - 'v*'
-  # pull_request:
-  #   branches: [ docker ]
+    branches: ["docker"]
   workflow_dispatch:
 
 env:
   BUILD_TYPE: Release
+  # ACE Micro Release 8.0.5 — the only external dependency on Windows;
+  # MySQL / OpenSSL / zlib are bundled under dep/windows/.
+  ACE_VERSION: "8.0.5"
+  ACE_ROOT: "C:\\ACE"
 
 jobs:
   build:
-    name: Windows x64 Release
-    runs-on: windows-2022
+    name: Windows x64 – Release
+    runs-on: windows-latest
 
     steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          submodules: recursive
-          fetch-depth: 0   # needed for git-describe / revision info
+          fetch-depth: 0   # needed for revision hash in the binary
 
-      # ----------------------------------------------------------------
-      # ACE — the only external dependency on Windows.
-      # MySQL / OpenSSL / zlib are bundled under dep/windows/.
-      #
-      # Build ACE 6.5.19 from source to avoid all vcpkg compatibility issues:
-      #   - Recent vcpkg ships ACE 7.x  → MSVC C2694 in ACE_Singleton
-      #   - Pinned old vcpkg (2023.04.15) → hardcoded MSYS2 package hashes
-      #     are now 404 on every mirror; vcpkg_acquire_msys always fires even
-      #     when pkg-config is already in PATH.
-      # Building from the upstream tag is deterministic and mirror-independent.
-      # ----------------------------------------------------------------
-      - name: Cache ACE 6.5.19 installation
-        id: ace-cache
+      # ── 2. Toolchain ─────────────────────────────────────────────────────────
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Set up CMake ≥ 3.25
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: "3.25.1"
+
+      # ── 3. ACE – restore from cache or build from source ────────────────────
+      - name: Restore ACE cache
+        id: cache-ace
         uses: actions/cache@v4
         with:
-          path: C:\ACE_install
-          key: ace-6.5.19-vs2022-x64-v1
+          path: ${{ env.ACE_ROOT }}
+          # Bump the suffix (v1 → v2 …) to force a rebuild when patches change.
+          key: ace-${{ env.ACE_VERSION }}-win64-release-v1
 
-      - name: Clone ACE 6.5.19 source
-        if: steps.ace-cache.outputs.cache-hit != 'true'
+      - name: Download ACE ${{ env.ACE_VERSION }}
+        if: steps.cache-ace.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          git clone --depth 1 --branch "ACE+TAO-6_5_19" `
-            https://github.com/DOCGroup/ACE_TAO.git C:\ACE_src --quiet
+          $url = "https://github.com/DOCGroup/ACE_TAO/releases/download/ACE%2BTAO-$($env:ACE_VERSION -replace '\.','_')/ACE-$($env:ACE_VERSION).zip"
+          Write-Host "Downloading ACE from $url"
+          Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\ACE.zip" -UseBasicParsing
+          Expand-Archive -Path "$env:TEMP\ACE.zip" -DestinationPath "$env:TEMP\ACE-src" -Force
+          # The archive unpacks to ACE_wrappers/ — move to the expected root
+          $inner = Get-ChildItem "$env:TEMP\ACE-src" -Directory | Select-Object -First 1
+          Move-Item $inner.FullName $env:ACE_ROOT
 
-      - name: Build and install ACE 6.5.19
-        if: steps.ace-cache.outputs.cache-hit != 'true'
+      - name: Patch ACE for MSVC compatibility
+        if: steps.cache-ace.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          cmake -S C:\ACE_src -B C:\ACE_build `
-            -G "Visual Studio 17 2022" -A x64 `
-            -DCMAKE_INSTALL_PREFIX="C:\ACE_install" `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DBUILD_TESTING=OFF
-          cmake --build C:\ACE_build `
-            --config Release `
-            --parallel $env:NUMBER_OF_PROCESSORS
-          cmake --install C:\ACE_build --config Release
+          # config.h is required on Windows; ACE ships config-win32.h but not a top-level config.h
+          $configH = Join-Path $env:ACE_ROOT "ace\config.h"
+          if (-not (Test-Path $configH)) {
+            Set-Content -Path $configH -Value '#include "ace/config-win32.h"' -Encoding UTF8
+            Write-Host "Created ace/config.h"
+          }
 
-      - name: Set ACE_ROOT environment variable
+          # Add 'noexcept' to destructors / move members in Singleton to satisfy
+          # stricter C++17 rules enforced by VS 2022 / VS 2026.
+          foreach ($file in @("ace\Singleton.h", "ace\Singleton.inl", "ace\Singleton.cpp")) {
+            $path = Join-Path $env:ACE_ROOT $file
+            if (Test-Path $path) {
+              $content = Get-Content $path -Raw
+              # Append noexcept to bare destructor declarations that are missing it
+              $patched = $content `
+                -replace '(~\w+\s*\(\s*\))\s*(?!noexcept)\s*;', '$1 noexcept;' `
+                -replace '(~\w+\s*\(\s*\))\s*(?!noexcept)\s*\{', '$1 noexcept {'
+              if ($patched -ne $content) {
+                Set-Content -Path $path -Value $patched -Encoding UTF8 -NoNewline
+                Write-Host "Patched $file"
+              }
+            }
+          }
+
+      - name: Build ACE (Release x64)
+        if: steps.cache-ace.outputs.cache-hit != 'true'
         shell: pwsh
-        run: echo "ACE_ROOT=C:\ACE_install" >> $env:GITHUB_ENV
+        run: |
+          # Prefer the VS-2022 solution; fall back to any available .sln
+          $sln = Get-ChildItem $env:ACE_ROOT -Filter "ACE_vs2022.sln" | Select-Object -First 1
+          if (-not $sln) {
+            $sln = Get-ChildItem $env:ACE_ROOT -Filter "ACE*.sln" | Select-Object -First 1
+          }
+          if (-not $sln) {
+            Write-Error "No ACE solution file found under $env:ACE_ROOT"
+            exit 1
+          }
+          Write-Host "Building $($sln.FullName)"
+          msbuild "$($sln.FullName)" `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /m `
+            /nologo `
+            /verbosity:minimal
 
-      # ----------------------------------------------------------------
-      # Configure
-      # ----------------------------------------------------------------
+      # ── 4. Patch client build version ────────────────────────────────────────
+      # The realmd accepts clients of build 7272 (current HEAD). The windows-build.md
+      # guide documents changing 7199→7207; adjust the sed target as needed.
+      - name: Patch RealmList client build (optional)
+        shell: pwsh
+        run: |
+          $file = "${{ github.workspace }}\src\realmd\RealmList.cpp"
+          if (Test-Path $file) {
+            $content = Get-Content $file -Raw
+            # Only patch if the old value exists; avoids silent no-ops breaking future runs
+            if ($content -match '\b7199\b') {
+              $patched = $content -replace '\b7199\b', '7207'
+              Set-Content -Path $file -Value $patched -Encoding UTF8 -NoNewline
+              Write-Host "Patched RealmList client build 7199 → 7207"
+            } else {
+              Write-Host "Client build value 7199 not found – skipping patch"
+            }
+          }
+
+      # ── 5. Configure CMake ────────────────────────────────────────────────────
       - name: Configure CMake
         shell: pwsh
         run: |
-          cmake -S . -B build `
-            -G "Visual Studio 17 2022" `
+          $buildDir = "${{ github.workspace }}\..\turtlewow-build"
+          New-Item -ItemType Directory -Force $buildDir | Out-Null
+
+          cmake -B $buildDir `
+            -S "${{ github.workspace }}" `
             -A x64 `
             -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
+            -DACE_ROOT="$env:ACE_ROOT" `
             -DUSE_STD_MALLOC=ON `
             -DUSE_SCRIPTS=ON `
-            -DUSE_ANTICHEAT=OFF `
-            -DUSE_EXTRACTORS=ON `
-            -DALLOW_TURTLE_ADDONS=ON `
-            -DUSE_DISCORD_BOT=OFF `
-            -DUSE_LIBCURL=OFF `
-            -DUSE_REALMMERGE=OFF `
-            -DACE_ROOT="C:/ACE_install"
+            -DUSE_EXTRACTORS=OFF
 
-      # ----------------------------------------------------------------
-      # Build
-      # ----------------------------------------------------------------
-      - name: Build
+      # ── 6. Build ──────────────────────────────────────────────────────────────
+      - name: Build TurtleWoW (Release x64)
         shell: pwsh
         run: |
-          cmake --build build `
-            --config ${{ env.BUILD_TYPE }} `
-            --parallel $env:NUMBER_OF_PROCESSORS
+          $buildDir = "${{ github.workspace }}\..\turtlewow-build"
+          $sln = Get-ChildItem $buildDir -Filter "TurtleWoW.sln" | Select-Object -First 1
+          if (-not $sln) {
+            Write-Error "TurtleWoW.sln not found in $buildDir"
+            exit 1
+          }
+          msbuild "$($sln.FullName)" `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /m `
+            /nologo `
+            /verbosity:minimal
 
-      # ----------------------------------------------------------------
-      # Stage artifact directory
-      # ----------------------------------------------------------------
-      - name: Stage binaries
+      # ── 7. Copy ACE.dll next to the server binaries ───────────────────────────
+      - name: Copy ACE.dll
         shell: pwsh
         run: |
-          $dest = "artifact\bin"
-          New-Item -ItemType Directory -Force $dest | Out-Null
-
-          # Core server binaries
-          $binRelease = "bin\${{ env.BUILD_TYPE }}"
-          if (Test-Path $binRelease) {
-            Copy-Item "$binRelease\*.exe" $dest -ErrorAction SilentlyContinue
-            Copy-Item "$binRelease\*.dll" $dest -ErrorAction SilentlyContinue
+          # On Windows the CMake project writes binaries to ${CMAKE_SOURCE_DIR}/bin
+          $binDir = "${{ github.workspace }}\bin"
+          $aceDll = Get-ChildItem $env:ACE_ROOT -Recurse -Filter "ACE.dll" |
+                    Where-Object { $_.FullName -match "Release" } |
+                    Select-Object -First 1
+          if ($aceDll) {
+            Copy-Item -Force $aceDll.FullName $binDir
+            Write-Host "Copied $($aceDll.FullName) → $binDir"
           } else {
-            # Some generators put output directly under bin/
-            Copy-Item "bin\*.exe" $dest -ErrorAction SilentlyContinue
-            Copy-Item "bin\*.dll" $dest -ErrorAction SilentlyContinue
+            Write-Warning "ACE.dll not found – server may fail to start without it"
           }
 
-          # Runtime DLLs bundled with the repo (MySQL, OpenSSL, zlib …)
-          Copy-Item "dep\windows\lib\x64_release\*.dll" $dest -ErrorAction SilentlyContinue
-
-          # ACE runtime DLL (built from source)
-          Copy-Item "C:\ACE_install\bin\ACE.dll" $dest -ErrorAction SilentlyContinue
-
-          Write-Host "Staged files:"
-          Get-ChildItem $dest | Select-Object Name, Length
-
-      # ----------------------------------------------------------------
-      # Upload artifact
-      # ----------------------------------------------------------------
-      - name: Upload build artifact
+      # ── 8. Upload artifacts ───────────────────────────────────────────────────
+      - name: Upload server binaries
         uses: actions/upload-artifact@v4
         with:
-          name: TurtleWoW-Windows-x64-${{ github.sha }}
-          path: artifact/
-          if-no-files-found: error
+          name: turtlewow-server-win64-${{ github.sha }}
+          path: |
+            ${{ github.workspace }}\bin\mangosd.exe
+            ${{ github.workspace }}\bin\realmd.exe
+            ${{ github.workspace }}\bin\ACE.dll
+            ${{ github.workspace }}\bin\*.dll
+            ${{ github.workspace }}\bin\*.conf.dist
+          if-no-files-found: warn
           retention-days: 30
-
-      # ----------------------------------------------------------------
-      # Create GitHub Release (only on version tags)
-      # ----------------------------------------------------------------
-      - name: Create release archive
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: pwsh
-        run: |
-          Compress-Archive -Path artifact\* `
-            -DestinationPath "TurtleWoW-Windows-x64-${{ github.ref_name }}.zip"
-
-      - name: Upload to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: TurtleWoW-Windows-x64-${{ github.ref_name }}.zip
-          generate_release_notes: true
