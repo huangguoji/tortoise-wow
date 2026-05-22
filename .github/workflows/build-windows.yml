@@ -1,8 +1,8 @@
 name: Build Windows
 
 on:
-  # push:
-  #   branches: [ docker ]
+  push:
+    branches: [ docker ]
   #   tags:
   #     - 'v*'
   # pull_request:
