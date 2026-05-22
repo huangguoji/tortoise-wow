@@ -11,7 +11,6 @@ on:
 
 env:
   BUILD_TYPE: Release
-  VCPKG_DEFAULT_TRIPLET: x64-windows
 
 jobs:
   build:
@@ -29,56 +28,44 @@ jobs:
       # ACE — the only external dependency on Windows.
       # MySQL / OpenSSL / zlib are bundled under dep/windows/.
       #
-      # ACE 7.x (shipped by recent vcpkg) is incompatible with this codebase:
-      # MSVC C2694 fires because ACE_Cleanup::~ACE_Cleanup gained noexcept(false)
-      # while ACE_Singleton's generated dtor is implicitly noexcept.
-      # Solution: clone vcpkg at the 2023.04.15 release tag which still ships
-      # ACE 6.5.x, then cache the installed packages.
+      # Build ACE 6.5.19 from source to avoid all vcpkg compatibility issues:
+      #   - Recent vcpkg ships ACE 7.x  → MSVC C2694 in ACE_Singleton
+      #   - Pinned old vcpkg (2023.04.15) → hardcoded MSYS2 package hashes
+      #     are now 404 on every mirror; vcpkg_acquire_msys always fires even
+      #     when pkg-config is already in PATH.
+      # Building from the upstream tag is deterministic and mirror-independent.
       # ----------------------------------------------------------------
-      - name: Cache pinned vcpkg ACE packages
-        id: vcpkg-cache
+      - name: Cache ACE 6.5.19 installation
+        id: ace-cache
         uses: actions/cache@v4
         with:
-          path: C:\vcpkg_pinned\installed
-          key: vcpkg-ace6-x64-windows-2023.04.15
+          path: C:\ACE_install
+          key: ace-6.5.19-vs2022-x64-v1
 
-      - name: Checkout pinned vcpkg (ACE 6.5.x era)
-        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+      - name: Clone ACE 6.5.19 source
+        if: steps.ace-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg_pinned `
-            --branch 2023.04.15 --depth 1 --quiet
-          C:\vcpkg_pinned\bootstrap-vcpkg.bat -disableMetrics
+          git clone --depth 1 --branch "ACE+TAO-6_5_19" `
+            https://github.com/DOCGroup/ACE_TAO.git C:\ACE_src --quiet
 
-      # pkg-config must exist before vcpkg builds ACE; otherwise the ACE port's
-      # vcpkg_fixup_pkgconfig step tries to download MSYS2 packages whose URLs
-      # are now 404 on all mirrors (the pinned vcpkg has stale package hashes).
-      - name: Install pkg-config (prevents vcpkg MSYS2 download)
-        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
-        shell: pwsh
-        run: choco install pkgconfiglite --no-progress -y
-
-      - name: Install ACE 6.5.x via pinned vcpkg
-        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+      - name: Build and install ACE 6.5.19
+        if: steps.ace-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          & "C:\vcpkg_pinned\vcpkg.exe" install ace:x64-windows
+          cmake -S C:\ACE_src -B C:\ACE_build `
+            -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_INSTALL_PREFIX="C:\ACE_install" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DBUILD_TESTING=OFF
+          cmake --build C:\ACE_build `
+            --config Release `
+            --parallel $env:NUMBER_OF_PROCESSORS
+          cmake --install C:\ACE_build --config Release
 
-      - name: Bootstrap vcpkg (cache-hit path)
-        if: steps.vcpkg-cache.outputs.cache-hit == 'true'
-        shell: pwsh
-        run: |
-          if (-not (Test-Path C:\vcpkg_pinned\vcpkg.exe)) {
-            git clone https://github.com/microsoft/vcpkg.git C:\vcpkg_pinned `
-              --branch 2023.04.15 --depth 1 --quiet
-            C:\vcpkg_pinned\bootstrap-vcpkg.bat -disableMetrics
-          }
-
-      # Expose ACE_ROOT so CMake FindACE.cmake can locate the library
       - name: Set ACE_ROOT environment variable
         shell: pwsh
-        run: |
-          echo "ACE_ROOT=C:\vcpkg_pinned\installed\x64-windows" >> $env:GITHUB_ENV
+        run: echo "ACE_ROOT=C:\ACE_install" >> $env:GITHUB_ENV
 
       # ----------------------------------------------------------------
       # Configure
@@ -98,7 +85,7 @@ jobs:
             -DUSE_DISCORD_BOT=OFF `
             -DUSE_LIBCURL=OFF `
             -DUSE_REALMMERGE=OFF `
-            -DACE_ROOT="C:/vcpkg_pinned/installed/x64-windows"
+            -DACE_ROOT="C:/ACE_install"
 
       # ----------------------------------------------------------------
       # Build
@@ -133,8 +120,8 @@ jobs:
           # Runtime DLLs bundled with the repo (MySQL, OpenSSL, zlib …)
           Copy-Item "dep\windows\lib\x64_release\*.dll" $dest -ErrorAction SilentlyContinue
 
-          # ACE runtime DLL from pinned vcpkg
-          Copy-Item "C:\vcpkg_pinned\installed\x64-windows\bin\ACE.dll" $dest -ErrorAction SilentlyContinue
+          # ACE runtime DLL (built from source)
+          Copy-Item "C:\ACE_install\bin\ACE.dll" $dest -ErrorAction SilentlyContinue
 
           Write-Host "Staged files:"
           Get-ChildItem $dest | Select-Object Name, Length
