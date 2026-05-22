@@ -5,8 +5,8 @@ on:
   #   branches: [ docker ]
   #   tags:
   #     - 'v*'
-  pull_request:
-    branches: [ docker ]
+  # pull_request:
+  #   branches: [ docker ]
   workflow_dispatch:
 
 env:
