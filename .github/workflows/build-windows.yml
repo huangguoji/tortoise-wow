@@ -1,10 +1,10 @@
 name: Build Windows
 
 on:
-  push:
-    branches: [ docker ]
-    tags:
-      - 'v*'
+  # push:
+  #   branches: [ docker ]
+  #   tags:
+  #     - 'v*'
   pull_request:
     branches: [ docker ]
   workflow_dispatch:
@@ -26,36 +26,51 @@ jobs:
           fetch-depth: 0   # needed for git-describe / revision info
 
       # ----------------------------------------------------------------
-      # vcpkg: restore or build ACE (the only external dependency on Windows;
-      # MySQL / OpenSSL / zlib are bundled under dep/windows/)
+      # ACE — the only external dependency on Windows.
+      # MySQL / OpenSSL / zlib are bundled under dep/windows/.
+      #
+      # ACE 7.x (shipped by recent vcpkg) is incompatible with this codebase:
+      # MSVC C2694 fires because ACE_Cleanup::~ACE_Cleanup gained noexcept(false)
+      # while ACE_Singleton's generated dtor is implicitly noexcept.
+      # Solution: clone vcpkg at the 2023.04.15 release tag which still ships
+      # ACE 6.5.x, then cache the installed packages.
       # ----------------------------------------------------------------
-      - name: Export vcpkg commit hash for cache key
-        shell: pwsh
-        run: |
-          $hash = (git -C "C:\vcpkg" rev-parse HEAD 2>$null)
-          if (-not $hash) { $hash = "builtin" }
-          echo "VCPKG_COMMIT=$hash" >> $env:GITHUB_ENV
-
-      - name: Cache vcpkg installed packages
+      - name: Cache pinned vcpkg ACE packages
         id: vcpkg-cache
         uses: actions/cache@v4
         with:
-          path: C:\vcpkg\installed
-          key: vcpkg-${{ env.VCPKG_DEFAULT_TRIPLET }}-ace-${{ env.VCPKG_COMMIT }}
-          restore-keys: |
-            vcpkg-${{ env.VCPKG_DEFAULT_TRIPLET }}-ace-
+          path: C:\vcpkg_pinned\installed
+          key: vcpkg-ace6-x64-windows-2023.04.15
 
-      - name: Install ACE via vcpkg
+      - name: Checkout pinned vcpkg (ACE 6.5.x era)
         if: steps.vcpkg-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          & "C:\vcpkg\vcpkg.exe" install ace:x64-windows
+          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg_pinned `
+            --branch 2023.04.15 --depth 1 --quiet
+          C:\vcpkg_pinned\bootstrap-vcpkg.bat -disableMetrics
+
+      - name: Install ACE 6.5.x via pinned vcpkg
+        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          & "C:\vcpkg_pinned\vcpkg.exe" install ace:x64-windows
+
+      - name: Bootstrap vcpkg (cache-hit path)
+        if: steps.vcpkg-cache.outputs.cache-hit == 'true'
+        shell: pwsh
+        run: |
+          if (-not (Test-Path C:\vcpkg_pinned\vcpkg.exe)) {
+            git clone https://github.com/microsoft/vcpkg.git C:\vcpkg_pinned `
+              --branch 2023.04.15 --depth 1 --quiet
+            C:\vcpkg_pinned\bootstrap-vcpkg.bat -disableMetrics
+          }
 
       # Expose ACE_ROOT so CMake FindACE.cmake can locate the library
       - name: Set ACE_ROOT environment variable
         shell: pwsh
         run: |
-          echo "ACE_ROOT=C:\vcpkg\installed\x64-windows" >> $env:GITHUB_ENV
+          echo "ACE_ROOT=C:\vcpkg_pinned\installed\x64-windows" >> $env:GITHUB_ENV
 
       # ----------------------------------------------------------------
       # Configure
@@ -75,7 +90,7 @@ jobs:
             -DUSE_DISCORD_BOT=OFF `
             -DUSE_LIBCURL=OFF `
             -DUSE_REALMMERGE=OFF `
-            -DACE_ROOT="C:/vcpkg/installed/x64-windows"
+            -DACE_ROOT="C:/vcpkg_pinned/installed/x64-windows"
 
       # ----------------------------------------------------------------
       # Build
@@ -110,8 +125,8 @@ jobs:
           # Runtime DLLs bundled with the repo (MySQL, OpenSSL, zlib …)
           Copy-Item "dep\windows\lib\x64_release\*.dll" $dest -ErrorAction SilentlyContinue
 
-          # ACE runtime DLL from vcpkg
-          Copy-Item "C:\vcpkg\installed\x64-windows\bin\ACE.dll" $dest -ErrorAction SilentlyContinue
+          # ACE runtime DLL from pinned vcpkg
+          Copy-Item "C:\vcpkg_pinned\installed\x64-windows\bin\ACE.dll" $dest -ErrorAction SilentlyContinue
 
           Write-Host "Staged files:"
           Get-ChildItem $dest | Select-Object Name, Length

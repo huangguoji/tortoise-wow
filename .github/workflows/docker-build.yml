@@ -1,8 +1,8 @@
 name: Build and Push Docker Images main
 
 on:
-  push:
-    branches: [ docker ]
+  # push:
+  #   branches: [ docker ]
   workflow_dispatch:
 
 concurrency:
