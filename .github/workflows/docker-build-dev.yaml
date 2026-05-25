@@ -12,7 +12,7 @@ permissions: {}
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  CACHIX_CACHE_NAME: "tortoise-wow"
+  CACHIX_CACHE_NAME: "twow"
 
 jobs:
   build:
