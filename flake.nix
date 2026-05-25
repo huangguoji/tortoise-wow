@@ -111,7 +111,8 @@
             "-DOPENSSL_ROOT_DIR=${pkgs.openssl.dev}"
             "-DOPENSSL_INCLUDE_DIR=${pkgs.openssl.dev}/include"
             "-DALLOW_TURTLE_ADDONS=ON"
-            "-DUSE_REALMMERGE=ON"
+            "-DUSE_REALMMERGE=ON",
+            "-DBUILD_PLAYERBOTS=ON"
           ];
 
           # Base layer with runtime dependencies (shared between realmd and mangosd)
