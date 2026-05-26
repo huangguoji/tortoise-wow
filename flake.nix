@@ -68,6 +68,14 @@
             for f in src/game/AccountMgr.h src/game/Conditions.h src/game/DynamicVisibilityMgr.h src/game/ObjectMgr.h src/game/Objects/Player.h src/game/Logging/DatabaseLogger.hpp src/shared/Database/AutoUpdater.cpp; do
               sed -i '1i #include <optional>' "$f"
             done
+
+            # PlayerbotAI.h uses std::future and the AreaTableEntry/AreaTrigger
+            # type aliases that normally come from botpch.h (the PCH). When
+            # USE_PCH=OFF those are never injected; patch the header directly.
+            sed -i '1i #include <future>' \
+              src/modules/PlayerBots/playerbot/PlayerbotAI.h
+            sed -i '2i struct AreaEntry; typedef AreaEntry AreaTableEntry; struct AreaTriggerEntry; typedef AreaTriggerEntry AreaTrigger;' \
+              src/modules/PlayerBots/playerbot/PlayerbotAI.h
           '';
 
           NIX_LDFLAGS = "-lmariadb -L${pkgs.mariadb-connector-c.out}/lib/mariadb";
@@ -93,7 +101,7 @@
           tortoiseWowPkg = makeTortoise pkgs [
             "-G Ninja"
             "-DCMAKE_BUILD_TYPE=Release"
-            "-DUSE_PCH=OFF"
+            "-DUSE_PCH=ON"
             "-DUSE_STD_MALLOC=ON"
             "-DUSE_EXTRACTORS=ON"
             "-DBUILD_FOR_HOST_CPU=OFF"
@@ -107,7 +115,7 @@
           tortoiseWowDevPkg = makeTortoise pkgs [
             "-G Ninja"
             "-DCMAKE_BUILD_TYPE=Debug"
-            "-DUSE_PCH=OFF"
+            "-DUSE_PCH=ON"
             "-DUSE_STD_MALLOC=ON"
             "-DUSE_EXTRACTORS=OFF"
             "-DUSE_ANTICHEAT=OFF"
