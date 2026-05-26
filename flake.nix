@@ -54,7 +54,9 @@
           postPatch = ''
             substituteInPlace CMakeLists.txt \
               --replace "find_package(MySQL REQUIRED)" "set(MySQL_FOUND TRUE)" \
-              --replace "-march=native" "-march=x86-64"
+              --replace "-march=native" "-march=x86-64" \
+              --replace "find_package(Boost REQUIRED COMPONENTS system filesystem thread)" \
+                        "find_package(Boost REQUIRED COMPONENTS filesystem thread)"
 
             # Force it to use CMake's built-in FindOpenSSL instead of the bundled one
             rm cmake/FindOpenSSL.cmake
