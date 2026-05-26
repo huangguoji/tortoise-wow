@@ -57,7 +57,10 @@
               --replace "-march=native" "-march=x86-64" \
               --replace "find_package(Boost REQUIRED COMPONENTS system filesystem thread)" \
                         "find_package(Boost REQUIRED COMPONENTS filesystem thread)"
-
+          # Boost 1.87+ dropped boost_system as a compiled component (it is now header-only).
+          # Provide a stub INTERFACE target so vendored modules (e.g. PlayerBots) that
+          # call target_link_libraries(...Boost::system...) still configure successfully.
+          sed -i 's|find_package(Boost REQUIRED COMPONENTS filesystem thread)|find_package(Boost REQUIRED COMPONENTS filesystem thread)\nif(NOT TARGET Boost::system)\n  add_library(Boost::system INTERFACE IMPORTED)\nendif()|g' CMakeLists.txt
             # Force it to use CMake's built-in FindOpenSSL instead of the bundled one
             rm cmake/FindOpenSSL.cmake
 
