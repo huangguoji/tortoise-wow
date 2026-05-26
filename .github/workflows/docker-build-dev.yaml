@@ -1,0 +1,233 @@
+name: Build and Push Dev Docker Images
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  CACHIX_CACHE_NAME: "twow"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      realmd-digest-dev: ${{ steps.load.outputs.realmd-digest-dev }}
+      mangosd-digest-dev: ${{ steps.load.outputs.mangosd-digest-dev }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+          ref: ${{ github.ref }}
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build Docker images with Nix
+        run: |
+          nix build .#realmd-image-tar-dev --out-link result-realmd-image-tar-dev
+          nix build .#mangosd-image-tar-dev --out-link result-mangosd-image-tar-dev
+
+      - name: Push compiled binaries to Cachix
+        if: github.event_name != 'pull_request'
+        run: |
+          nix run nixpkgs#cachix -- push $CACHIX_CACHE_NAME $(nix-store -qR $(nix path-info .#tortoise-wow))
+        env:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Push image tarballs to Cachix
+        if: github.event_name != 'pull_request'
+        run: |
+          nix run nixpkgs#cachix -- push $CACHIX_CACHE_NAME $(nix-store -qR $(readlink -f result-realmd-image-tar-dev))
+          nix run nixpkgs#cachix -- push $CACHIX_CACHE_NAME $(nix-store -qR $(readlink -f result-mangosd-image-tar-dev))
+        env:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Load images into Docker and capture digests
+        id: load
+        run: |
+          docker load < result-realmd-image-tar-dev
+          docker load < result-mangosd-image-tar-dev
+
+          echo "realmd-digest-dev=$(docker inspect --format='{{index .Id}}' tortoise-wow-realmd-dev:latest)" >> $GITHUB_OUTPUT
+          echo "mangosd-digest-dev=$(docker inspect --format='{{index .Id}}' tortoise-wow-mangosd-dev:latest)" >> $GITHUB_OUTPUT
+
+      - name: Verify images are loaded
+        run: |
+          docker image inspect tortoise-wow-realmd-dev:latest
+          docker image inspect tortoise-wow-mangosd-dev:latest
+
+      - name: Export images as tarballs for artifact sharing
+        run: |
+          docker save tortoise-wow-realmd-dev:latest | gzip > realmd-dev.tar.gz
+          docker save tortoise-wow-mangosd-dev:latest | gzip > mangosd-dev.tar.gz
+
+      - name: Upload image artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: docker-images-dev
+          path: |
+            realmd-dev.tar.gz
+            mangosd-dev.tar.gz
+          retention-days: 30
+
+  publish:
+    runs-on: ubuntu-24.04
+    needs: build
+    timeout-minutes: 30
+    permissions:
+      packages: write
+      id-token: write
+
+    outputs:
+      realmd-dev-ref: ${{ steps.push.outputs.realmd-dev_ref }}
+      mangosd-dev-ref: ${{ steps.push.outputs.mangosd-dev_ref }}
+
+    steps:
+      - name: Download image artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: docker-images-dev
+
+      - name: Load images
+        run: |
+          docker load < realmd-dev.tar.gz
+          docker load < mangosd-dev.tar.gz
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for realmd-dev
+        id: meta-realmd-dev
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-realmd-dev
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+            type=sha,prefix=sha-,format=long
+
+      - name: Extract metadata for mangosd-dev
+        id: meta-mangosd-dev
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-mangosd-dev
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+            type=sha,prefix=sha-,format=long
+
+      - name: Tag and push all images
+        id: push
+        run: |
+          push_image() {
+          local local_tag=$1
+          local tags=$2
+          local output_key=$3
+          local digest=""
+          for tag in $tags; do
+            docker tag $local_tag $tag
+            docker push $tag
+          done
+          digest=$(docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${output_key}:sha-${{ github.sha }} --verbose 2>/dev/null | jq -r '.Descriptor.digest' || docker inspect --format='{{index .RepoDigests 0}}' $local_tag | cut -d@ -f2)
+          echo "${output_key}_ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${output_key}@${digest}" >> $GITHUB_OUTPUT
+          }
+          push_image tortoise-wow-realmd-dev:latest "${{ steps.meta-realmd-dev.outputs.tags }}" realmd-dev
+          push_image tortoise-wow-mangosd-dev:latest "${{ steps.meta-mangosd-dev.outputs.tags }}" mangosd-dev
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
+
+      - name: Sign all images by digest
+        run: |
+          cosign sign --yes ${{ steps.push.outputs.realmd-dev_ref }}
+          cosign sign --yes ${{ steps.push.outputs.mangosd-dev_ref }}
+        env:
+          COSIGN_EXPERIMENTAL: true
+
+  scan:
+    runs-on: ubuntu-24.04
+    needs: publish
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Generate SBOM for realmd-dev
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ needs.publish.outputs.realmd-dev-ref }}
+          format: 'spdx-json'
+          output: 'sbom-realmd-dev.spdx.json'
+          exit-code: '0'
+
+      - name: Generate SBOM for mangosd-dev
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ needs.publish.outputs.mangosd-dev-ref }}
+          format: 'spdx-json'
+          output: 'sbom-mangosd-dev.spdx.json'
+          exit-code: '0'
+
+      - name: Run Trivy vulnerability scanner on realmd-dev
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ needs.publish.outputs.realmd-dev-ref }}
+          format: 'sarif'
+          output: 'trivy-realmd-dev.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+      - name: Run Trivy vulnerability scanner on mangosd-dev
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ needs.publish.outputs.mangosd-dev-ref }}
+          format: 'sarif'
+          output: 'trivy-mangosd-dev.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+      - name: Upload Trivy results for realmd-dev to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@e46ed2cbd01164d986452f91f178727624ae40d7 # v4.35.3
+        with:
+          sarif_file: 'trivy-realmd-dev.sarif'
+          category: 'realmd-dev'
+
+      - name: Upload Trivy results for mangosd-dev to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@e46ed2cbd01164d986452f91f178727624ae40d7 # v4.35.3
+        with:
+          sarif_file: 'trivy-mangosd-dev.sarif'
+          category: 'mangosd-dev'
+
+      - name: Upload SBOMs as artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sboms-dev
+          path: |
+            sbom-realmd-dev.spdx.json
+            sbom-mangosd-dev.spdx.json
+          retention-days: 30

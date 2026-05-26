@@ -53,6 +53,54 @@ To build this project follow any MaNGOS/MaNGOS Zero build guide, with the additi
 
 This will be streamlined once the core is more up to date
 
+## Docker Compose Deployment
+
+This repository includes a `docker-compose.yml` setup that starts:
+
+1. `db` (MariaDB 10.6)
+2. `realmd`
+3. `mangosd`
+
+### Prerequisites
+
+1. Install Docker and Docker Compose.
+2. Ensure `./data` contains the extracted game data expected by `mangosd`.
+
+### Start
+
+```bash
+docker compose up -d --build
+```
+
+### Logs
+
+```bash
+docker compose logs -f db realmd mangosd
+```
+
+### Stop
+
+```bash
+docker compose down
+```
+
+### Reset database volume (danger: deletes all DB data)
+
+```bash
+docker compose down -v
+```
+
+On first boot, the database container imports:
+
+1. `sql/create_databases.sql`
+2. all files in `sql/base/*.sql` (into `tw_world`)
+
+The default DB credentials used by `realmd`/`mangosd` are:
+
+- user: `mangos`
+- password: `mangos`
+- host: `db`
+
 ## Contributing
 
 Contributions are welcome, but I may be slow to review and merge PRs

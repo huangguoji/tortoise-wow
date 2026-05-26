@@ -1170,83 +1170,6 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, int3
             break;
         case SPELLFAMILY_PALADIN:
         {
-            // Seal of Righteousness - melee proc dummy
-            if ((dummySpell->IsFitToFamilyMask<CF_PALADIN_SEALS>()) && triggeredByAura->GetEffIndex() == EFFECT_INDEX_0)
-            {
-                if (!pVictim)
-                    return SPELL_AURA_PROC_FAILED;
-
-                if (GetTypeId() != TYPEID_PLAYER)
-                    return SPELL_AURA_PROC_FAILED;
-
-                uint32 spellId;
-                switch (triggeredByAura->GetId())
-                {
-                    case 20154:
-                    case 21084:
-                        spellId = 25742;
-                        break;     // Rank 1
-                    case 20287:
-                        spellId = 25740;
-                        break;     // Rank 2
-                    case 20288:
-                        spellId = 25739;
-                        break;     // Rank 3
-                    case 20289:
-                        spellId = 25738;
-                        break;     // Rank 4
-                    case 20290:
-                        spellId = 25737;
-                        break;     // Rank 5
-                    case 20291:
-                        spellId = 25736;
-                        break;     // Rank 6
-                    case 20292:
-                        spellId = 25735;
-                        break;     // Rank 7
-                    case 20293:
-                        spellId = 25713;
-                        break;     // Rank 8
-                    default:
-                        sLog.outError("Unit::HandleDummyAuraProc: non handled possibly SoR (Id = %u)", triggeredByAura->GetId());
-                        return SPELL_AURA_PROC_FAILED;
-                }
-                float MAX_WSP = 4.0f;
-                float MIN_WSP = 1.5f;
-
-                Item *item = ((Player*)this)->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
-                float speed = (item ? item->GetProto()->Delay : BASE_ATTACK_TIME) / 1000.0f;
-
-                float minDmg = triggerAmount / 87.0f;
-                float maxDmg = triggerAmount / 25.0f;
-
-                float damageBasePoints = (maxDmg - minDmg) * ((speed - MIN_WSP) / (MAX_WSP - MIN_WSP)) + minDmg;
-
-                // Apply Improved Seal of Rightousness talent
-                // Modifier is applied on base damage only (changed patch 2.1.0)
-                uint32 impSoRList[] = { 20224, 20225, 20330, 20331, 20332 };
-                for (uint32 i : impSoRList)
-                {
-                    SpellModifier *mod = ((Player*)this)->GetSpellMod(SPELLMOD_ALL_EFFECTS, i);
-                    if (mod && mod->type == SPELLMOD_PCT && mod->value > 0)
-                        damageBasePoints += damageBasePoints*(float)mod->value / 100.0f;
-                }
-
-                int32 damagePoint = urand(0, 1) ? floor(damageBasePoints) : ceil(damageBasePoints);
-
-                // apply damage bonuses manually
-                if (damagePoint >= 0)
-                {
-                    damagePoint = SpellDamageBonusDone(pVictim, dummySpell, EFFECT_INDEX_0, damagePoint, SPELL_DIRECT_DAMAGE);
-                    damagePoint = pVictim->SpellDamageBonusTaken(this, dummySpell, EFFECT_INDEX_0, damagePoint, SPELL_DIRECT_DAMAGE);
-                }
-
-                CastCustomSpell(pVictim, spellId, &damagePoint, nullptr, nullptr, true, nullptr, triggeredByAura);
-                // Seal of Righteousness can proc weapon enchants. mechanic removed in 2.1.0
-                ((Player*)this)->CastItemCombatSpell(pVictim, BASE_ATTACK);
-                return SPELL_AURA_PROC_OK;                                // no hidden cooldown
-            }
-
             switch (dummySpell->Id)
             {
                 // Sanctified Command (Custom Paladin Talent)
@@ -1713,6 +1636,46 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit* pVictim, uint32 d
             break;
         case SPELLFAMILY_PALADIN:
         {
+            // Seal of Righteousness: Damage Calculation
+            if (auraSpellInfo->IsFitToFamilyMask<CF_PALADIN_SEAL_OF_RIGHTEOUSNESS>() && triggeredByAura->GetEffIndex() == EFFECT_INDEX_0)
+            {
+                if (!pVictim || GetTypeId() != TYPEID_PLAYER)
+                    return SPELL_AURA_PROC_FAILED;
+
+                float const maxWeaponSpeed = 4.0f;
+                float const minWeaponSpeed = 1.5f;
+
+                Player* player = (Player*)this;
+                Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
+                float speed = (item ? item->GetProto()->Delay : BASE_ATTACK_TIME) / 1000.0f;
+
+                float minDmg = triggerAmount / 87.0f;
+                float maxDmg = triggerAmount / 25.0f;
+                float damageBasePoints = (maxDmg - minDmg) * ((speed - minWeaponSpeed) / (maxWeaponSpeed - minWeaponSpeed)) + minDmg;
+
+                int32 damagePoint = urand(0, 1) ? floor(damageBasePoints) : ceil(damageBasePoints);
+
+                if (damagePoint >= 0)
+                {
+                    int32 const spellPowerBonus = SpellBonusWithCoeffs(
+                        auraSpellInfo,
+                        EFFECT_INDEX_0,
+                        0,
+                        SpellBaseDamageBonusDone(auraSpellInfo->GetSpellSchoolMask()),
+                        0,
+                        SPELL_DIRECT_DAMAGE,
+                        true,
+                        this);
+
+                    damagePoint += spellPowerBonus;
+                }
+
+                CastCustomSpell(pVictim, trigger_spell_id, &damagePoint, nullptr, nullptr, true, castItem, triggeredByAura);
+
+                player->CastItemCombatSpell(pVictim, BASE_ATTACK);
+                return SPELL_AURA_PROC_OK;
+            }
+
             // Blessed Strikes: Crusader Strike resets Holy Shock cooldown
             if (auraSpellInfo->Id >= 51317 && auraSpellInfo->Id <= 51321)
             {

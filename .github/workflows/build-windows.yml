@@ -1,0 +1,265 @@
+name: Build Windows Server
+
+on:
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Release
+  # ACE Micro Release 8.0.5 — the only external dependency on Windows;
+  # MySQL / OpenSSL / zlib are bundled under dep/windows/.
+  ACE_VERSION: "8.0.5"
+  ACE_ROOT: "C:\\ACE"
+
+jobs:
+  build:
+    name: Windows x64 – Release
+    runs-on: windows-latest
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needed for revision hash in the binary
+
+      # ── 2. Toolchain ─────────────────────────────────────────────────────────
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Set up CMake ≥ 3.25
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: "3.25.1"
+
+      # ── 3. ACE – restore from cache or build from source ────────────────────
+      - name: Restore ACE cache
+        id: cache-ace
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ACE_ROOT }}
+          # Bump the suffix (v1 → v2 …) to force a rebuild when patches change.
+          key: ace-${{ env.ACE_VERSION }}-win64-release-v5
+
+      - name: Download ACE ${{ env.ACE_VERSION }}
+        if: steps.cache-ace.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $url = "https://github.com/DOCGroup/ACE_TAO/releases/download/ACE%2BTAO-$($env:ACE_VERSION -replace '\.','_')/ACE-$($env:ACE_VERSION).zip"
+          Write-Host "Downloading ACE from $url"
+          Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\ACE.zip" -UseBasicParsing
+          Expand-Archive -Path "$env:TEMP\ACE.zip" -DestinationPath "$env:TEMP\ACE-src" -Force
+          # The archive unpacks to ACE_wrappers/ — move to the expected root
+          $inner = Get-ChildItem "$env:TEMP\ACE-src" -Directory | Select-Object -First 1
+          Move-Item $inner.FullName $env:ACE_ROOT
+
+      - name: Patch ACE for MSVC compatibility
+        if: steps.cache-ace.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          # config.h is required on Windows; ACE ships config-win32.h but not a top-level config.h.
+          $configH = Join-Path $env:ACE_ROOT "ace\config.h"
+          if (-not (Test-Path $configH)) {
+            Set-Content -Path $configH -Value '#include "ace/config-win32.h"' -Encoding UTF8
+            Write-Host "Created ace/config.h"
+          }
+
+      # ── 3b. Fix MSVC C2694 in ACE Singleton headers (runs EVERY time) ───────
+      # This must run regardless of cache because a cached ACE might not have this fix.
+      - name: Fix ACE Singleton noexcept error (C2694)
+        shell: pwsh
+        run: |
+          $singletonH = Join-Path $env:ACE_ROOT "ace\Singleton.h"
+          if (-not (Test-Path $singletonH)) {
+            Write-Error "Singleton.h not found at $singletonH"
+            exit 1
+          }
+
+          $content = Get-Content $singletonH -Raw
+
+          # Skip if already patched
+          if ($content -match '~ACE_Singleton\s*\([^)]*\)\s*noexcept') {
+            Write-Host "Singleton.h: already has noexcept destructor — skipping"
+            exit 0
+          }
+
+          Write-Host "=== Singleton.h: first 15 lines for diagnostics ==="
+          Get-Content $singletonH -TotalCount 15 | ForEach-Object { Write-Host $_ }
+          Write-Host "=== end diagnostics ==="
+
+          # Strategy A: line-by-line — find "class ACE_Singleton ... ACE_Cleanup" then "public:"
+          $lines = Get-Content $singletonH
+          $output = [System.Collections.Generic.List[string]]::new()
+          $inSingletonClass = $false
+          $inserted = $false
+
+          foreach ($line in $lines) {
+            $output.Add($line)
+            if (-not $inserted) {
+              if ($line -match 'class\s+ACE_Singleton\b') {
+                $inSingletonClass = $true
+                Write-Host "Found class declaration: $line"
+              }
+              if ($inSingletonClass -and $line -match '^\s*public\s*:') {
+                $output.Add("  virtual ~ACE_Singleton (void) noexcept {}")
+                $inserted = $true
+                Write-Host "Strategy A: inserted destructor after 'public:'"
+              }
+            }
+          }
+
+          # Strategy B (fallback): insert at line 107 (just before error line 108)
+          if (-not $inserted) {
+            Write-Host "Strategy A failed — using fallback (insert before line 108)"
+            $lines = Get-Content $singletonH
+            if ($lines.Count -ge 108) {
+              $before = $lines[0..106]
+              $after = $lines[107..($lines.Count - 1)]
+              $output = [System.Collections.Generic.List[string]]::new()
+              $before | ForEach-Object { $output.Add($_) }
+              $output.Add("  virtual ~ACE_Singleton (void) noexcept {}")
+              $after | ForEach-Object { $output.Add($_) }
+              $inserted = $true
+              Write-Host "Strategy B: inserted destructor at line 108"
+            }
+          }
+
+          # Strategy C (nuclear): replace the entire class closing brace pattern
+          if (-not $inserted) {
+            Write-Host "Strategy B failed — using nuclear option (raw regex on full content)"
+            $patched = $content -replace '(?m)(class\s+ACE_Singleton\b[^\n]*\n)', "`$1  virtual ~ACE_Singleton (void) noexcept {}`n"
+            if ($patched -ne $content) {
+              $content = $patched
+              $inserted = $true
+              Write-Host "Strategy C: inserted destructor after class declaration line"
+            }
+          }
+
+          if ($inserted) {
+            if ($output.Count -gt 0) {
+              Set-Content -Path $singletonH -Value ($output -join "`n") -Encoding UTF8 -NoNewline
+            } else {
+              Set-Content -Path $singletonH -Value $content -Encoding UTF8 -NoNewline
+            }
+            Write-Host "SUCCESS: Singleton.h patched"
+            # Verify
+            $check = Get-Content $singletonH -Raw
+            if ($check -match '~ACE_Singleton\s*\([^)]*\)\s*noexcept') {
+              Write-Host "VERIFIED: noexcept destructor present in file"
+            } else {
+              Write-Error "VERIFICATION FAILED: destructor not found after patching!"
+              exit 1
+            }
+          } else {
+            Write-Error "ALL STRATEGIES FAILED — cannot patch Singleton.h"
+            exit 1
+          }
+
+      - name: Build ACE (Release x64)
+        if: steps.cache-ace.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          # Prefer the VS-2022 solution; fall back to any available .sln
+          $sln = Get-ChildItem $env:ACE_ROOT -Filter "ACE_vs2022.sln" | Select-Object -First 1
+          if (-not $sln) {
+            $sln = Get-ChildItem $env:ACE_ROOT -Filter "ACE*.sln" | Select-Object -First 1
+          }
+          if (-not $sln) {
+            Write-Error "No ACE solution file found under $env:ACE_ROOT"
+            exit 1
+          }
+          Write-Host "Building $($sln.FullName)"
+          msbuild "$($sln.FullName)" `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /m `
+            /nologo `
+            /verbosity:minimal
+
+      # ── 4. Patch client build version ────────────────────────────────────────
+      # The realmd accepts clients of build 7272 (current HEAD). The windows-build.md
+      # guide documents changing 7199→7207; adjust the sed target as needed.
+      - name: Patch RealmList client build (optional)
+        shell: pwsh
+        run: |
+          $file = "${{ github.workspace }}\src\realmd\RealmList.cpp"
+          if (Test-Path $file) {
+            $content = Get-Content $file -Raw
+            # Only patch if the old value exists; avoids silent no-ops breaking future runs
+            if ($content -match '\b7199\b') {
+              $patched = $content -replace '\b7199\b', '7207'
+              Set-Content -Path $file -Value $patched -Encoding UTF8 -NoNewline
+              Write-Host "Patched RealmList client build 7199 → 7207"
+            } else {
+              Write-Host "Client build value 7199 not found – skipping patch"
+            }
+          }
+
+      # ── 5. Configure CMake ────────────────────────────────────────────────────
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          $buildDir = "${{ github.workspace }}\..\turtlewow-build"
+          New-Item -ItemType Directory -Force $buildDir | Out-Null
+
+          cmake -B $buildDir `
+            -S "${{ github.workspace }}" `
+            -A x64 `
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
+            -DACE_ROOT="$env:ACE_ROOT" `
+            -DUSE_STD_MALLOC=ON `
+            -DUSE_SCRIPTS=ON `
+            -DBUILD_FOR_HOST_CPU=OFF `
+            -DUSE_ANTICHEAT=OFF `
+            -DALLOW_TURTLE_ADDONS=ON `
+            -DUSE_EXTRACTORS=ON
+
+      # ── 6. Build ──────────────────────────────────────────────────────────────
+      - name: Build TurtleWoW (Release x64)
+        shell: pwsh
+        run: |
+          $buildDir = "${{ github.workspace }}\..\turtlewow-build"
+          $sln = Get-ChildItem $buildDir -Filter "TurtleWoW.sln" | Select-Object -First 1
+          if (-not $sln) {
+            Write-Error "TurtleWoW.sln not found in $buildDir"
+            exit 1
+          }
+          msbuild "$($sln.FullName)" `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /m `
+            /nologo `
+            /verbosity:minimal
+
+      # ── 7. Copy ACE.dll next to the server binaries ───────────────────────────
+      - name: Copy ACE.dll
+        shell: pwsh
+        run: |
+          # VS multi-config generator outputs to bin\Release\
+          $binDir = "${{ github.workspace }}\bin\Release"
+          if (-not (Test-Path $binDir)) {
+            # Fallback: maybe binaries are directly in bin\
+            $binDir = "${{ github.workspace }}\bin"
+          }
+          Write-Host "Binary dir: $binDir"
+          Write-Host "Contents:" ; Get-ChildItem $binDir -ErrorAction SilentlyContinue | Select-Object Name
+
+          # Find ACE.dll anywhere under ACE_ROOT (no subfolder filter)
+          $aceDll = Get-ChildItem $env:ACE_ROOT -Recurse -Filter "ACE.dll" |
+                    Select-Object -First 1
+          if ($aceDll) {
+            Copy-Item -Force $aceDll.FullName $binDir
+            Write-Host "Copied $($aceDll.FullName) → $binDir"
+          } else {
+            Write-Warning "ACE.dll not found under $env:ACE_ROOT"
+            Write-Host "ACE_ROOT contents:" ; Get-ChildItem $env:ACE_ROOT -Recurse -Filter "*.dll" | Select-Object FullName
+          }
+
+      # ── 8. Upload artifacts ───────────────────────────────────────────────────
+      - name: Upload server binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: turtlewow-server-win64-${{ github.sha }}
+          path: |
+            ${{ github.workspace }}/bin/Release/
+          if-no-files-found: warn
+          retention-days: 30

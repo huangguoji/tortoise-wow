@@ -10,3 +10,5 @@
 /out
 /tools/checkegglogs/obj/Debug/net8.0
 /tools/checkegglogs/obj/Release/net8.0
+build-vs-tools/
+bin

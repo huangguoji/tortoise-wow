@@ -1,0 +1,8 @@
+.git
+.gitignore
+build
+bin
+lib
+**/.vs
+**/.vscode
+**/cmake-build-*

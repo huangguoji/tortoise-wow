@@ -1,0 +1,78 @@
+services:
+  db:
+    image: mariadb:10.6
+    container_name: tortoise-wow-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tw_logon
+      MYSQL_USER: mangos
+      MYSQL_PASSWORD: mangos
+      MANGOS_DB_USER: mangos
+      MANGOS_DB_PASSWORD: mangos
+      REALM_PUBLIC_ADDRESS: 127.0.0.1
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_general_ci"]
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./sql:/sql:ro
+      - ./docker/init-db.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  realmd:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tortoise-wow-realmd
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: mangos
+      DB_PASSWORD: mangos
+      DB_WAIT_TIMEOUT: 180
+    volumes:
+      - ./data:/opt/turtlewow/server/data:ro
+      - logs_data:/opt/turtlewow/server/logs
+    command: ["realmd", "-c", "/opt/turtlewow/server/etc/realmd.conf"]
+    ports:
+      - "3724:3724"
+
+  mangosd:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tortoise-wow-mangosd
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      realmd:
+        condition: service_started
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: mangos
+      DB_PASSWORD: mangos
+      DB_WAIT_TIMEOUT: 180
+    volumes:
+      - ./data:/opt/turtlewow/server/data:ro
+      - logs_data:/opt/turtlewow/server/logs
+      - honor_data:/opt/turtlewow/server/honor
+      - pdump_data:/opt/turtlewow/server/pdump
+    command: ["mangosd", "-c", "/opt/turtlewow/server/etc/mangosd.conf"]
+    ports:
+      - "8090:8090"
+
+volumes:
+  db_data:
+  logs_data:
+  honor_data:
+  pdump_data:
