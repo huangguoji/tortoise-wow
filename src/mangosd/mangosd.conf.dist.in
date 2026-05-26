@@ -381,7 +381,7 @@ Progression.UnlinkedAuctionHouses = 1
 # DebuffLimit
 # How many debuffs can be present on a target simultaneously
 
-DebuffLimit = 0
+DebuffLimit = 40
 
 # LogSQL
 # Enable logging of GM commands. (All SQL code will be written to a log file)
@@ -653,7 +653,7 @@ SkipCinematics = 0
 
 # ShowHealthValues. Show real NPC & player health values instead of percentages.
 
-ShowHealthValues = 0
+ShowHealthValues = 1
 
 # MaxPlayerLevel. Max level that can be reached by a player for experience. (1 - 255)
 
@@ -852,13 +852,13 @@ AllowTwoSide.Accounts = 1
 
 # AllowTwoSide.Interaction. Allow interaction with the hostiled faction.
 
-AllowTwoSide.Interaction.Chat = 0
+AllowTwoSide.Interaction.Chat = 1
 AllowTwoSide.Interaction.Channel = 1
-AllowTwoSide.Interaction.Group = 0
+AllowTwoSide.Interaction.Group = 1
 AllowTwoSide.Interaction.Guild = 1
-AllowTwoSide.Interaction.Trade = 0
+AllowTwoSide.Interaction.Trade = 1
 AllowTwoSide.Interaction.Auction = 1
-AllowTwoSide.Interaction.Mail = 0
+AllowTwoSide.Interaction.Mail = 1
 
 # AllowTwoSide.WhoList. Allow show player from both team in who list.
 
