@@ -60,6 +60,14 @@ dungeons/deadmines/boss_mr_smite.cpp
 dungeons/deadmines/deadmines.cpp
 dungeons/deadmines/deadmines.h
 dungeons/deadmines/instance_deadmines.cpp
+dungeons/dragonmaw_retreat/boss_bogpaw_truthsay.cpp
+dungeons/dragonmaw_retreat/boss_gowlfang.cpp
+dungeons/dragonmaw_retreat/boss_halgan_redbrand.cpp
+dungeons/dragonmaw_retreat/boss_searistrasz.cpp
+dungeons/dragonmaw_retreat/boss_web_master_torkon.cpp
+dungeons/dragonmaw_retreat/boss_zuluhed_the_whacked.cpp
+dungeons/dragonmaw_retreat/dragonmaw_retreat.h
+dungeons/dragonmaw_retreat/instance_dragonmaw_retreat.cpp
 dungeons/dire_maul/boss_gordok_king.cpp
 dungeons/dire_maul/boss_immol_thar.cpp
 dungeons/dire_maul/boss_tendris_warpwood.cpp

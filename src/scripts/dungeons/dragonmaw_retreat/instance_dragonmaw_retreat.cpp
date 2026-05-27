@@ -1,0 +1,85 @@
+#include "scriptPCH.h"
+#include "dragonmaw_retreat.h"
+#include <algorithm>
+
+struct instance_dragonmaw_retreat : public ScriptedInstance
+{
+    explicit instance_dragonmaw_retreat(Map* pMap) : ScriptedInstance(pMap)
+    {
+        Initialize();
+    }
+
+    uint64 m_uiSearistraszGUID;
+    std::vector<ObjectGuid> m_vDeadDragonmawEnchanters;
+
+    void Initialize() override
+    {
+        m_uiSearistraszGUID = 0;
+        m_vDeadDragonmawEnchanters.clear();
+    }
+
+    void OnCreatureCreate(Creature* pCreature) override
+    {
+        if (pCreature->GetEntry() == NPC_SEARISTRASZ)
+            m_uiSearistraszGUID = pCreature->GetGUID();
+    }
+
+    void OnCreatureDeath(Creature* pCreature) override
+    {
+        if (pCreature->GetEntry() == NPC_DRAGONMAW_ENCHANTER)
+        {
+            MarkDragonmawEnchanterDead(pCreature->GetObjectGuid());
+
+            if (GetDragonmawEnchantersDeadCount() >= MAX_DRAGONMAW_ENCHANTERS)
+            {
+                if (Creature* pSearistrasz = GetSearistrasz())
+                    pSearistrasz->RemoveAurasDueToSpell(SPELL_ENCHANTING_FLAMES);
+            }
+        }
+    }
+
+    uint32 GetData(uint32 uiType) override
+    {
+        if (uiType == DATA_DRAGONMAW_ENCHANTERS_DEAD)
+            return GetDragonmawEnchantersDeadCount();
+
+        return 0;
+    }
+
+    uint64 GetData64(uint32 uiType) override
+    {
+        if (uiType == DATA_SEARISTRASZ_GUID)
+            return m_uiSearistraszGUID;
+
+        return 0;
+    }
+
+    Creature* GetSearistrasz()
+    {
+        return m_uiSearistraszGUID ? instance->GetCreature(m_uiSearistraszGUID) : nullptr;
+    }
+
+    void MarkDragonmawEnchanterDead(ObjectGuid guid)
+    {
+        if (std::find(m_vDeadDragonmawEnchanters.begin(), m_vDeadDragonmawEnchanters.end(), guid) == m_vDeadDragonmawEnchanters.end())
+            m_vDeadDragonmawEnchanters.push_back(guid);
+    }
+
+    uint32 GetDragonmawEnchantersDeadCount() const
+    {
+        return static_cast<uint32>(m_vDeadDragonmawEnchanters.size());
+    }
+};
+
+InstanceData* GetInstanceData_instance_dragonmaw_retreat(Map* pMap)
+{
+    return new instance_dragonmaw_retreat(pMap);
+}
+
+void AddSC_instance_dragonmaw_retreat()
+{
+    Script* pNewscript = new Script;
+    pNewscript->Name = "instance_dragonmaw_retreat";
+    pNewscript->GetInstanceData = &GetInstanceData_instance_dragonmaw_retreat;
+    pNewscript->RegisterSelf();
+}
