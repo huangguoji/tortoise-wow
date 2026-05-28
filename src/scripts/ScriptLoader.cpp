@@ -79,6 +79,14 @@ void AddSC_deadmines();                              //deadmines
 void AddSC_instance_deadmines();
 void AddSC_boss_mr_smite();
 
+void AddSC_instance_dragonmaw_retreat();             //dragonmaw_retreat
+void AddSC_boss_bogpaw_truthsay();
+void AddSC_boss_gowlfang();
+void AddSC_boss_halgan_redbrand();
+void AddSC_boss_searistrasz();
+void AddSC_boss_web_master_torkon();
+void AddSC_boss_zuluhed_the_whacked();
+
 void AddSC_gnomeregan();                             //gnomeregan
 void AddSC_boss_thermaplugg();
 void AddSC_instance_gnomeregan();
@@ -409,6 +417,13 @@ void AddScripts()
     AddSC_deadmines();                                      //deadmines
     AddSC_instance_deadmines();
     AddSC_boss_mr_smite();
+    AddSC_instance_dragonmaw_retreat();                     //dragonmaw_retreat
+    AddSC_boss_bogpaw_truthsay();
+    AddSC_boss_gowlfang();
+    AddSC_boss_halgan_redbrand();
+    AddSC_boss_searistrasz();
+    AddSC_boss_web_master_torkon();
+    AddSC_boss_zuluhed_the_whacked();
     AddSC_gnomeregan();                                     //gnomeregan
     AddSC_boss_thermaplugg();
     AddSC_instance_gnomeregan();
