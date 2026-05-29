@@ -177,7 +177,7 @@ class AuctionHouseMgr
 
         AuctionHouseObject* GetAuctionsMap(AuctionHouseEntry const* house);
         // cmangos's AuctionHouseType-keyed lookup.
-        AuctionHouseObject* GetAuctionsMap(uint32 /*type*/) { return GetAuctionsMap((AuctionHouseEntry const*)nullptr); }
+        AuctionHouseObject* GetAuctionsMap(uint32 type);
 
         Item* GetAItem(uint32 id)
         {

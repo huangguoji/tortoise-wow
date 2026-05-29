@@ -4258,6 +4258,8 @@ void RandomPlayerbotMgr::MirrorAh()
     for (auto house : houses)
     {
         AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(house);
+        if (!auctionHouse)
+            continue;
 
         AuctionHouseObject::AuctionEntryMap const& map = *auctionHouse->GetAuctions();
 

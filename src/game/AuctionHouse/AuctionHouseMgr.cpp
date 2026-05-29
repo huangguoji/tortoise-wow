@@ -121,11 +121,24 @@ AuctionHouseMgr::~AuctionHouseMgr()
 
 AuctionHouseObject * AuctionHouseMgr::GetAuctionsMap(AuctionHouseEntry const* house)
 {
+    if (!house)
+        return nullptr;
+
     auto itr = m_mAuctionHouses.find(house->houseId);
     if (itr != m_mAuctionHouses.end())
         return itr->second;
 
     return nullptr;
+}
+
+AuctionHouseObject * AuctionHouseMgr::GetAuctionsMap(uint32 type)
+{
+    static const uint32 houseIdByType[3] = { 1, 6, 7 };
+    if (type >= 3)
+        return nullptr;
+
+    AuctionHouseEntry const* house = sAuctionHouseStore.LookupEntry(houseIdByType[type]);
+    return house ? GetAuctionsMap(house) : nullptr;
 }
 
 uint32 AuctionHouseMgr::GetAuctionDeposit(AuctionHouseEntry const* entry, uint32 time, Item *pItem)
