@@ -873,6 +873,8 @@ namespace MaNGOS
             WorldObject const& GetFocusObject() const { return *i_obj; }
             bool operator()(Unit* u)
             {
+                if (!i_funit)
+                    return false;
                 if(!i_funit->CanSeeInWorld(u))
                     return false;
 
