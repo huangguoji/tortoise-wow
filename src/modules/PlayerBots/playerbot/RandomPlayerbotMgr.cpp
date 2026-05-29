@@ -2775,9 +2775,9 @@ void RandomPlayerbotMgr::PrepareTeleportCache()
         for (uint8 level = 1; level <= maxLevel; level++)
         {
             auto results = WorldDatabase.PQuery("SELECT `map`, `position_x`, `position_y`, `position_z` "
-                "FROM (SELECT `map`, `position_x`, `position_y`, `position_z`, t.maxlevel, t.minlevel, "
-                "%u - (t.maxlevel + t.minlevel) / 2 delta "
-                "FROM creature c INNER JOIN creature_template t ON c.id = t.entry WHERE t.CreatureType != 8 AND t.NpcFlags = 0 AND t.Rank = 0 AND NOT (t.extraFlags & 1024 OR t.extraFlags & 65536 OR t.extraflags & 64 OR t.unitFlags & 256 OR t.unitFlags & 512) AND t.lootid != 0) q "
+                "FROM (SELECT `map`, `position_x`, `position_y`, `position_z`, t.level_max, t.level_min, "
+                "%u - (t.level_max + t.level_min) / 2 delta "
+                "FROM creature c INNER JOIN creature_template t ON c.id = t.entry WHERE t.type != 8 AND t.npc_flags = 0 AND t.rank = 0 AND NOT (t.flags_extra & 1024 OR t.flags_extra & 65536 OR t.flags_extra & 64 OR t.unit_flags & 256 OR t.unit_flags & 512) AND t.loot_id != 0) q "
                 "WHERE delta >= 0 AND delta <= %u AND map in (%s)",
                 level,
                 sPlayerbotAIConfig.randomBotTeleLevel,
@@ -3175,7 +3175,7 @@ uint32 RandomPlayerbotMgr::GetZoneLevel(uint16 mapId, float teleX, float teleY, 
 	uint32 maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
 
 	uint32 level;
-    auto results = WorldDatabase.PQuery("SELECT AVG(t.minlevel) minlevel, AVG(t.maxlevel) maxlevel FROM creature c "
+    auto results = WorldDatabase.PQuery("SELECT AVG(t.level_min) minlevel, AVG(t.level_max) maxlevel FROM creature c "
             "INNER JOIN creature_template t ON c.id = t.entry "
             "WHERE map = '%u' AND minlevel > 1 AND abs(position_x - '%f') < '%u' AND abs(position_y - '%f') < '%u'",
             mapId, teleX, sPlayerbotAIConfig.randomBotTeleportDistance / 2, teleY, sPlayerbotAIConfig.randomBotTeleportDistance / 2);

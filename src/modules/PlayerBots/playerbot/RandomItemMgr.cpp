@@ -3872,7 +3872,7 @@ void RandomItemMgr::BuildRarityCache()
                     "    end "
                     ") chance, 'creature' type "
                     "from creature_loot_template lt "
-                    "join creature_template ct on ct.LootId = lt.entry "
+                    "join creature_template ct on ct.loot_id = lt.entry "
                     "join creature c on c.id = ct.entry "
                     "where lt.item = '%u' "
                     "union all "
@@ -3933,7 +3933,7 @@ void RandomItemMgr::BuildRarityCache()
                     "    end "
                     ") chance, 'skinning' type "
                     "from skinning_loot_template lt "
-                    "join creature_template ct on ct.SkinningLootId = lt.entry "
+                    "join creature_template ct on ct.skinning_loot_id = lt.entry "
                     "join creature c on c.id = ct.entry "
                     "where lt.item = '%u' "
                     ") q; ",

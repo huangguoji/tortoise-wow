@@ -24,17 +24,6 @@ bool PetitionSignAction::Execute(Event& event)
     p >> petitionGuid >> inviter;
     uint32 type = 9;
 
-#ifndef MANGOSBOT_ZERO
-    auto result = CharacterDatabase.PQuery("SELECT `type` FROM `petition` WHERE `petitionguid` = '%u'", petitionGuid.GetCounter());
-    if (!result)
-    {
-        return false;
-    }
-
-    Field* fields = result->Fetch();
-    type = fields[0].GetUInt32();
-#endif
-
     bool accept = true;
 
     if (type != 9)
