@@ -22,11 +22,14 @@ struct boss_searistraszAI : public ScriptedAI
     uint32 m_uiFlameBreathTimer;
     uint32 m_uiWingFlapTimer;
 
+    bool m_bUsedHalfHealthLine;
+
     void Reset() override
     {
         m_uiFireballTimer = urand(5 * IN_MILLISECONDS, 7 * IN_MILLISECONDS);
         m_uiFlameBreathTimer = urand(2 * IN_MILLISECONDS, 4 * IN_MILLISECONDS);
         m_uiWingFlapTimer = urand(500, 1500);
+        m_bUsedHalfHealthLine = false;
 
         if (!m_pInstance || m_pInstance->GetData(DATA_DRAGONMAW_ENCHANTERS_DEAD) < MAX_DRAGONMAW_ENCHANTERS)
         {
@@ -37,10 +40,26 @@ struct boss_searistraszAI : public ScriptedAI
             m_creature->RemoveAurasDueToSpell(SPELL_ENCHANTING_FLAMES);
     }
 
+    void Aggro(Unit* /*pWho*/) override
+    {
+        DoScriptText(SAY_DRAGONMAW_SEARISTRASZ_AGGRO, m_creature);
+    }
+
+    void JustDied(Unit* /*pKiller*/) override
+    {
+        DoScriptText(SAY_DRAGONMAW_SEARISTRASZ_DEATH, m_creature);
+    }
+
     void UpdateAI(const uint32 uiDiff) override
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->GetVictim())
             return;
+
+        if (!m_bUsedHalfHealthLine && m_creature->GetHealthPercent() <= 50.0f)
+        {
+            m_bUsedHalfHealthLine = true;
+            DoScriptText(SAY_DRAGONMAW_SEARISTRASZ_HALF_HEALTH, m_creature);
+        }
 
         if (m_uiWingFlapTimer < uiDiff)
         {

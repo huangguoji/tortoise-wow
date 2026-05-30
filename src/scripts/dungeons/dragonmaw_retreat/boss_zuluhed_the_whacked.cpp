@@ -1,4 +1,5 @@
 #include "scriptPCH.h"
+#include "dragonmaw_retreat.h"
 
 enum
 {
@@ -30,6 +31,16 @@ struct boss_zuluhed_the_whackedAI : public ScriptedAI
         m_bSoulSequenceFinished = false;
     }
 
+    void Aggro(Unit* /*pWho*/) override
+    {
+        DoScriptText(SAY_DRAGONMAW_ZULUHED_AGGRO, m_creature);
+    }
+
+    void JustDied(Unit* /*pKiller*/) override
+    {
+        DoScriptText(SAY_DRAGONMAW_ZULUHED_DEATH, m_creature);
+    }
+
     void UpdateAI(const uint32 uiDiff) override
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->GetVictim())
@@ -42,7 +53,10 @@ struct boss_zuluhed_the_whackedAI : public ScriptedAI
                 pTarget = m_creature->GetVictim();
 
             if (DoCastSpellIfCan(pTarget, SPELL_SOUL_DOMINATION) == CAST_OK)
+            {
+                DoScriptText(SAY_DRAGONMAW_ZULUHED_SOUL_DOMINATION, m_creature);
                 m_uiSoulDominationTimer = urand(14 * IN_MILLISECONDS, 18 * IN_MILLISECONDS);
+            }
         }
         else
             m_uiSoulDominationTimer -= uiDiff;
@@ -53,6 +67,7 @@ struct boss_zuluhed_the_whackedAI : public ScriptedAI
             {
                 m_bSoulSequenceStarted = true;
                 m_uiSoulSequenceTimer = 6500;
+                DoScriptText(SAY_DRAGONMAW_ZULUHED_WITHERING_SOUL, m_creature);
             }
         }
 

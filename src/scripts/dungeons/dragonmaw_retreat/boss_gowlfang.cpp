@@ -20,6 +20,16 @@ struct boss_gowlfangAI : public ScriptedAI
         m_bUsedIntimidatingRoar = false;
     }
 
+    void Aggro(Unit* /*pWho*/) override
+    {
+        DoScriptText(SAY_DRAGONMAW_GOWLFANG_AGGRO, m_creature);
+    }
+
+    void JustDied(Unit* /*pKiller*/) override
+    {
+        DoScriptText(SAY_DRAGONMAW_GOWLFANG_DEATH, m_creature);
+    }
+
     void UpdateAI(const uint32 /*uiDiff*/) override
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->GetVictim())
@@ -30,6 +40,7 @@ struct boss_gowlfangAI : public ScriptedAI
             if (DoCastSpellIfCan(m_creature, SPELL_INTIMIDATING_ROAR) == CAST_OK)
             {
                 m_bUsedIntimidatingRoar = true;
+                DoScriptText(SAY_DRAGONMAW_GOWLFANG_HALF_HEALTH, m_creature);
                 DoResetThreat();
             }
         }
