@@ -33,7 +33,12 @@ struct instance_dragonmaw_retreat : public ScriptedInstance
             if (GetDragonmawEnchantersDeadCount() >= MAX_DRAGONMAW_ENCHANTERS)
             {
                 if (Creature* pSearistrasz = GetSearistrasz())
+                {
+                    if (pSearistrasz->HasAura(SPELL_ENCHANTING_FLAMES))
+                        DoScriptText(SAY_DRAGONMAW_SEARISTRASZ_FLAME_REMOVED, pSearistrasz);
+
                     pSearistrasz->RemoveAurasDueToSpell(SPELL_ENCHANTING_FLAMES);
+                }
             }
         }
     }

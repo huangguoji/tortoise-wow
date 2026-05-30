@@ -84,7 +84,6 @@ void AddSC_boss_bogpaw_truthsay();
 void AddSC_boss_gowlfang();
 void AddSC_boss_halgan_redbrand();
 void AddSC_boss_searistrasz();
-void AddSC_boss_web_master_torkon();
 void AddSC_boss_zuluhed_the_whacked();
 
 void AddSC_gnomeregan();                             //gnomeregan
@@ -422,7 +421,6 @@ void AddScripts()
     AddSC_boss_gowlfang();
     AddSC_boss_halgan_redbrand();
     AddSC_boss_searistrasz();
-    AddSC_boss_web_master_torkon();
     AddSC_boss_zuluhed_the_whacked();
     AddSC_gnomeregan();                                     //gnomeregan
     AddSC_boss_thermaplugg();

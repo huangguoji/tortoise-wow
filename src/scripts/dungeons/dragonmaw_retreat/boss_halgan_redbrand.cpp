@@ -1,4 +1,5 @@
 #include "scriptPCH.h"
+#include "dragonmaw_retreat.h"
 
 enum
 {
@@ -27,6 +28,16 @@ struct boss_halgan_redbrandAI : public ScriptedAI
         m_bUsedPsychicScream = false;
     }
 
+    void Aggro(Unit* /*pWho*/) override
+    {
+        DoScriptText(SAY_DRAGONMAW_HALGAN_AGGRO, m_creature);
+    }
+
+    void JustDied(Unit* /*pKiller*/) override
+    {
+        DoScriptText(SAY_DRAGONMAW_HALGAN_DEATH, m_creature);
+    }
+
     Unit* SelectRandomHostileTarget(uint32 uiSpellId)
     {
         if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uiSpellId, SELECT_FLAG_IN_LOS | SELECT_FLAG_NO_TOTEM))
@@ -43,7 +54,10 @@ struct boss_halgan_redbrandAI : public ScriptedAI
         if (!m_bUsedPsychicScream && m_creature->GetHealthPercent() <= 50.0f)
         {
             if (DoCastSpellIfCan(m_creature->GetVictim(), SPELL_PSYCHIC_SCREAM) == CAST_OK)
+            {
                 m_bUsedPsychicScream = true;
+                DoScriptText(SAY_DRAGONMAW_HALGAN_HALF_HEALTH, m_creature);
+            }
         }
 
         if (m_uiCurseOfAgonyTimer < uiDiff)
