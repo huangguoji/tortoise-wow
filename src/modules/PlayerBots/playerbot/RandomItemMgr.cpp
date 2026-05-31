@@ -915,7 +915,7 @@ void RandomItemMgr::BuildItemInfoCache()
     std::vector<uint32> allianceItems;
     std::vector<uint32> hordeItems;
     vendorItems.clear();
-    if (std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("%s", "SELECT item, entry FROM npc_vendor")))
+    if (std::unique_ptr<QueryResult> result{WorldDatabase.PQuery("%s", "SELECT item, entry FROM npc_vendor")})
     {
         BarGoLink bar(result->GetRowCount());
         do
@@ -1223,7 +1223,7 @@ void RandomItemMgr::BuildItemInfoCache()
                         if (!crItem || !crItem->conditionId)
                             continue;
 
-                        if (std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("SELECT type, value1, value2 FROM conditions WHERE condition_entry = '%u'", crItem->conditionId)))
+                        if (std::unique_ptr<QueryResult> result{WorldDatabase.PQuery("SELECT type, value1, value2 FROM conditions WHERE condition_entry = '%u'", crItem->conditionId)})
                         {
                             do
                             {
