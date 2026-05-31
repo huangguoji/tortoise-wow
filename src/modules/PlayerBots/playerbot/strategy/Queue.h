@@ -8,7 +8,7 @@ class Queue
 public:
     Queue(void) {}
 public:
-    ~Queue(void) {}
+    ~Queue(void) { RemoveExpired(); }
 public:
 	void Push(ActionBasket *action);
 	ActionNode* Pop(ActionBasket* action = nullptr);

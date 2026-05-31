@@ -14,7 +14,7 @@ bool HireAction::Execute(Event& event)
         return false;
 
     uint32 account = sObjectMgr.GetPlayerAccountIdByGUID(requester->GetObjectGuid());
-    auto results = CharacterDatabase.PQuery("SELECT count(*) FROM characters where account = '%u'", account);
+    std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("SELECT count(*) FROM characters where account = '%u'", account);
 
     uint32 charCount = 10;
     if (results)

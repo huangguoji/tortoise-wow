@@ -4423,7 +4423,7 @@ ObjectGuid PlayerbotFactory::GetRandomBot()
         if (!sAccountMgr.GetCharactersCount(accountId))
             continue;
 
-        auto result = CharacterDatabase.PQuery("SELECT guid FROM characters WHERE account = '%u'", accountId);
+        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT guid FROM characters WHERE account = '%u'", accountId);
         if (!result)
             continue;
 
@@ -5298,7 +5298,7 @@ void PlayerbotFactory::LoadEnchantContainer()
 
    uint32 count = 0;
 
-   auto result = WorldDatabase.PQuery("SELECT class, spec, spellid, slotid FROM ai_playerbot_enchants");
+   std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("SELECT class, spec, spellid, slotid FROM ai_playerbot_enchants");
    if (result)
    {
       do

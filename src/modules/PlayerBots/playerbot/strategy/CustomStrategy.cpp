@@ -97,7 +97,7 @@ void CustomStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 
 void CustomStrategy::LoadActionLines(uint32 owner)
 {
-    auto results = CharacterDatabase.PQuery("SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = '%s' and owner = '%u' order by idx",
+    std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("SELECT action_line FROM ai_playerbot_custom_strategy WHERE name = '%s' and owner = '%u' order by idx",
             qualifier.c_str(), owner);
     if (results)
     {

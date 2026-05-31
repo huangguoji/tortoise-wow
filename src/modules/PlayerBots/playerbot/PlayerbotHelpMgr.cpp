@@ -30,6 +30,12 @@ PlayerbotHelpMgr::PlayerbotHelpMgr()
 
 PlayerbotHelpMgr::~PlayerbotHelpMgr()
 {
+#ifdef GenerateBotHelp
+    for (auto& [name, context] : classContext)
+        delete context;
+    classContext.clear();
+    genericContext = nullptr;
+#endif
 }
 
 void PlayerbotHelpMgr::replace(std::string& text, const std::string what, const std::string with)
@@ -924,7 +930,7 @@ void PlayerbotHelpMgr::FormatHelpTopics()
 void PlayerbotHelpMgr::LoadBotHelpTexts()
 {
     sLog.outBasic("Loading playerbot texts...");
-    auto results = WorldDatabase.PQuery("SELECT `name`, `template_text`, `text`, `text_loc1`, `text_loc2`, `text_loc3`, `text_loc4`, `text_loc5`, `text_loc6`, `text_loc7`, `text_loc8` FROM `ai_playerbot_help_texts`");
+    std::unique_ptr<QueryResult> results(WorldDatabase.PQuery("SELECT `name`, `template_text`, `text`, `text_loc1`, `text_loc2`, `text_loc3`, `text_loc4`, `text_loc5`, `text_loc6`, `text_loc7`, `text_loc8` FROM `ai_playerbot_help_texts`");
     int count = 0;
     if (results)
     {

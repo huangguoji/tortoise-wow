@@ -3539,6 +3539,8 @@ bool PlayerbotAI::TellPlayerNoFacing(Player* player, std::string text, Playerbot
     if (!noRepeat || !lastSaid || (time(0) - lastSaid) >= sPlayerbotAIConfig.repeatDelay / 1000)
     {
         whispers[text] = time(0);
+        while (whispers.size() > 1000)
+            whispers.erase(whispers.begin());
 
         if (m_recordMessages)
         {
@@ -3630,6 +3632,8 @@ bool PlayerbotAI::TellPlayerNoFacing(Player* player, std::string text, Playerbot
                     return false;
 
                 whispers[text] = time(0);
+                while (whispers.size() > 1000)
+                    whispers.erase(whispers.begin());
 
                 if (currentChat.second >= time(0))
                    type = currentChat.first;

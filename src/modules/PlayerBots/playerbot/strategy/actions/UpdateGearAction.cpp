@@ -207,7 +207,7 @@ void UpdateGearAction::EnchantItem(Item* item)
 
         if (enchants.empty())
         {
-            auto result = WorldDatabase.PQuery("SELECT class, spec, spellid, slotid FROM ai_playerbot_enchants");
+            std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("SELECT class, spec, spellid, slotid FROM ai_playerbot_enchants");
             if (result)
             {
                 do

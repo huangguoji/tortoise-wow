@@ -310,7 +310,7 @@ RandomPlayerbotMgr::RandomPlayerbotMgr()
 
 #ifndef MANGOSBOT_ZERO
         // load random bot team members
-        auto results = CharacterDatabase.PQuery("SELECT guid FROM arena_team_member");
+        std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("SELECT guid FROM arena_team_member");
         if (results)
         {
             sLog.outString("Loading arena team bot members...");
@@ -1060,7 +1060,7 @@ void RandomPlayerbotMgr::LoadNamedLocations()
 {
     namedLocations.clear();
 
-    auto result = WorldDatabase.Query("SELECT `name`, `map_id`, `position_x`, `position_y`, `position_z`, `orientation` FROM `ai_playerbot_named_location` WHERE `name` NOT LIKE 'FISH_LOCATION%'");
+    std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT `name`, `map_id`, `position_x`, `position_y`, `position_z`, `orientation` FROM `ai_playerbot_named_location` WHERE `name` NOT LIKE 'FISH_LOCATION%'");
 
     if (!result)
     {
@@ -1352,7 +1352,7 @@ void RandomPlayerbotMgr::LoadBattleMastersCache()
     sLog.outString("---------------------------------------");
     sLog.outString();
 
-    auto result = WorldDatabase.Query("SELECT `entry`,`bg_template` FROM `battlemaster_entry`");
+    std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT `entry`,`bg_template` FROM `battlemaster_entry`");
 
     uint32 count = 0;
 
@@ -2752,7 +2752,7 @@ void RandomPlayerbotMgr::PrepareTeleportCache()
     if (maxLevel > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
         maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
 
-    auto results = CharacterDatabase.PQuery("SELECT `map_id`, `x`, `y`, `z`, `level` FROM `ai_playerbot_tele_cache`");
+    std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("SELECT `map_id`, `x`, `y`, `z`, `level` FROM `ai_playerbot_tele_cache`");
     if (results)
     {
         sLog.outString("Loading random teleport caches for %d levels...", maxLevel);
@@ -2774,7 +2774,7 @@ void RandomPlayerbotMgr::PrepareTeleportCache()
         BarGoLink bar(maxLevel);
         for (uint8 level = 1; level <= maxLevel; level++)
         {
-            auto results = WorldDatabase.PQuery("SELECT `map`, `position_x`, `position_y`, `position_z` "
+            std::unique_ptr<QueryResult> results(WorldDatabase.PQuery("SELECT `map`, `position_x`, `position_y`, `position_z` "
                 "FROM (SELECT `map`, `position_x`, `position_y`, `position_z`, t.level_max, t.level_min, "
                 "%u - (t.level_max + t.level_min) / 2 delta "
                 "FROM creature c INNER JOIN creature_template t ON c.id = t.entry WHERE t.type != 8 AND t.npc_flags = 0 AND t.rank = 0 AND NOT (t.flags_extra & 1024 OR t.flags_extra & 65536 OR t.flags_extra & 64 OR t.unit_flags & 256 OR t.unit_flags & 512) AND t.loot_id != 0) q "
@@ -2807,7 +2807,7 @@ void RandomPlayerbotMgr::PrepareTeleportCache()
 
     sLog.outString("Preparing RPG teleport caches for %d factions...", sFactionTemplateStore.GetNumRows());
 
-    results = WorldDatabase.PQuery("SELECT map, position_x, position_y, position_z, "
+    results.reset(WorldDatabase.PQuery("SELECT map, position_x, position_y, position_z, "
         "r.race, r.minl, r.maxl "
         "FROM creature c INNER JOIN ai_playerbot_rpg_races r ON c.id = r.entry "
         "WHERE r.race < 15");
@@ -3175,7 +3175,7 @@ uint32 RandomPlayerbotMgr::GetZoneLevel(uint16 mapId, float teleX, float teleY, 
 	uint32 maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
 
 	uint32 level;
-    auto results = WorldDatabase.PQuery("SELECT AVG(t.level_min) minlevel, AVG(t.level_max) maxlevel FROM creature c "
+    std::unique_ptr<QueryResult> results(WorldDatabase.PQuery("SELECT AVG(t.level_min) minlevel, AVG(t.level_max) maxlevel FROM creature c "
             "INNER JOIN creature_template t ON c.id = t.entry "
             "WHERE map = '%u' AND minlevel > 1 AND abs(position_x - '%f') < '%u' AND abs(position_y - '%f') < '%u'",
             mapId, teleX, sPlayerbotAIConfig.randomBotTeleportDistance / 2, teleY, sPlayerbotAIConfig.randomBotTeleportDistance / 2);
@@ -3272,7 +3272,7 @@ std::list<uint32> RandomPlayerbotMgr::GetBots()
 {
     if (!currentBots.empty()) return currentBots;
 
-    auto results = CharacterDatabase.Query(
+    std::unique_ptr<QueryResult> results(CharacterDatabase.Query(
             "SELECT bot FROM ai_playerbot_random_bots WHERE owner = 0 AND event = 'add'");
 
     if (results)
@@ -3292,7 +3292,7 @@ std::list<uint32> RandomPlayerbotMgr::GetBgBots(uint32 bracket)
 {
     //if (!currentBgBots.empty()) return currentBgBots;
 
-    auto results = CharacterDatabase.PQuery(
+    std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery(
         "SELECT bot FROM ai_playerbot_random_bots WHERE event = 'bg' AND value = '%d'", bracket);
     std::list<uint32> BgBots;
     if (results)
@@ -3313,7 +3313,7 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, std::string event)
     // load all events at once on first event load
     if (eventCache[bot].empty())
     {
-        auto results = CharacterDatabase.PQuery("SELECT `event`, `value`, `time`, validIn, `data` FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '%u'", bot);
+        std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("SELECT `event`, `value`, `time`, validIn, `data` FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '%u'", bot);
         if (results)
         {
             do
@@ -4622,7 +4622,7 @@ uint32 RandomPlayerbotMgr::GetOrCreateAccount(Player* master, std::string& error
     maxCharsPerAccount = 10;
 #endif
 
-    auto accountNrQr = LoginDatabase.PQuery("SELECT max(replace(lower(username), lower('%s'), '') + 1 - 1) maxAccountNr FROM account WHERE replace(lower(username), lower('%s'), '') != 0", sPlayerbotAIConfig.randomBotAccountPrefix.c_str(), sPlayerbotAIConfig.randomBotAccountPrefix.c_str());
+    std::unique_ptr<QueryResult> accountNrQr(LoginDatabase.PQuery("SELECT max(replace(lower(username), lower('%s'), '') + 1 - 1) maxAccountNr FROM account WHERE replace(lower(username), lower('%s'), '') != 0", sPlayerbotAIConfig.randomBotAccountPrefix.c_str(), sPlayerbotAIConfig.randomBotAccountPrefix.c_str());
 
     if (!accountNrQr)
     {
@@ -4717,7 +4717,7 @@ void RandomPlayerbotMgr::OnBotDeleted(uint32 botGuid, uint32 accountId)
             prefix << sPlayerbotAIConfig.randomBotAccountPrefix;
             size_t prefixLen = prefix.str().length();
             
-            auto result = LoginDatabase.PQuery("SELECT username FROM account WHERE id = '%u'", accountId);
+            std::unique_ptr<QueryResult> result(LoginDatabase.PQuery("SELECT username FROM account WHERE id = '%u'", accountId);
             if (result)
             {
                 std::string username = result->Fetch()[0].GetString();

@@ -197,7 +197,7 @@ RandomItemList RandomItemMgr::Query(uint32 level, RandomItemType type, RandomIte
 void RandomItemMgr::BuildRandomItemCache()
 {
     randomItemCache.clear();
-    auto results = CharacterDatabase.PQuery("select lvl, type, item from ai_playerbot_rnditem_cache");
+    std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("select lvl, type, item from ai_playerbot_rnditem_cache");
     if (results)
     {
         sLog.outString("Loading random item cache");
@@ -854,7 +854,7 @@ void RandomItemMgr::BuildItemInfoCache()
 
     // load weightscales
     sLog.outString("Loading weightscales info");
-    auto results = WorldDatabase.PQuery("select id, name, class from ai_playerbot_weightscales");
+    std::unique_ptr<QueryResult> results(WorldDatabase.PQuery("select id, name, class from ai_playerbot_weightscales");
 
     if (results)
     {
@@ -880,7 +880,7 @@ void RandomItemMgr::BuildItemInfoCache()
 
         sLog.outString("Loaded %d weightscale class specs", totalcount);
 
-        auto result = WorldDatabase.PQuery("select id, field, val from ai_playerbot_weightscale_data");
+        std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("select id, field, val from ai_playerbot_weightscale_data");
         if (result)
         {
             do
@@ -915,7 +915,7 @@ void RandomItemMgr::BuildItemInfoCache()
     std::vector<uint32> allianceItems;
     std::vector<uint32> hordeItems;
     vendorItems.clear();
-    if (auto result = WorldDatabase.PQuery("%s", "SELECT item, entry FROM npc_vendor"))
+    if (std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("%s", "SELECT item, entry FROM npc_vendor"))
     {
         BarGoLink bar(result->GetRowCount());
         do
@@ -1223,7 +1223,7 @@ void RandomItemMgr::BuildItemInfoCache()
                         if (!crItem || !crItem->conditionId)
                             continue;
 
-                        if (auto result = WorldDatabase.PQuery("SELECT type, value1, value2 FROM conditions WHERE condition_entry = '%u'", crItem->conditionId))
+                        if (std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("SELECT type, value1, value2 FROM conditions WHERE condition_entry = '%u'", crItem->conditionId))
                         {
                             do
                             {
@@ -3302,7 +3302,7 @@ void RandomItemMgr::BuildEquipCache()
 
     equipCache.clear();
 
-    auto results = CharacterDatabase.PQuery("select clazz, spec, lvl, slot, quality, item from ai_playerbot_equip_cache");
+    std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("select clazz, spec, lvl, slot, quality, item from ai_playerbot_equip_cache");
     if (results)
     {
         sLog.outString("Loading equipment cache for %d classes, %d levels, %d slots, %d quality from %d items",
@@ -3485,7 +3485,7 @@ void RandomItemMgr::BuildAmmoCache()
     {
         for (uint32 subClass = ITEM_SUBCLASS_ARROW; subClass <= ITEM_SUBCLASS_BULLET; subClass++)
         {
-            auto results = WorldDatabase.PQuery(
+            std::unique_ptr<QueryResult> results(WorldDatabase.PQuery(
                     "select entry, required_level from item_template where class = '%u' and subclass = '%u' and required_level <= '%u' and quality = '%u' order by required_level desc",
                     ITEM_CLASS_PROJECTILE, subClass, level, ITEM_QUALITY_NORMAL);
             if (!results)
@@ -3500,7 +3500,7 @@ void RandomItemMgr::BuildAmmoCache()
             }
         }
 
-        auto results = WorldDatabase.PQuery(
+        std::unique_ptr<QueryResult> results(WorldDatabase.PQuery(
             "select entry, required_level from item_template where class = '%u' and subclass = '%u' and required_level <= '%u' and quality = '%u' order by required_level desc",
             ITEM_CLASS_WEAPON, ITEM_SUBCLASS_WEAPON_THROWN, level, ITEM_QUALITY_NORMAL);
         if (!results)
@@ -3819,7 +3819,7 @@ std::vector<uint32> RandomItemMgr::GetGemsList()
 
 void RandomItemMgr::BuildRarityCache()
 {
-    auto results = CharacterDatabase.PQuery("select item, rarity from ai_playerbot_rarity_cache");
+    std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("select item, rarity from ai_playerbot_rarity_cache");
     if (results)
     {
         sLog.outBasic("Loading item rarity cache");
@@ -3858,7 +3858,7 @@ void RandomItemMgr::BuildRarityCache()
 
             if (!proto->ItemLevel)
                 continue;
-            auto results = WorldDatabase.PQuery(
+            std::unique_ptr<QueryResult> results(WorldDatabase.PQuery(
                     "select max(q.chance) from ( "
                     // "-- Creature "
                     "select  "
@@ -3979,7 +3979,7 @@ void RandomItemMgr::LoadRandomEnchantments()
     randomEnchantsCache.clear();
 
     uint32 count = 0;
-    auto queryResult = WorldDatabase.Query("SELECT entry, ench, chance FROM item_enchantment_template");
+    std::unique_ptr<QueryResult> queryResult(WorldDatabase.Query("SELECT entry, ench, chance FROM item_enchantment_template");
 
     if (queryResult)
     {

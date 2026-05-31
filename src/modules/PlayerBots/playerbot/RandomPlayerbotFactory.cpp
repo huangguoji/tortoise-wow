@@ -440,7 +440,7 @@ void RandomPlayerbotFactory::EnsureNamesInitialized()
 
     sLog.outString("Initializing random bot names...");
 
-    auto result = CharacterDatabase.PQuery("SELECT n.gender, n.name, e.guid FROM ai_playerbot_names n LEFT OUTER JOIN characters e ON e.name = n.name");
+    std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT n.gender, n.name, e.guid FROM ai_playerbot_names n LEFT OUTER JOIN characters e ON e.name = n.name");
     if (!result)
     {
         sLog.outError("No names found in ai_playerbot_names table");
@@ -467,7 +467,7 @@ void RandomPlayerbotFactory::EnsureNamesInitialized()
     {
         sLog.outError("The name database has not been updated. Run ai_playerbot_names.sql to update.");
 
-        auto oldResult = CharacterDatabase.PQuery("SELECT e.name FROM characters e");
+        std::unique_ptr<QueryResult> oldResult(CharacterDatabase.PQuery("SELECT e.name FROM characters e");
         if (oldResult)
         {
             do
@@ -509,7 +509,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
     // check if scheduled for delete
     bool delAccs = false;
     bool delFriends = false;
-    auto values = CharacterDatabase.Query(
+    std::unique_ptr<QueryResult> values(CharacterDatabase.Query(
         "select value from ai_playerbot_random_bots where event = 'bot_delete'");
 
     if (values)
@@ -531,7 +531,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
 
         uint32 maxAccountNum = 0;
 
-        auto accountNrQr = LoginDatabase.PQuery("SELECT max(replace(lower(username), lower('%s'), '') + 1 - 1) maxAccountNr FROM account WHERE replace(lower(username), lower('%s'), '') != 0", sPlayerbotAIConfig.randomBotAccountPrefix.c_str(), sPlayerbotAIConfig.randomBotAccountPrefix.c_str());
+        std::unique_ptr<QueryResult> accountNrQr(LoginDatabase.PQuery("SELECT max(replace(lower(username), lower('%s'), '') + 1 - 1) maxAccountNr FROM account WHERE replace(lower(username), lower('%s'), '') != 0", sPlayerbotAIConfig.randomBotAccountPrefix.c_str(), sPlayerbotAIConfig.randomBotAccountPrefix.c_str());
         
         if (!accountNrQr)
         {
@@ -551,7 +551,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
             std::ostringstream out; out << sPlayerbotAIConfig.randomBotAccountPrefix << accountNumber;
             std::string accountName = out.str();
 
-            auto result = LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
+            std::unique_ptr<QueryResult> result(LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
             if (!result)
                 continue;
 
@@ -570,7 +570,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
         // load list of friends
         if (!delFriends)
         {
-            auto result = CharacterDatabase.PQuery("SELECT friend FROM character_social WHERE flags='%u'", SOCIAL_FLAG_FRIEND);
+            std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT friend FROM character_social WHERE flags='%u'", SOCIAL_FLAG_FRIEND);
             if (result)
             {
                 do
@@ -583,7 +583,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
             }
         }
 
-        auto results = LoginDatabase.PQuery("SELECT id FROM account where username like '%s%%'", sPlayerbotAIConfig.randomBotAccountPrefix.c_str());
+        std::unique_ptr<QueryResult> results(LoginDatabase.PQuery("SELECT id FROM account where username like '%s%%'", sPlayerbotAIConfig.randomBotAccountPrefix.c_str());
         if (results)
         {
             BarGoLink bar(results->GetRowCount());
@@ -596,7 +596,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
                 if (!delFriends)
                 {
                     // existing characters list
-                    auto result = CharacterDatabase.PQuery("SELECT guid FROM characters WHERE account='%u'", accId);
+                    std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT guid FROM characters WHERE account='%u'", accId);
                     if (result)
                     {
                         do
@@ -643,7 +643,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
 
     //Delete temporary bots.
 
-    auto temporarybots = CharacterDatabase.Query("SELECT characters.guid, characters.account FROM ai_playerbot_random_bots JOIN characters ON (characters.guid = ai_playerbot_random_bots.bot AND characters.name = ai_playerbot_random_bots.data) WHERE ai_playerbot_random_bots.event = 'temporary'");
+    std::unique_ptr<QueryResult> temporarybots(CharacterDatabase.Query("SELECT characters.guid, characters.account FROM ai_playerbot_random_bots JOIN characters ON (characters.guid = ai_playerbot_random_bots.bot AND characters.name = ai_playerbot_random_bots.data) WHERE ai_playerbot_random_bots.event = 'temporary'");
 
     if (temporarybots)
     {
@@ -668,7 +668,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
     CharacterDatabase.PExecute("DELETE FROM ai_playerbot_random_bots WHERE ai_playerbot_random_bots.event = 'temporary'");
 
     //Loop over randombot accounts that have no characters and delete them as well, to clean up after temporary bots.
-    auto temporaryAccounts = LoginDatabase.PQuery("SELECT id FROM account WHERE username like '%s%%' and id >= %u", sPlayerbotAIConfig.randomBotAccountPrefix.c_str(), sPlayerbotAIConfig.randomBotAccountCount);
+    std::unique_ptr<QueryResult> temporaryAccounts(LoginDatabase.PQuery("SELECT id FROM account WHERE username like '%s%%' and id >= %u", sPlayerbotAIConfig.randomBotAccountPrefix.c_str(), sPlayerbotAIConfig.randomBotAccountCount);
 
     if (temporaryAccounts)
     {
@@ -693,7 +693,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
             std::ostringstream out; out << sPlayerbotAIConfig.randomBotAccountPrefix << accountNumber;
             std::string accountName = out.str();
 
-            auto results = LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
+            std::unique_ptr<QueryResult> results(LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
             if (!results)
                 continue;
 
@@ -716,7 +716,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
     {
         std::ostringstream out; out << sPlayerbotAIConfig.randomBotAccountPrefix << accountNumber;
         std::string accountName = out.str();
-        auto results = LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
+        std::unique_ptr<QueryResult> results(LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
         if (results)
         {
             continue;
@@ -768,7 +768,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
         for (auto& name : kv.second)
             used[name] = false;
 
-    auto result = CharacterDatabase.PQuery("SELECT n.gender, n.name, e.guid FROM ai_playerbot_names n LEFT OUTER JOIN characters e ON e.name = n.name");
+    std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT n.gender, n.name, e.guid FROM ai_playerbot_names n LEFT OUTER JOIN characters e ON e.name = n.name");
     if (!result)
     {
         sLog.outError("No more names left for random bots");
@@ -788,7 +788,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
     } while (result->NextRow());
 
     // Fallback: Generate extra names if needed based on character count
-    auto countResult = CharacterDatabase.Query("SELECT COUNT(guid) FROM characters");
+    std::unique_ptr<QueryResult> countResult(CharacterDatabase.Query("SELECT COUNT(guid) FROM characters");
     if (countResult)
         totalCharCount = countResult->Fetch()[0].GetUInt32();
 
@@ -840,7 +840,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
         std::ostringstream out; out << sPlayerbotAIConfig.randomBotAccountPrefix << accountNumber;
         std::string accountName = out.str();
 
-        auto results = LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
+        std::unique_ptr<QueryResult> results(LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
         if (!results)
             continue;
 
@@ -1003,7 +1003,7 @@ void RandomPlayerbotFactory::CreateRandomGuilds()
     std::vector<uint32> randomBots;
     std::map<uint32, std::vector<uint32>> charAccGuids;
 
-    auto charAccounts = CharacterDatabase.PQuery(
+    std::unique_ptr<QueryResult> charAccounts(CharacterDatabase.PQuery(
         "select `account`, `guid` from `characters`");
 
     if (charAccounts)
@@ -1131,7 +1131,7 @@ void RandomPlayerbotFactory::CreateRandomGuilds()
 
 std::string RandomPlayerbotFactory::CreateRandomGuildName()
 {
-    auto result = CharacterDatabase.Query("SELECT MAX(name_id) FROM ai_playerbot_guild_names");
+    std::unique_ptr<QueryResult> result(CharacterDatabase.Query("SELECT MAX(name_id) FROM ai_playerbot_guild_names");
     if (!result)
     {
         sLog.outError("No more names left for random guilds");
@@ -1142,7 +1142,7 @@ std::string RandomPlayerbotFactory::CreateRandomGuildName()
     uint32 maxId = fields[0].GetUInt32();
 
     uint32 id = urand(0, maxId);
-    result = CharacterDatabase.PQuery("SELECT n.name FROM ai_playerbot_guild_names n "
+    result.reset(CharacterDatabase.PQuery("SELECT n.name FROM ai_playerbot_guild_names n "
             "LEFT OUTER JOIN guild e ON e.name = n.name "
             "WHERE e.guildid IS NULL AND n.name_id >= '%u' LIMIT 1", id);
     if (!result)
@@ -1161,7 +1161,7 @@ void RandomPlayerbotFactory::CreateRandomArenaTeams()
 {
     std::vector<uint32> randomBots;
 
-    auto results = CharacterDatabase.PQuery(
+    std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery(
         "select `bot` from ai_playerbot_random_bots where event = 'add'");
 
     if (results)
@@ -1274,7 +1274,7 @@ void RandomPlayerbotFactory::CreateRandomArenaTeams()
             continue;
         }
 
-        auto results = CharacterDatabase.PQuery("SELECT `type` FROM ai_playerbot_arena_team_names WHERE name = '%s'", arenaTeamName.c_str());
+        std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("SELECT `type` FROM ai_playerbot_arena_team_names WHERE name = '%s'", arenaTeamName.c_str());
         if (!results)
         {
             sLog.outError("No valid types for arena teams");
@@ -1377,7 +1377,7 @@ void RandomPlayerbotFactory::CreateRandomArenaTeams()
 
 std::string RandomPlayerbotFactory::CreateRandomArenaTeamName()
 {
-    auto result = CharacterDatabase.Query("SELECT MAX(name_id) FROM ai_playerbot_arena_team_names");
+    std::unique_ptr<QueryResult> result(CharacterDatabase.Query("SELECT MAX(name_id) FROM ai_playerbot_arena_team_names");
     if (!result)
     {
         sLog.outError("No more names left for random arena teams");
@@ -1388,7 +1388,7 @@ std::string RandomPlayerbotFactory::CreateRandomArenaTeamName()
     uint32 maxId = fields[0].GetUInt32();
 
     uint32 id = urand(0, maxId);
-    result = CharacterDatabase.PQuery("SELECT n.name FROM ai_playerbot_arena_team_names n "
+    result.reset(CharacterDatabase.PQuery("SELECT n.name FROM ai_playerbot_arena_team_names n "
         "LEFT OUTER JOIN arena_team e ON e.name = n.name "
         "WHERE e.arenateamid IS NULL AND n.name_id >= '%u' LIMIT 1", id);
     if (!result)

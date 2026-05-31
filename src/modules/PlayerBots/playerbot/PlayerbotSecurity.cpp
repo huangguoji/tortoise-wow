@@ -254,6 +254,8 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
     if (!lastSaid || (time(0) - lastSaid) >= sPlayerbotAIConfig.repeatDelay / 1000)
     {
         whispers[guid][text] = time(0);
+        while (whispers[guid].size() > 500)
+            whispers[guid].erase(whispers[guid].begin());
         bot->Whisper(text, LANG_UNIVERSAL, ObjectGuid(guid));
     }
     return false;
