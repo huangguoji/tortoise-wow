@@ -1401,7 +1401,7 @@ void ItemUsageValue::PopulateReagentItemIdsForCraftableItemIds()
 
 void ItemUsageValue::PopulateSoldByVendorItemIds()
 {
-    if (std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("%s", "SELECT distinct item FROM npc_vendor")))
+    if (std::unique_ptr<QueryResult> result{WorldDatabase.PQuery("%s", "SELECT distinct item FROM npc_vendor")})
     {
         BarGoLink bar(result->GetRowCount());
         do
@@ -1419,7 +1419,7 @@ void ItemUsageValue::PopulateSoldByVendorItemIds()
         } while (result->NextRow());
     }
 
-    if (std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("%s", "SELECT distinct item FROM npc_vendor WHERE maxcount > 0")))
+    if (std::unique_ptr<QueryResult> result{WorldDatabase.PQuery("%s", "SELECT distinct item FROM npc_vendor WHERE maxcount > 0")})
     {
         BarGoLink bar(result->GetRowCount());
         do
