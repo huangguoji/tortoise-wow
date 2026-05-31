@@ -148,7 +148,7 @@ bool PetitionOfferAction::Execute(Event& event)
     data << petitions.front()->GetObjectGuid();
     data << guid;
 
-    std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT playerguid FROM petition_sign WHERE player_account = '%u' AND petitionguid = '%u'", player->GetSession()->GetAccountId(), petitions.front()->GetObjectGuid().GetCounter());
+    std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT playerguid FROM petition_sign WHERE player_account = '%u' AND petitionguid = '%u'", player->GetSession()->GetAccountId(), petitions.front()->GetObjectGuid().GetCounter()));
 
     if (result)
     {

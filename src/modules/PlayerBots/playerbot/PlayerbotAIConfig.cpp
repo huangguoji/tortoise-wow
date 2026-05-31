@@ -796,7 +796,7 @@ bool PlayerbotAIConfig::IsInRandomAccountList(uint32 id)
     // belongs to the bot pool). Look up the username and accept any account
     // whose name starts with the configured RNDBOT prefix. Once recognized,
     // add to the cached list so subsequent calls take the fast path.
-    std::unique_ptr<QueryResult> qr(LoginDatabase.PQuery("SELECT username FROM account WHERE id = %u", id);
+    std::unique_ptr<QueryResult> qr(LoginDatabase.PQuery("SELECT username FROM account WHERE id = %u", id));
     if (!qr)
         return false;
     Field* fields = qr->Fetch();
@@ -916,7 +916,7 @@ void PlayerbotAIConfig::loadFreeAltBotAccounts()
 
     freeAltBots.clear();
 
-    std::unique_ptr<QueryResult> results(LoginDatabase.PQuery("SELECT username, id FROM account where username not like '%s%%'", randomBotAccountPrefix.c_str());
+    std::unique_ptr<QueryResult> results(LoginDatabase.PQuery("SELECT username, id FROM account where username not like '%s%%'", randomBotAccountPrefix.c_str()));
     if (results)
     {
         do
@@ -930,7 +930,7 @@ void PlayerbotAIConfig::loadFreeAltBotAccounts()
             if (std::find(toggleAlwaysOnlineAccounts.begin(), toggleAlwaysOnlineAccounts.end(), accountName) != toggleAlwaysOnlineAccounts.end())
                 accountToggle = true;
 
-            std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT name, guid FROM characters WHERE account = '%u'", accountId);
+            std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT name, guid FROM characters WHERE account = '%u'", accountId));
             if (!result)
                 continue;
 
@@ -1265,7 +1265,7 @@ void PlayerbotAIConfig::LoadLLMDefaultPrompts(const std::string& fileName)
             continue;
         }
 
-        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT guid FROM characters WHERE name = '%s' LIMIT 1", name.c_str());
+        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT guid FROM characters WHERE name = '%s' LIMIT 1", name.c_str()));
         if (!result)
         {
             sLog.outError("Character '%s' not found in characters DB while loading '%s'.", name.c_str(), fileName.c_str());

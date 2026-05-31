@@ -169,7 +169,7 @@ void AvailableItemsBag::Load()
 {
     std::set<uint32> vendorItems;
 
-      std::unique_ptr<QueryResult> results(WorldDatabase.PQuery("SELECT item FROM npc_vendor where maxcount = 0");
+      std::unique_ptr<QueryResult> results(WorldDatabase.PQuery("SELECT item FROM npc_vendor where maxcount = 0"));
       if (results != NULL)
       {
           do

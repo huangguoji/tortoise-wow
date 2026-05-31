@@ -17,7 +17,7 @@ void PlayerbotDbStore::Load(PlayerbotAI *ai, std::string preset)
 {
     uint64 guid = ai->GetBot()->GetObjectGuid().GetRawValue();
 
-    std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("SELECT `key`,`value` FROM `ai_playerbot_db_store` WHERE `guid` = '%lu' AND `preset` = '%s'", guid, preset.c_str());
+    std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("SELECT `key`,`value` FROM `ai_playerbot_db_store` WHERE `guid` = '%lu' AND `preset` = '%s'", guid, preset.c_str()));
     if (results)
     {
         ai->ClearStrategies(BotState::BOT_STATE_COMBAT);

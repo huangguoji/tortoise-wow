@@ -38,7 +38,7 @@ void PlayerbotTextMgr::LoadBotTexts()
 {
     botTexts.clear();
     sLog.outBasic("Loading playerbot texts...");
-    std::unique_ptr<QueryResult> results(WorldDatabase.PQuery("SELECT `name`, `text`, `say_type`, `reply_type`, `text_loc1`, `text_loc2`, `text_loc3`, `text_loc4`, `text_loc5`, `text_loc6`, `text_loc7`, `text_loc8` FROM `ai_playerbot_texts`");
+    std::unique_ptr<QueryResult> results(WorldDatabase.PQuery("SELECT `name`, `text`, `say_type`, `reply_type`, `text_loc1`, `text_loc2`, `text_loc3`, `text_loc4`, `text_loc5`, `text_loc6`, `text_loc7`, `text_loc8` FROM `ai_playerbot_texts`"));
     int count = 0;
     if (results)
     {
@@ -66,7 +66,7 @@ void PlayerbotTextMgr::LoadBotTextChance()
 {
     if (botTextChance.empty())
     {
-        std::unique_ptr<QueryResult> results(WorldDatabase.PQuery("SELECT name, probability FROM ai_playerbot_texts_chance");
+        std::unique_ptr<QueryResult> results(WorldDatabase.PQuery("SELECT name, probability FROM ai_playerbot_texts_chance"));
         if (results)
         {
             do

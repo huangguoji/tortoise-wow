@@ -75,7 +75,7 @@ double PricingStrategy::GetMarketPrice(uint32 itemId, uint32 auctionHouse)
 {
     double marketPrice = 0;
 
-    std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("SELECT price FROM ahbot_price WHERE item = '%u' AND auction_house = '%u'", itemId, auctionHouse);
+    std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("SELECT price FROM ahbot_price WHERE item = '%u' AND auction_house = '%u'", itemId, auctionHouse));
     if (results)
     {
         marketPrice = results->Fetch()[0].GetFloat();
@@ -131,7 +131,7 @@ double PricingStrategy::GetCategoryPriceMultiplier(uint32 untilTime, uint32 auct
 
     std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery(
         "SELECT count(*) FROM (SELECT round(buytime/3600/24/5) as days FROM ahbot_history WHERE category = '%s' AND won = '1' AND buytime <= '%u' AND auction_house = '%u' group by days) q",
-        category->GetName().c_str(), untilTime, AhBot::factions[auctionHouse]);
+        category->GetName().c_str(), untilTime, AhBot::factions[auctionHouse]));
     if (results)
     {
         Field* fields = results->Fetch();
@@ -157,7 +157,7 @@ double PricingStrategy::GetItemPriceMultiplier(ItemPrototype const* proto, uint3
 
     std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery(
         "SELECT count(*) FROM (SELECT round(buytime/3600/24/5) as days FROM ahbot_history WHERE won = '1' AND item = '%u' AND buytime <= '%u' AND auction_house = '%u' group by days) q",
-        proto->ItemId, untilTime, AhBot::factions[auctionHouse]);
+        proto->ItemId, untilTime, AhBot::factions[auctionHouse]));
     if (results)
     {
         Field* fields = results->Fetch();
@@ -196,7 +196,7 @@ uint32 PricingStrategy::GetDefaultBuyPrice(ItemPrototype const* proto)
 
         std::unique_ptr<QueryResult> results(WorldDatabase.PQuery(
             "select max(QuestLevel), max(MinLevel) from quest_template where ReqItemId1 = %u or ReqItemId2 = %u or ReqItemId3 = %u or ReqItemId4 = %u",
-            proto->ItemId, proto->ItemId, proto->ItemId, proto->ItemId);
+            proto->ItemId, proto->ItemId, proto->ItemId, proto->ItemId));
         if (results)
         {
             Field* fields = results->Fetch();

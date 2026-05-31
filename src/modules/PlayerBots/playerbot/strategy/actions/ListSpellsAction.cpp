@@ -67,7 +67,7 @@ std::list<std::pair<uint32, std::string> > ListSpellsAction::GetSpellList(std::s
 
     if (vendorItems.empty())
     {
-        std::unique_ptr<QueryResult> results(WorldDatabase.PQuery("SELECT item FROM npc_vendor where maxcount = 0");
+        std::unique_ptr<QueryResult> results(WorldDatabase.PQuery("SELECT item FROM npc_vendor where maxcount = 0"));
         if (results)
         {
             do

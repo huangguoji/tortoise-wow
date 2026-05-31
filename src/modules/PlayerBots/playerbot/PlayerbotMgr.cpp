@@ -769,7 +769,7 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
     if (sRandomPlayerbotMgr.IsRandomBot(bot))
     {
         uint32 lowguid = bot->GetObjectGuid().GetCounter();
-        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT 1 FROM character_social WHERE flags='%u' and friend='%d'", SOCIAL_FLAG_FRIEND, lowguid);
+        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT 1 FROM character_social WHERE flags='%u' and friend='%d'", SOCIAL_FLAG_FRIEND, lowguid));
         if (result)
             bot->GetPlayerbotAI()->SetPlayerFriend(true);
         else
@@ -964,7 +964,7 @@ std::list<std::string> PlayerbotHolder::HandlePlayerbotCommand(const std::string
             return messages;
         }
 
-        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT m.guid, (select name from characters c where c.guid = m.guid) FROM guild_member m WHERE guildid = '%u'", master->GetGuildId());
+        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT m.guid, (select name from characters c where c.guid = m.guid) FROM guild_member m WHERE guildid = '%u'", master->GetGuildId()));
 
         if (!result)
         {
@@ -1009,7 +1009,7 @@ std::list<std::string> PlayerbotHolder::HandlePlayerbotCommand(const std::string
 
             std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery(
                 "SELECT name FROM characters WHERE account = '%u'",
-                accountId);
+                accountId));
             if (results)
             {
                 do
@@ -1062,7 +1062,7 @@ uint32 PlayerbotHolder::GetAccountId(std::string name)
 {
     uint32 accountId = 0;
 
-    std::unique_ptr<QueryResult> results(LoginDatabase.PQuery("SELECT id FROM account WHERE username = '%s'", name.c_str());
+    std::unique_ptr<QueryResult> results(LoginDatabase.PQuery("SELECT id FROM account WHERE username = '%s'", name.c_str()));
     if(results)
     {
         Field* fields = results->Fetch();
@@ -1114,7 +1114,7 @@ std::string PlayerbotHolder::ListBots(Player* master, const std::string param)
     if (master)
     {
         std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery("SELECT class,name FROM characters where account = '%u'",
-            master->GetSession()->GetAccountId());
+            master->GetSession()->GetAccountId()));
         if (results != NULL)
         {
             do
@@ -1361,7 +1361,7 @@ void PlayerbotMgr::OnPlayerLogin(Player* player)
     uint32 accountId = player->GetSession()->GetAccountId();
     std::unique_ptr<QueryResult> results(CharacterDatabase.PQuery(
         "SELECT guid, name FROM characters WHERE account = '%u'",
-        accountId);
+        accountId));
     if (results)
     {
         std::ostringstream out; out << "add ";
@@ -2306,7 +2306,7 @@ void PlayerbotHolder::CreateBot(Player* master, const std::string param, std::li
 
     if (!name.empty())
     {
-        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT guid FROM characters WHERE name = '%s'", name.c_str());
+        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery("SELECT guid FROM characters WHERE name = '%s'", name.c_str()));
         if (result)
         {
             messages.push_back("Name already exists");
