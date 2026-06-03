@@ -7878,6 +7878,10 @@ bool SpellAuraHolder::IsWeaponBuffCoexistableWith(SpellAuraHolder const* ref) co
 
 bool SpellAuraHolder::IsNeedVisibleSlot(Unit const* caster) const
 {
+    // Ghost Visual aura is hidden from client, but visual slot is needed to display visual effect.
+    if (m_spellProto->Id == 22650)
+        return true;
+
     // Respect hidden clientside flag regardless of duration/passive state.
     if (m_spellProto->HasAttribute(SPELL_ATTR_HIDDEN_CLIENTSIDE))
         return false;
@@ -7999,6 +8003,12 @@ void SpellAuraHolder::HandleCastOnAuraRemoval() const
         {
             if (mode == AURA_REMOVE_BY_EXPIRE || mode == AURA_REMOVE_BY_CANCEL)
                 uiTriggeredSpell = 52504;        // Dust of Disappearance
+            break;
+        }
+        case 44053:
+        {
+            if (mode == AURA_REMOVE_BY_EXPIRE)
+                uiTriggeredSpell = 44052;        // Drazare's Embrace
             break;
         }
         default:
