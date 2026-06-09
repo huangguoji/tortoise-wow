@@ -84,10 +84,11 @@ void WardenModuleMgr::LoadWardenModules()
     }
 }
 
+
 const WardenModule *WardenModuleMgr::GetWindowsModule() const
 {
-    MANGOS_ASSERT(!_winModules.empty());
-
+    if (_winModules.empty())
+        return nullptr;
     return &_winModules[urand(0, _winModules.size() - 1)];
 }
 

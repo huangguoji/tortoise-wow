@@ -9833,7 +9833,6 @@ void Unit::ClearAllReactives()
         ModifyAuraState(AURA_STATE_HUNTER_PARRY, false);
     if (GetClass() == CLASS_ROGUE && HasAuraState(AURA_STATE_TARGET_DODGED))
         ModifyAuraState(AURA_STATE_TARGET_DODGED, false);
-
     if (GetClass() == CLASS_WARRIOR && IsPlayer())
         static_cast<Player*>(this)->ClearComboPoints();
 }

@@ -57,7 +57,8 @@ Warden::Warden(WorldSession *session, const WardenModule *module, const BigNumbe
     _session(session), _inputCrypto(KeyLength), _outputCrypto(KeyLength), _initialized(false), _module(module), _crk(nullptr),
     _timeoutClock(0), _scanClock(0), _anticheat(reinterpret_cast<SessionAnticheat *>(anticheat)), _moduleSendPending(false)
 {
-    MANGOS_ASSERT(!!_module || session->GetPlatform() != CLIENT_PLATFORM_X86);
+    if (session->GetPlatform() == CLIENT_PLATFORM_X86)
+        MANGOS_ASSERT(!!_module || !sConfig.GetBoolDefault("Warden.WinEnabled", false));
     MANGOS_ASSERT(!!_anticheat);
 
     auto const kBytes = K.AsByteArray();
