@@ -67,6 +67,8 @@ dungeons/dragonmaw_retreat/boss_searistrasz.cpp
 dungeons/dragonmaw_retreat/boss_zuluhed_the_whacked.cpp
 dungeons/dragonmaw_retreat/dragonmaw_retreat.h
 dungeons/dragonmaw_retreat/instance_dragonmaw_retreat.cpp
+dungeons/frostmane_hollow/boss_hailar_the_frigid.cpp
+dungeons/frostmane_hollow/frostmane_hollow.h
 dungeons/windhorn_canyon/boss_bonespeaker_narlgom.cpp
 dungeons/windhorn_canyon/windhorn_canyon.cpp
 dungeons/windhorn_canyon/windhorn_canyon.h

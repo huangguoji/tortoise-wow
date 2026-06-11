@@ -3755,6 +3755,16 @@ bool Unit::RemoveNoStackAurasDueToAuraHolder(SpellAuraHolder *holder)
         return false;
 
     uint32 spellId = holder->GetId();
+    bool allowPeriodicHealStacking = false;
+
+    switch (spellId)
+    {
+        case 41592: // Frostmane Ritual
+            allowPeriodicHealStacking = true;
+            break;
+        default:
+            break;
+    }
 
     // passive spell special case (only non stackable with ranks)
     if (spellProto->Attributes & (SPELL_ATTR_PASSIVE | SPELL_ATTR_HIDDEN_CLIENTSIDE))
@@ -3865,7 +3875,7 @@ bool Unit::RemoveNoStackAurasDueToAuraHolder(SpellAuraHolder *holder)
         if (i_spellId == spellId)
         {
             // Nostalrius - fix stack same HoT rank / diff caster
-            if (firstInChain)
+            if (firstInChain && !allowPeriodicHealStacking)
                 RemoveAurasDueToSpell(i_spellId);
             else switch (spellId)
             {
