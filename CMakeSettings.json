@@ -1,0 +1,82 @@
+﻿{
+  "configurations": [
+    {
+      "name": "x64-Debug",
+      "generator": "Visual Studio 18 2026 Win64",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "BOOST_ROOT",
+          "value": "C:\\Boost",
+          "type": "PATH"
+        },
+        {
+          "name": "BOOST_INCLUDEDIR",
+          "value": "C:\\Boost\\include\\boost-1_91",
+          "type": "PATH"
+        },
+        {
+          "name": "BOOST_LIBRARYDIR",
+          "value": "C:\\Boost\\lib",
+          "type": "PATH"
+        },
+        {
+          "name": "Boost_NO_BOOST_CMAKE",
+          "value": "ON",
+          "type": "BOOL"
+        },
+        {
+          "name": "boost_system_DIR",
+          "value": "C:/Boost/lib/cmake/Boost-1.91.0",
+          "type": "PATH"
+        },
+        {
+          "name": "Boost_DIR",
+          "value": "C:/Boost/lib/cmake/Boost-1.91.0",
+          "type": "PATH"
+        },
+        {
+          "name": "BUILD_PLAYERBOTS",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "ALLOW_TURTLE_ADDONS",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "boost_headers_DIR",
+          "value": "C:\\Boost\\include\\boost-1_91\\boost",
+          "type": "PATH"
+        },
+        {
+          "name": "ACE_INCLUDE_DIR",
+          "value": "C:\\tortoise-wow-build\\src\\ACE",
+          "type": "PATH"
+        },
+        {
+          "name": "ACE_LIBRARY",
+          "value": "C:\\tortoise-wow-build\\src\\ACE\\lib\\ACE.lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "CMAKE_EXE_LINKER_FLAGS_DEBUG",
+          "value": "/DEBUG /PDB:realmd.pdb",
+          "type": "STRING"
+        },
+        {
+          "name": "CMAKE_CXX_FLAGS",
+          "value": "/Zm200",
+          "type": "STRING"
+        }
+      ]
+    }
+  ]
+}

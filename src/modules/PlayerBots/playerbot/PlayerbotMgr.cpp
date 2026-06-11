@@ -752,6 +752,12 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
 
     ai->ResetStrategies();
 
+    // check activity  
+    ai->AllowActivity(ALL_ACTIVITY, true);
+    // set delay on login  
+    ai->SetActionDuration(urand(2000, 4000));
+
+    // Moved after SetActionDuration to ensure delay is active before movement expiration  
     if (master && !master->IsTaxiFlying())
     {
         bot->GetMotionMaster()->MovementExpired();

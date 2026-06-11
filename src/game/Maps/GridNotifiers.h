@@ -873,9 +873,11 @@ namespace MaNGOS
             WorldObject const& GetFocusObject() const { return *i_obj; }
             bool operator()(Unit* u)
             {
+                // Guard: i_funit may be null when constructed with a non-unit WorldObject.
                 if (!i_funit)
                     return false;
-                if(!i_funit->CanSeeInWorld(u))
+
+                if (!i_funit->CanSeeInWorld(u))
                     return false;
 
                 return u->IsAlive() && i_obj->IsWithinDistInMap(u, i_range) && !i_funit->IsFriendlyTo(u);

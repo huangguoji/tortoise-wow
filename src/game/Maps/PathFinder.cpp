@@ -50,7 +50,8 @@ PathInfo::PathInfo(const Unit* owner) :
     m_navMesh(nullptr), m_navMeshQuery(nullptr), m_targetAllowedFlags(0)
 {
     //DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::PathInfo for %u \n", m_sourceUnit->GetGUIDLow());
-    createFilter();
+    if (m_sourceUnit)
+        createFilter();
 }
 
 

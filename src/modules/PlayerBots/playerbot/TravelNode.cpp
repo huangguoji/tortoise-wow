@@ -1122,10 +1122,13 @@ void TravelPath::ClipPath(PlayerbotAI* ai, Unit* mover, bool ignoreEnemyTargets)
 {
     auto startP = getNextPoint(mover, 0.0f, false);
 
-    cutTo(*startP, false);
-
+    // If no next point found, nothing to clip.
     if (startP == fullPath.end())
         return;
+
+    // cutTo may modify fullPath and invalidate iterators, so only call it
+    // after confirming startP is valid.
+    cutTo(*startP, false);
 
     AiObjectContext* context = ai->GetAiObjectContext();
     std::list<ObjectGuid> targets;

@@ -784,17 +784,6 @@ VALUES
 -- FILE: creature_template_dragonmaw.sql
 -- GENERATED: 20260529182210
 -- ==============================================
-UPDATE creature_template
-SET display_id1 = display_id1,
-    display_id2 = display_id2,
-    display_id3 = display_id3,
-    display_id4 = display_id4,
-    speed_walk = speed_walk,
-    speed_run = speed_run,
-    unit_flags = unit_flags,
-    dynamic_flags = dynamic_flags,
-    auras = 'auras'
-WHERE entry = entry;
 
 UPDATE creature_template
 SET display_id1 = 1141,
