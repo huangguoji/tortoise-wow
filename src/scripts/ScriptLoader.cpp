@@ -331,6 +331,13 @@ void AddSC_boss_hargesh_doomcaller();
 void AddSC_boss_hatereaver_annhilator();
 void AddSC_trash_mobs_hateforge_quarry();
 
+// Frostmane Hollow
+void AddSC_boss_hailar_the_frigid();
+
+// Windhorn Canyon
+void AddSC_boss_bonespeaker_narlgom();
+void AddSC_windhorn_canyon();
+
 // Stormwind Vaults
 void AddSC_boss_aszosh_grimflame();
 void AddSC_boss_black_bride();
@@ -621,6 +628,13 @@ void AddScripts()
     AddSC_thunder_bluff();
     AddSC_ungoro_crater();
     AddSC_winterspring();
+
+    // Frostmane Hollow
+    AddSC_boss_hailar_the_frigid();
+
+    // Windhorn Canyon
+    AddSC_boss_bonespeaker_narlgom();
+    AddSC_windhorn_canyon();
 
     // Stormwind Vaults
     AddSC_boss_aszosh_grimflame();
