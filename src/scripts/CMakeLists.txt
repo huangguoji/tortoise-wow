@@ -347,11 +347,13 @@ world/eastern_plaguelands.cpp
 world/elwynn_forest.cpp
 world/felwood.cpp
 world/feralas.cpp
+world/grim_reaches.cpp
 world/hillsbrad_foothills.cpp
 world/hinterlands.cpp
 world/ironforge.cpp
 world/loch_modan.cpp
 world/moonglade.cpp
+world/moonwhisper_coast.cpp
 world/mulgore.cpp
 world/orgrimmar.cpp
 world/redridge_mountains.cpp

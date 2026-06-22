@@ -26,9 +26,96 @@ mob_aquementas
 npc_marin_noggenfogger
 npc_tooga
 go_inconspicuous_landmark
+go_slickwick_control_panel
 EndContentData */
 
 #include "scriptPCH.h"
+
+/*######
+Disgusting hack for slickwick oil pumps
+Can likely be entirely db driven, will clean later
+######*/
+
+enum SlickwickControlPanel
+{
+    QUEST_A_DEAL_WORTH_TAKING       = 41762,
+    QUEST_OIL_BASED_GRIEVANCES      = 41764,
+    ITEM_KALKES_ENERGY_REGULATOR    = 41995,
+
+    GO_CONTROL_PANEL_ALPHA          = 2020225,
+    GO_CONTROL_PANEL_BETA           = 2020226,
+    GO_CONTROL_PANEL_GAMMA          = 2020227,
+    GO_CONTROL_PANEL_DELTA          = 2020228,
+
+    GOSSIP_TEXT_SLICKWICK_PANEL     = 2020225,
+
+    GOSSIP_ACTION_SABOTAGE_PANEL    = GOSSIP_ACTION_INFO_DEF + 1,
+    GOSSIP_ACTION_DEACTIVATE_PANEL  = GOSSIP_ACTION_INFO_DEF + 2
+};
+
+uint8 GetSlickwickControlPanelObjective(GameObject const* pGo)
+{
+    switch (pGo->GetEntry())
+    {
+        case GO_CONTROL_PANEL_ALPHA: return 0;
+        case GO_CONTROL_PANEL_BETA:  return 1;
+        case GO_CONTROL_PANEL_GAMMA: return 2;
+        case GO_CONTROL_PANEL_DELTA: return 3;
+        default:                    return QUEST_OBJECTIVES_COUNT;
+    }
+}
+
+bool HasIncompleteSlickwickPanelObjective(Player* pPlayer, GameObject const* pGo, uint32 questId)
+{
+    uint8 objective = GetSlickwickControlPanelObjective(pGo);
+    if (objective >= QUEST_OBJECTIVES_COUNT)
+        return false;
+
+    QuestStatusData const* questStatus = pPlayer->GetQuestStatusData(questId);
+    if (!questStatus || questStatus->m_status != QUEST_STATUS_INCOMPLETE)
+        return false;
+
+    Quest const* quest = sObjectMgr.GetQuestTemplate(questId);
+    if (!quest || quest->ReqCreatureOrGOId[objective] != -int32(pGo->GetEntry()))
+        return false;
+
+    return questStatus->m_creatureOrGOcount[objective] < quest->ReqCreatureOrGOCount[objective];
+}
+
+bool GOGossipHello_go_slickwick_control_panel(Player* pPlayer, GameObject* pGo)
+{
+    if (HasIncompleteSlickwickPanelObjective(pPlayer, pGo, QUEST_A_DEAL_WORTH_TAKING))
+        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "<Sabotage the pump station.>", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_SABOTAGE_PANEL);
+
+    if (pPlayer->HasItemCount(ITEM_KALKES_ENERGY_REGULATOR, 1, false) &&
+        HasIncompleteSlickwickPanelObjective(pPlayer, pGo, QUEST_OIL_BASED_GRIEVANCES))
+        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "<Deactivate the buzzing control panel.>", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_DEACTIVATE_PANEL);
+
+    pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXT_SLICKWICK_PANEL, pGo->GetGUID());
+    return true;
+}
+
+bool GOGossipSelect_go_slickwick_control_panel(Player* pPlayer, GameObject* pGo, uint32 /*sender*/, uint32 action)
+{
+    bool canComplete = false;
+
+    if (action == GOSSIP_ACTION_SABOTAGE_PANEL)
+        canComplete = HasIncompleteSlickwickPanelObjective(pPlayer, pGo, QUEST_A_DEAL_WORTH_TAKING);
+    else if (action == GOSSIP_ACTION_DEACTIVATE_PANEL)
+    {
+        canComplete = pPlayer->HasItemCount(ITEM_KALKES_ENERGY_REGULATOR, 1, false) &&
+            HasIncompleteSlickwickPanelObjective(pPlayer, pGo, QUEST_OIL_BASED_GRIEVANCES);
+    }
+
+    if (canComplete)
+    {
+        pPlayer->CastedCreatureOrGO(pGo->GetEntry(), pGo->GetObjectGuid(), 0);
+        pGo->SendGameObjectCustomAnim();
+    }
+
+    pPlayer->CLOSE_GOSSIP_MENU();
+    return true;
+}
 
 /*######
 ## mob_aquementas
@@ -647,5 +734,11 @@ void AddSC_tanaris()
     newscript->Name = "go_inconspicuous_landmark";
     newscript->GOGetAI = &GetAIgo_inconspicuous_landmark;
     newscript->pGOHello = &GOHello_go_inconspicuous_landmark;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "go_slickwick_control_panel";
+    newscript->pGOGossipHello = &GOGossipHello_go_slickwick_control_panel;
+    newscript->pGOGossipSelect = &GOGossipSelect_go_slickwick_control_panel;
     newscript->RegisterSelf();
 }
