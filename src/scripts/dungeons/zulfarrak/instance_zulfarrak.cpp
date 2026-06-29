@@ -108,6 +108,9 @@ public:
     uint64 OroGUID;
     uint64 RavenGUID;
     uint64 MurtaGUID;
+    uint64 KathzenGUID;
+    uint64 JuthzaGUID;
+    uint64 RazjalGUID;
     uint64 EndDoorGUID;
     uint32 PyramidPhase;
     uint32 major_wave_Timer;
@@ -134,6 +137,9 @@ public:
         OroGUID = 0;
         RavenGUID = 0;
         MurtaGUID = 0;
+        KathzenGUID = 0;
+        JuthzaGUID = 0;
+        RazjalGUID = 0;
         EndDoorGUID = 0;
     }
 
@@ -166,6 +172,15 @@ public:
                 break;
             case ENTRY_UKORZ:
                 UkorzGUID = pCreature->GetGUID();
+                break;
+            case ENTRY_KATHZEN:
+                KathzenGUID = pCreature->GetGUID();
+                break;
+            case ENTRY_JUTHZA:
+                JuthzaGUID = pCreature->GetGUID();
+                break;
+            case ENTRY_RAZJAL:
+                RazjalGUID = pCreature->GetGUID();
                 break;
             case NPC_GAHZRILLA:
                 if (GahzRillaEncounter >= IN_PROGRESS)
@@ -218,6 +233,12 @@ public:
                 return MurtaGUID;
             case ENTRY_UKORZ:
                 return UkorzGUID;
+            case ENTRY_KATHZEN:
+                return KathzenGUID;
+            case ENTRY_JUTHZA:
+                return JuthzaGUID;
+            case ENTRY_RAZJAL:
+                return RazjalGUID;
             case GO_END_DOOR:
                 return EndDoorGUID;
         }

@@ -14,6 +14,9 @@ enum zfEntries
     ENTRY_WEEGLI = 7607,
     ENTRY_MURTA = 7608,
     ENTRY_UKORZ = 7267,
+    ENTRY_KATHZEN = 62496,
+    ENTRY_JUTHZA = 62497,
+    ENTRY_RAZJAL = 62498,
 
     GO_END_DOOR = 146084,
 
@@ -21,6 +24,7 @@ enum zfEntries
     EVENT_GAHZRILLA = 2,
     EVENT_END_DOOR = 3,
     EVENT_ZUMRAH = 4,
+    EVENT_FARRAKI_ARENA = 5,
 };
 
 enum zfPyramidPhases

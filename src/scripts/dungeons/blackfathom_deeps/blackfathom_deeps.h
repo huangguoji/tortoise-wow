@@ -21,6 +21,11 @@ enum
     TYPE_AQUANIS                = 12,
 
     NPC_BARON_AQUANIS           = 12876,
+    NPC_VELTHELAXX_THE_DEFILER  = 62530,
+    NPC_WOJI_THE_TOAD           = 62531,
+
+    SPELL_TARGETED_ARCANE_CHANNELING = 51187,
+
     GO_FATHOM_STONE             = 177964,
 
     // Shrine event
