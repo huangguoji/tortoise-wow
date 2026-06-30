@@ -101,7 +101,7 @@ namespace DBUpdater
         return dbMigrations;
     }
 
-    bool AutoUpdater::ProcessTargetUpdates(const fs::directory_entry& targetPath, DatabaseType* targetDatabase, bool region) const
+    bool AutoUpdater::ProcessTargetUpdates(const fs::directory_entry& targetPath, DatabaseType* targetDatabase, bool region, bool sortByName) const
     {
         auto fileMigrations = LoadFileMigrations(targetPath);
         auto dbMigrations = LoadDatabaseMigrations(targetDatabase);
@@ -138,19 +138,24 @@ namespace DBUpdater
         }
 
         //sort by modified-at ascending for oldest -> newest updates
-        std::sort(updates.begin(), updates.end(), [](const FileMigration& e1, const FileMigration& e2)
-        {
-            if (e1.ModifiedAt < e2.ModifiedAt)
-                return true;
-
-            if (e1.ModifiedAt > e2.ModifiedAt)
-                return false;
-
-
-            //if we're here then both modifiedAt are the same, can happen with Git merges etc. We sort alphabetically by lowest -> oldest first.
-            return e1.Name < e2.Name;
-
-        });
+        // sort order controlled by Database.AutoUpdate.SortByName config  
+        // false (default): sort by modification time ascending, alphabetical name as tiebreaker  
+        // true: sort alphabetically by name ascending, modification time as tiebreaker  
+        std::sort(updates.begin(), updates.end(), [sortByName](const FileMigration& e1, const FileMigration& e2)
+            {
+                if (sortByName)
+                {
+                    if (e1.Name != e2.Name)
+                        return e1.Name < e2.Name;
+                    return e1.ModifiedAt < e2.ModifiedAt;
+                }
+                else
+                {
+                    if (e1.ModifiedAt != e2.ModifiedAt)
+                        return e1.ModifiedAt < e2.ModifiedAt;
+                    return e1.Name < e2.Name;
+                }
+            });
 
         for (const auto& update : updates)
         {
@@ -380,6 +385,7 @@ namespace DBUpdater
         auto authUpdateFolder = sConfig.GetStringDefault("Database.AutoUpdate.AuthUpdateName", "Logon");
         auto charUpdateFolder = sConfig.GetStringDefault("Database.AutoUpdate.CharUpdateName", "Char");
         auto worldUpdateFolder = sConfig.GetStringDefault("Database.AutoUpdate.WorldUpdateName", "World");
+        bool sortByName = sConfig.GetBoolDefault("Database.AutoUpdate.SortByName", false);
         path folderPath{ pathString };
 
 
@@ -387,13 +393,13 @@ namespace DBUpdater
         directory_entry charUpdatePath{ folderPath / charUpdateFolder };
         directory_entry worldUpdatePath{ folderPath / worldUpdateFolder };
 
-        if (!ProcessTargetUpdates(logonUpdatePath, &LoginDatabase, false))
+        if (!ProcessTargetUpdates(logonUpdatePath, &LoginDatabase, false, sortByName))
             return false;
 
-        if (!ProcessTargetUpdates(charUpdatePath, &CharacterDatabase, false))
+        if (!ProcessTargetUpdates(charUpdatePath, &CharacterDatabase, false, sortByName))
             return false;
 
-        if (!ProcessTargetUpdates(worldUpdatePath, &WorldDatabase, false))
+        if (!ProcessTargetUpdates(worldUpdatePath, &WorldDatabase, false, sortByName))
             return false;
 
 
@@ -408,13 +414,13 @@ namespace DBUpdater
             directory_entry cnWorldPath{ worldUpdatePath.path() / "cn" };
 
 
-            if (!ProcessTargetUpdates(cnLogonPath, &LoginDatabase, true))
+            if (!ProcessTargetUpdates(cnLogonPath, &LoginDatabase, true, sortByName))
                 return false;
 
-            if (!ProcessTargetUpdates(cnCharPath, &CharacterDatabase, true))
+            if (!ProcessTargetUpdates(cnCharPath, &CharacterDatabase, true, sortByName))
                 return false;
 
-            if (!ProcessTargetUpdates(cnWorldPath, &WorldDatabase, true))
+            if (!ProcessTargetUpdates(cnWorldPath, &WorldDatabase, true, sortByName))
                 return false;
         }
 

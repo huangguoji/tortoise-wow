@@ -2,8 +2,8 @@
 -- FILE: a_big_nuke.sql
 -- GENERATED: 20260618114919
 -- ==============================================
-DELETE FROM creature
-WHERE guid BETWEEN 2700000 AND 2702528;
+DELETE FROM `creature`
+WHERE `guid` BETWEEN 2700000 AND 2702528;
 
 -- ==============================================
 -- FILE: add_missing_creatures_moonwhisper.sql

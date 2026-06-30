@@ -2,8 +2,8 @@
 -- FILE: a_big_nuke.sql
 -- GENERATED: 20260608174707
 -- ==============================================
-DELETE FROM creature WHERE map = 820;
-DELETE FROM gameobject WHERE map = 820;
+DELETE FROM `creature` WHERE `map` = 820;
+DELETE FROM `gameobject` WHERE `map` = 820;
 
 -- ==============================================
 -- FILE: add_missing_creatures.sql
@@ -2910,27 +2910,27 @@ VALUES
 (62784, 'Windhorn Canyon - Walgan Bloodcaller', 16044, 100, 1, 0, 0, 0, 0, 7, 8, 17, 0, 16727, 100, 0, 0, 0, 0, 3, 5, 27, 33, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0),
 (62865, 'Windhorn Canyon - Storm Guardian', 3391, 100, 0, 0, 0, 0, 0, 2, 28, 29, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0),
 (62985, 'Windhorn Canyon - Deathtotem Behemoth', 31771, 100, 0, 0, 0, 0, 4, 21, 15, 22, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 0, 0, 0, 0, 0, 0, 0, 0);
-UPDATE creature_template
-SET spell_list_id = entry
-WHERE entry IN (
+UPDATE `creature_template`
+SET `spell_list_id` = `entry`
+WHERE `entry` IN (
     62759, 62761, 62762, 62763, 62764, 62765, 62767, 62768,
     62769, 62770, 62772, 62773, 62774, 62777, 62778, 62779,
     62781, 62782, 62783, 62784, 62865, 62985
 );
 
-UPDATE creature_template
-SET spell_list_id = 0, ai_name = '', script_name = 'boss_bonespeaker_narlgom'
-WHERE entry = 62780;
+UPDATE `creature_template`
+SET `spell_list_id` = 0, `ai_name` = '', `script_name` = 'boss_bonespeaker_narlgom'
+WHERE `entry` = 62780;
 
-UPDATE creature_template
-SET ai_name = '', script_name = 'boss_chieftain_shalk_blackwind'
-WHERE entry = 62782;
+UPDATE `creature_template`
+SET `ai_name` = '', `script_name` = 'boss_chieftain_shalk_blackwind'
+WHERE `entry` = 62782;
 
-UPDATE creature_template
-SET ai_name = '', script_name = 'npc_champion_rotag'
-WHERE entry = 62785;
+UPDATE `creature_template`
+SET `ai_name` = '', `script_name` = 'npc_champion_rotag'
+WHERE `entry` = 62785;
 
-UPDATE creature_template
-SET ai_name = '', script_name = 'npc_windhorn_storm_guardian'
-WHERE entry = 62865;
+UPDATE `creature_template`
+SET `ai_name` = '', `script_name` = 'npc_windhorn_storm_guardian'
+WHERE `entry` = 62865;
 

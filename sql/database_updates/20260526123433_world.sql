@@ -681,9 +681,9 @@ VALUES
 -- GENERATED: 20260526123433
 -- ==============================================
 -- Updating the gates to lock
-UPDATE gameobject_template
-SET flags = 34
-WHERE entry = 2020232;
+UPDATE `gameobject_template`
+SET `flags` = 34
+WHERE `entry` = 2020232;
 
 -- ==============================================
 -- FILE: game_tele_dragonmaw.sql

@@ -92,8 +92,8 @@ VALUES
 -- FILE: a_small_nuke.sql
 -- GENERATED: 20260610134807
 -- ==============================================
-DELETE FROM creature WHERE map = 822;
-DELETE FROM gameobject WHERE map = 822;
+DELETE FROM `creature` WHERE `map` = 822;
+DELETE FROM `gameobject` WHERE `map` = 822;
 
 -- ==============================================
 -- FILE: creature_addon_frostmane.sql
@@ -1153,22 +1153,22 @@ SET `display_id1` = 7341,
     `type` = 7
 WHERE `entry` = 63190;
 
-UPDATE creature_template
-SET spell_list_id = entry
-WHERE entry IN (
+UPDATE `creature_template`
+SET `spell_list_id` = `entry`
+WHERE `entry` IN (
     67, 33027, 63129, 63132, 63133, 63134,
     63135, 63136, 63137, 63139
 );
 
-UPDATE creature_template
-    SET ai_name = '',
-    script_name = 'npc_frostmane_ritualist'
-WHERE entry = 36519;
+UPDATE `creature_template`
+    SET `ai_name` = '',
+    `script_name` = 'npc_frostmane_ritualist'
+WHERE `entry` = 36519;
 
-UPDATE creature_template
-    SET spell_list_id = entry, ai_name = '',
-    script_name = 'boss_hailar_the_frigid'
-WHERE entry = 63130;
+UPDATE `creature_template`
+    SET `spell_list_id` = `entry`, `ai_name` = '',
+    `script_name` = 'boss_hailar_the_frigid'
+WHERE `entry` = 63130;
 
 -- ==============================================
 -- FILE: gameobject_frostmane.sql

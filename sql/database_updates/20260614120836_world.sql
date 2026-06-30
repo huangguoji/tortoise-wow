@@ -2,11 +2,11 @@
 -- FILE: a_big_nuke.sql
 -- GENERATED: 20260614120836
 -- ==============================================
-DELETE FROM creature
-WHERE guid BETWEEN 3590000 AND 3591718;
+DELETE FROM `creature`
+WHERE `guid` BETWEEN 3590000 AND 3591718;
 
-DELETE FROM gameobject
-WHERE guid BETWEEN 5024000 AND 5024268;
+DELETE FROM `gameobject`
+WHERE `guid` BETWEEN 5024000 AND 5024268;
 
 DELETE FROM `creature`
 WHERE `guid` IN

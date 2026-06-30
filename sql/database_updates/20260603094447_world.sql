@@ -2,11 +2,11 @@
 -- FILE: an_old_purge.sql
 -- GENERATED: 20260603094447
 -- ==============================================
-DELETE FROM creature
-WHERE guid BETWEEN 3620000 AND 3621021;
+DELETE FROM `creature`
+WHERE `guid` BETWEEN 3620000 AND 3621021;
 
-DELETE FROM gameobject
-WHERE guid BETWEEN 5028700 AND 5028751;
+DELETE FROM `gameobject`
+WHERE `guid` BETWEEN 5028700 AND 5028751;
 
 -- ==============================================
 -- FILE: creature_addon_balor.sql
@@ -85,9 +85,9 @@ VALUES
 -- FILE: creature_auras_balor.sql
 -- GENERATED: 20260603094447
 -- ==============================================
-UPDATE creature_template
-SET auras = 22650
-WHERE entry IN (62325, 62324, 62466, 62467, 62454, 62506, 62707);
+UPDATE `creature_template`
+SET `auras` = 22650
+WHERE `entry` IN (62325, 62324, 62466, 62467, 62454, 62506, 62707);
 
 -- ==============================================
 -- FILE: creature_balor.sql
@@ -3601,277 +3601,277 @@ VALUES
 -- FILE: scale_balor.sql
 -- GENERATED: 20260603094447
 -- ==============================================
-UPDATE creature_template
-SET scale = 0.30000001192092896
-WHERE entry = 2462;
-
-UPDATE creature_template
-SET scale = 0.20000000298023224
-WHERE entry = 14881;
-
-UPDATE creature_template
-SET scale = 0.800000011920929
-WHERE entry = 62314;
-
-UPDATE creature_template
-SET scale = 0.800000011920929
-WHERE entry = 62315;
-
-UPDATE creature_template
-SET scale = 1.399999976158142
-WHERE entry = 62323;
-
-UPDATE creature_template
-SET scale = 1.399999976158142
-WHERE entry = 62334;
-
-UPDATE creature_template
-SET scale = 0.800000011920929
-WHERE entry = 62338;
-
-UPDATE creature_template
-SET scale = 0.800000011920929
-WHERE entry = 62339;
-
-UPDATE creature_template
-SET scale = 0.800000011920929
-WHERE entry = 62340;
-
-UPDATE creature_template
-SET scale = 0.800000011920929
-WHERE entry = 62342;
-
-UPDATE creature_template
-SET scale = 1.2000000476837158
-WHERE entry = 62344;
-
-UPDATE creature_template
-SET scale = 0.800000011920929
-WHERE entry = 62345;
-
-UPDATE creature_template
-SET scale = 1.399999976158142
-WHERE entry = 62346;
-
-UPDATE creature_template
-SET scale = 1.399999976158142
-WHERE entry = 62347;
-
-UPDATE creature_template
-SET scale = 1.399999976158142
-WHERE entry = 62348;
-
-UPDATE creature_template
-SET scale = 1.399999976158142
-WHERE entry = 62349;
-
-UPDATE creature_template
-SET scale = 1.600000023841858
-WHERE entry = 62350;
-
-UPDATE creature_template
-SET scale = 1.2000000476837158
-WHERE entry = 62353;
-
-UPDATE creature_template
-SET scale = 1.2000000476837158
-WHERE entry = 62504;
-
-UPDATE creature_template
-SET scale = 3.0
-WHERE entry = 62505;
-
-UPDATE creature_template
-SET scale = 1.2999999523162842
-WHERE entry = 62588;
-
-UPDATE gameobject_template
-SET size = 0.4000000059604645
-WHERE entry = 1623;
-
-UPDATE gameobject_template
-SET size = 0.5
-WHERE entry = 1733;
-
-UPDATE gameobject_template
-SET size = 0.5
-WHERE entry = 1734;
-
-UPDATE gameobject_template
-SET size = 0.5
-WHERE entry = 1735;
-
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 2041;
-
-UPDATE gameobject_template
-SET size = 0.4000000059604645
-WHERE entry = 2042;
-
-UPDATE gameobject_template
-SET size = 0.5
-WHERE entry = 2043;
-
-UPDATE gameobject_template
-SET size = 0.5
-WHERE entry = 2045;
-
-UPDATE gameobject_template
-SET size = 0.75
-WHERE entry = 3707;
-
-UPDATE gameobject_template
-SET size = 0.75
-WHERE entry = 12843;
-
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 180322;
-
-UPDATE gameobject_template
-SET size = 2.0
-WHERE entry = 180322;
-
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 180885;
-
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 1000030;
-
-UPDATE gameobject_template
-SET size = 0.30000001192092896
-WHERE entry = 1000310;
-
-UPDATE gameobject_template
-SET size = 0.800000011920929
-WHERE entry = 2000058;
-
-UPDATE gameobject_template
-SET size = 1.399999976158142
-WHERE entry = 2000300;
-
-UPDATE gameobject_template
-SET size = 0.800000011920929
-WHERE entry = 2001957;
-
-UPDATE gameobject_template
-SET size = 1.2000000476837158
-WHERE entry = 2002563;
-
-UPDATE gameobject_template
-SET size = 0.4000000059604645
-WHERE entry = 2002591;
-
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 2003116;
-
-UPDATE gameobject_template
-SET size = 0.800000011920929
-WHERE entry = 2003178;
-
-UPDATE gameobject_template
-SET size = 0.800000011920929
-WHERE entry = 2003195;
-
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 2003223;
-
-UPDATE gameobject_template
-SET size = 1.399999976158142
-WHERE entry = 2003229;
-
-UPDATE gameobject_template
-SET size = 0.800000011920929
-WHERE entry = 2003230;
-
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 2003230;
-
-UPDATE gameobject_template
-SET size = 1.2000000476837158
-WHERE entry = 2003230;
-
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 2003285;
-
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 2003328;
-
-UPDATE gameobject_template
-SET size = 0.4000000059604645
-WHERE entry = 2003377;
-
-UPDATE gameobject_template
-SET size = 1.2000000476837158
-WHERE entry = 2003812;
-
-UPDATE gameobject_template
-SET size = 0.800000011920929
-WHERE entry = 2003876;
-
-UPDATE gameobject_template
-SET size = 1.399999976158142
-WHERE entry = 2004206;
-
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 2004235;
-
-UPDATE gameobject_template
-SET size = 0.800000011920929
-WHERE entry = 2004236;
-
-UPDATE gameobject_template
-SET size = 0.800000011920929
-WHERE entry = 2004430;
-
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 2004431;
-
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 2004642;
-
-UPDATE gameobject_template
-SET size = 0.4000000059604645
-WHERE entry = 2005316;
-
-UPDATE gameobject_template
-SET size = 0.44999998807907104
-WHERE entry = 2005745;
-
-UPDATE gameobject_template
-SET size = 0.5
-WHERE entry = 2007356;
-
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 2010378;
-
-UPDATE gameobject_template
-SET size = 0.20000000298023224
-WHERE entry = 2020224;
-
-UPDATE gameobject_template
-SET size = 2.0
-WHERE entry = 2020230;
-
-UPDATE gameobject_template
-SET size = 0.800000011920929
-WHERE entry = 2020233;
-
-UPDATE gameobject_template
-SET size = 1.2999999523162842
-WHERE entry = 3000303;
+UPDATE `creature_template`
+SET `scale` = 0.30000001192092896
+WHERE `entry` = 2462;
+
+UPDATE `creature_template`
+SET `scale` = 0.20000000298023224
+WHERE `entry` = 14881;
+
+UPDATE `creature_template`
+SET `scale` = 0.800000011920929
+WHERE `entry` = 62314;
+
+UPDATE `creature_template`
+SET `scale` = 0.800000011920929
+WHERE `entry` = 62315;
+
+UPDATE `creature_template`
+SET `scale` = 1.399999976158142
+WHERE `entry` = 62323;
+
+UPDATE `creature_template`
+SET `scale` = 1.399999976158142
+WHERE `entry` = 62334;
+
+UPDATE `creature_template`
+SET `scale` = 0.800000011920929
+WHERE `entry` = 62338;
+
+UPDATE `creature_template`
+SET `scale` = 0.800000011920929
+WHERE `entry` = 62339;
+
+UPDATE `creature_template`
+SET `scale` = 0.800000011920929
+WHERE `entry` = 62340;
+
+UPDATE `creature_template`
+SET `scale` = 0.800000011920929
+WHERE `entry` = 62342;
+
+UPDATE `creature_template`
+SET `scale` = 1.2000000476837158
+WHERE `entry` = 62344;
+
+UPDATE `creature_template`
+SET `scale` = 0.800000011920929
+WHERE `entry` = 62345;
+
+UPDATE `creature_template`
+SET `scale` = 1.399999976158142
+WHERE `entry` = 62346;
+
+UPDATE `creature_template`
+SET `scale` = 1.399999976158142
+WHERE `entry` = 62347;
+
+UPDATE `creature_template`
+SET `scale` = 1.399999976158142
+WHERE `entry` = 62348;
+
+UPDATE `creature_template`
+SET `scale` = 1.399999976158142
+WHERE `entry` = 62349;
+
+UPDATE `creature_template`
+SET `scale` = 1.600000023841858
+WHERE `entry` = 62350;
+
+UPDATE `creature_template`
+SET `scale` = 1.2000000476837158
+WHERE `entry` = 62353;
+
+UPDATE `creature_template`
+SET `scale` = 1.2000000476837158
+WHERE `entry` = 62504;
+
+UPDATE `creature_template`
+SET `scale` = 3.0
+WHERE `entry` = 62505;
+
+UPDATE `creature_template`
+SET `scale` = 1.2999999523162842
+WHERE `entry` = 62588;
+
+UPDATE `gameobject_template`
+SET `size` = 0.4000000059604645
+WHERE `entry` = 1623;
+
+UPDATE `gameobject_template`
+SET `size` = 0.5
+WHERE `entry` = 1733;
+
+UPDATE `gameobject_template`
+SET `size` = 0.5
+WHERE `entry` = 1734;
+
+UPDATE `gameobject_template`
+SET `size` = 0.5
+WHERE `entry` = 1735;
+
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 2041;
+
+UPDATE `gameobject_template`
+SET `size` = 0.4000000059604645
+WHERE `entry` = 2042;
+
+UPDATE `gameobject_template`
+SET `size` = 0.5
+WHERE `entry` = 2043;
+
+UPDATE `gameobject_template`
+SET `size` = 0.5
+WHERE `entry` = 2045;
+
+UPDATE `gameobject_template`
+SET `size` = 0.75
+WHERE `entry` = 3707;
+
+UPDATE `gameobject_template`
+SET `size` = 0.75
+WHERE `entry` = 12843;
+
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 180322;
+
+UPDATE `gameobject_template`
+SET `size` = 2.0
+WHERE `entry` = 180322;
+
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 180885;
+
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 1000030;
+
+UPDATE `gameobject_template`
+SET `size` = 0.30000001192092896
+WHERE `entry` = 1000310;
+
+UPDATE `gameobject_template`
+SET `size` = 0.800000011920929
+WHERE `entry` = 2000058;
+
+UPDATE `gameobject_template`
+SET `size` = 1.399999976158142
+WHERE `entry` = 2000300;
+
+UPDATE `gameobject_template`
+SET `size` = 0.800000011920929
+WHERE `entry` = 2001957;
+
+UPDATE `gameobject_template`
+SET `size` = 1.2000000476837158
+WHERE `entry` = 2002563;
+
+UPDATE `gameobject_template`
+SET `size` = 0.4000000059604645
+WHERE `entry` = 2002591;
+
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 2003116;
+
+UPDATE `gameobject_template`
+SET `size` = 0.800000011920929
+WHERE `entry` = 2003178;
+
+UPDATE `gameobject_template`
+SET `size` = 0.800000011920929
+WHERE `entry` = 2003195;
+
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 2003223;
+
+UPDATE `gameobject_template`
+SET `size` = 1.399999976158142
+WHERE `entry` = 2003229;
+
+UPDATE `gameobject_template`
+SET `size` = 0.800000011920929
+WHERE `entry` = 2003230;
+
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 2003230;
+
+UPDATE `gameobject_template`
+SET `size` = 1.2000000476837158
+WHERE `entry` = 2003230;
+
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 2003285;
+
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 2003328;
+
+UPDATE `gameobject_template`
+SET `size` = 0.4000000059604645
+WHERE `entry` = 2003377;
+
+UPDATE `gameobject_template`
+SET `size` = 1.2000000476837158
+WHERE `entry` = 2003812;
+
+UPDATE `gameobject_template`
+SET `size` = 0.800000011920929
+WHERE `entry` = 2003876;
+
+UPDATE `gameobject_template`
+SET `size` = 1.399999976158142
+WHERE `entry` = 2004206;
+
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 2004235;
+
+UPDATE `gameobject_template`
+SET `size` = 0.800000011920929
+WHERE `entry` = 2004236;
+
+UPDATE `gameobject_template`
+SET `size` = 0.800000011920929
+WHERE `entry` = 2004430;
+
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 2004431;
+
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 2004642;
+
+UPDATE `gameobject_template`
+SET `size` = 0.4000000059604645
+WHERE `entry` = 2005316;
+
+UPDATE `gameobject_template`
+SET `size` = 0.44999998807907104
+WHERE `entry` = 2005745;
+
+UPDATE `gameobject_template`
+SET `size` = 0.5
+WHERE `entry` = 2007356;
+
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 2010378;
+
+UPDATE `gameobject_template`
+SET `size` = 0.20000000298023224
+WHERE `entry` = 2020224;
+
+UPDATE `gameobject_template`
+SET `size` = 2.0
+WHERE `entry` = 2020230;
+
+UPDATE `gameobject_template`
+SET `size` = 0.800000011920929
+WHERE `entry` = 2020233;
+
+UPDATE `gameobject_template`
+SET `size` = 1.2999999523162842
+WHERE `entry` = 3000303;
 
 
 -- ==============================================
@@ -3882,8 +3882,8 @@ UPDATE `gameobject_template`
 SET `flags` = 34
 WHERE `entry` = 2020233;
 
-UPDATE gameobject
-SET spawn_flags = 1,
-    visibility_mod = 533.33
-WHERE id = 2020233;
+UPDATE `gameobject`
+SET `spawn_flags` = 1,
+    `visibility_mod` = 533.33
+WHERE `id` = 2020233;
 

@@ -3,12 +3,12 @@
 -- GENERATED: 20260605181338
 -- ==============================================
 -- Northwind Creatures nuke
-DELETE FROM creature
-WHERE guid BETWEEN 3600000 AND 3601353;
+DELETE FROM `creature`
+WHERE `guid` BETWEEN 3600000 AND 3601353;
 
 -- Northwind Gameobject nuke
-DELETE FROM gameobject
-WHERE guid BETWEEN 5023000 AND 5023282;
+DELETE FROM `gameobject`
+WHERE `guid` BETWEEN 5023000 AND 5023282;
 
 -- ==============================================
 -- FILE: adding_missing_npcs.sql
@@ -110,19 +110,19 @@ VALUES
 -- GENERATED: 20260605181338
 -- ==============================================
 -- Moving some invented creature IDs from dragonmaw
-UPDATE creature
+UPDATE `creature`
 SET `guid` = 9584707
 WHERE `guid` = 2584707;
 
-UPDATE creature
+UPDATE `creature`
 SET `guid` = 9584708
 WHERE `guid` = 2584708;
 
-UPDATE creature
+UPDATE `creature`
 SET `guid` = 9584713
 WHERE `guid` = 2584713;
 
-UPDATE creature
+UPDATE `creature`
 SET `guid` = 9584714
 WHERE `guid` = 2584714;
 

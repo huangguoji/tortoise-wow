@@ -2,7 +2,7 @@
 -- FILE: item_template.sql
 -- GENERATED: 20260505222630
 -- ==============================================
-REPLACE INTO item_template
+REPLACE INTO `item_template`
 (
     `entry`,
     `class`,

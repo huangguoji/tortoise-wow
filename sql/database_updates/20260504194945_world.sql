@@ -5,135 +5,135 @@
 -- Remove spells that are marked as deprecated in spell name
 
 -- Deprecated Curse of Weakness
-DELETE FROM npc_trainer WHERE spell = 1394;
+DELETE FROM `npc_trainer` WHERE `spell` = 1394;
 
 -- Deprecated Curse of Weakness Rank 3
-DELETE FROM npc_trainer WHERE spell = 6206;
+DELETE FROM `npc_trainer` WHERE `spell` = 6206;
 
 -- Deprecated Curse of Weakness Rank 4
-DELETE FROM npc_trainer WHERE spell = 7647;
+DELETE FROM `npc_trainer` WHERE `spell` = 7647;
 
 -- Deprecated Windfury Totem Rank 2
-DELETE FROM npc_trainer WHERE spell = 10615;
+DELETE FROM `npc_trainer` WHERE `spell` = 10615;
 
 -- Deprecated Windfury Totem Rank 3
-DELETE FROM npc_trainer WHERE spell = 10616;
+DELETE FROM `npc_trainer` WHERE `spell` = 10616;
 
 -- Deprecated Curse of Weakness Rank 5
-DELETE FROM npc_trainer WHERE spell = 11709;
+DELETE FROM `npc_trainer` WHERE `spell` = 11709;
 
 -- Deprecated Curse of Weakness Rank 6
-DELETE FROM npc_trainer WHERE spell = 11710;
+DELETE FROM `npc_trainer` WHERE `spell` = 11710;
 
 -- Deprecated Scorpid Sting Rank 2
-DELETE FROM npc_trainer WHERE spell = 14347;
+DELETE FROM `npc_trainer` WHERE `spell` = 14347;
 
 -- Deprecated Scorpid Sting Rank 3
-DELETE FROM npc_trainer WHERE spell = 14348;
+DELETE FROM `npc_trainer` WHERE `spell` = 14348;
 
 -- Deprecated Scorpid Sting Rank 4
-DELETE FROM npc_trainer WHERE spell = 14349;
+DELETE FROM `npc_trainer` WHERE `spell` = 14349;
 
 -- Deprecated Trueshot Aura Rank 3
-DELETE FROM npc_trainer WHERE spell = 20938;
+DELETE FROM `npc_trainer` WHERE `spell` = 20938;
 
 -- Deprecated Lightwell Rank 2
-DELETE FROM npc_trainer WHERE spell = 27875;
+DELETE FROM `npc_trainer` WHERE `spell` = 27875;
 
 -- Deprecated Lightwell Rank 3
-DELETE FROM npc_trainer WHERE spell = 27876;
+DELETE FROM `npc_trainer` WHERE `spell` = 27876;
 
 -- Deprecated Bloodlust Rank 2
-DELETE FROM npc_trainer WHERE spell = 47264;
+DELETE FROM `npc_trainer` WHERE `spell` = 47264;
 
 -- Deprecated Stormstrike Rank 2
-DELETE FROM npc_trainer WHERE spell = 47265;
+DELETE FROM `npc_trainer` WHERE `spell` = 47265;
 
 -- Deprecated Champion's Resolve
-DELETE FROM npc_trainer WHERE spell = 47292;
+DELETE FROM `npc_trainer` WHERE `spell` = 47292;
 
 -- Patch note based spell removals
 -- Hunter: Counterattack Rank 2 - Counterattack removed (1.17.2_cleaned.txt:660)
-DELETE FROM npc_trainer WHERE spell = 20942;
+DELETE FROM `npc_trainer` WHERE `spell` = 20942;
 
 -- Hunter: Counterattack Rank 3 - Counterattack removed (1.17.2_cleaned.txt:660)
-DELETE FROM npc_trainer WHERE spell = 20943;
+DELETE FROM `npc_trainer` WHERE `spell` = 20943;
 
 -- Hunter: Wyvern Sting Rank 2 - Wyvern Sting removed (1.17.2_cleaned.txt:686)
-DELETE FROM npc_trainer WHERE spell = 20940;
+DELETE FROM `npc_trainer` WHERE `spell` = 20940;
 
 -- Hunter: Wyvern Sting Rank 3 - Wyvern Sting removed (1.17.2_cleaned.txt:686)
-DELETE FROM npc_trainer WHERE spell = 20941;
+DELETE FROM `npc_trainer` WHERE `spell` = 20941;
 
 -- Priest: Elune's Grace Rank 2 - Elune's Grace removed (1.17.2_cleaned.txt:1327)
-DELETE FROM npc_trainer WHERE spell = 19358;
+DELETE FROM `npc_trainer` WHERE `spell` = 19358;
 
 -- Priest: Elune's Grace Rank 3 - Elune's Grace removed (1.17.2_cleaned.txt:1327)
-DELETE FROM npc_trainer WHERE spell = 19359;
+DELETE FROM `npc_trainer` WHERE `spell` = 19359;
 
 -- Priest: Elune's Grace Rank 4 - Elune's Grace removed (1.17.2_cleaned.txt:1327)
-DELETE FROM npc_trainer WHERE spell = 19360;
+DELETE FROM `npc_trainer` WHERE `spell` = 19360;
 
 -- Priest: Elune's Grace Rank 5 - Elune's Grace removed (1.17.2_cleaned.txt:1327)
-DELETE FROM npc_trainer WHERE spell = 19361;
+DELETE FROM `npc_trainer` WHERE `spell` = 19361;
 
 -- Shaman: Mana Tide Totem Rank 2 - Mana Tide Totem removed (1.17.2_cleaned.txt:2017)
-DELETE FROM npc_trainer WHERE spell = 17362;
+DELETE FROM `npc_trainer` WHERE `spell` = 17362;
 
 -- Shaman: Mana Tide Totem Rank 3 - Mana Tide Totem removed (1.17.2_cleaned.txt:2017)
-DELETE FROM npc_trainer WHERE spell = 17363;
+DELETE FROM `npc_trainer` WHERE `spell` = 17363;
 
 -- Warlock: Dark Pact Rank 2 - Dark Pact removed (1.17.2_cleaned.txt:2189)
-DELETE FROM npc_trainer WHERE spell = 18939;
+DELETE FROM `npc_trainer` WHERE `spell` = 18939;
 
 -- Warlock: Dark Pact Rank 3 - Dark Pact removed (1.17.2_cleaned.txt:2189)
-DELETE FROM npc_trainer WHERE spell = 18940;
+DELETE FROM `npc_trainer` WHERE `spell` = 18940;
 
 -- Priest: Empower Champion - Empower Champion removed (1.18.1_cleaned.txt:419)
-DELETE FROM npc_trainer WHERE spell = 47289;
+DELETE FROM `npc_trainer` WHERE `spell` = 47289;
 
 -- Priest: Champion's Grace - Champion's Grace removed (1.18.1_cleaned.txt:419)
-DELETE FROM npc_trainer WHERE spell = 47287;
+DELETE FROM `npc_trainer` WHERE `spell` = 47287;
 
 -- Priest: Champion's Bond - Champion's Bond removed (1.18.1_cleaned.txt:419)
-DELETE FROM npc_trainer WHERE spell = 47288;
+DELETE FROM `npc_trainer` WHERE `spell` = 47288;
 
 -- Priest: Revive Champion - Revive Champion removed (1.18.1_cleaned.txt:419)
-DELETE FROM npc_trainer WHERE spell = 47291;
+DELETE FROM `npc_trainer` WHERE `spell` = 47291;
 
 -- Warlock: Create Firestone - Old Create Firestone rank removed after stones were consolidated to one rank (1.17.2_cleaned.txt:2131)
-DELETE FROM npc_trainer WHERE spell = 607;
+DELETE FROM `npc_trainer` WHERE `spell` = 607;
 
 -- Warlock: Create Firestone (Lesser) - Old Create Firestone (Lesser) rank removed after stones were consolidated to one rank (1.17.2_cleaned.txt:2131)
-DELETE FROM npc_trainer WHERE spell = 1197;
+DELETE FROM `npc_trainer` WHERE `spell` = 1197;
 
 -- Warlock: Create Firestone (Greater) - Old Create Firestone (Greater) rank removed after stones were consolidated to one rank (1.17.2_cleaned.txt:2131)
-DELETE FROM npc_trainer WHERE spell = 18170;
+DELETE FROM `npc_trainer` WHERE `spell` = 18170;
 
 -- Warlock: Create Firestone (Major) - Old Create Firestone (Major) rank removed after stones were consolidated to one rank (1.17.2_cleaned.txt:2131)
-DELETE FROM npc_trainer WHERE spell = 18171;
+DELETE FROM `npc_trainer` WHERE `spell` = 18171;
 
 -- Warlock: Create Spellstone (Greater) - Old Create Spellstone (Greater) rank removed after stones were consolidated to one rank (1.17.2_cleaned.txt:2131)
-DELETE FROM npc_trainer WHERE spell = 17732;
+DELETE FROM `npc_trainer` WHERE `spell` = 17732;
 
 -- Warlock: Create Spellstone (Major) - Old Create Spellstone (Major) rank removed after stones were consolidated to one rank (1.17.2_cleaned.txt:2131)
-DELETE FROM npc_trainer WHERE spell = 17733;
+DELETE FROM `npc_trainer` WHERE `spell` = 17733;
 
 -- Warrior: Pummel Rank 2 - Pummel ranks removed; now only one rank (1.17.2_cleaned.txt:2356)
-DELETE FROM npc_trainer WHERE spell = 6556;
+DELETE FROM `npc_trainer` WHERE `spell` = 6556;
 
 -- Add or refresh class trainer learn-spell entries
 
 -- Druid: Ferocious Bite Rank 1 - Ferocious Bite Rank 1 added (1.17.2_cleaned.txt:261)
 -- adds 29 missing trainer rows.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (543, 51587, 5000, 0, 0, 24),
@@ -167,14 +167,14 @@ VALUES
 (61629, 51587, 5000, 0, 0, 24);
 
 -- Druid: Barkskin (Feral) Rank 1 - Barkskin (Feral) Rank 1 added (1.17.2_cleaned.txt:288)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (543, 51453, 23000, 0, 0, 44),
@@ -208,14 +208,14 @@ VALUES
 (61629, 51453, 23000, 0, 0, 44);
 
 -- Druid: Barkskin (Feral) Rank 2 - Barkskin (Feral) Rank 2 added (1.17.2_cleaned.txt:288)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (543, 51454, 32000, 0, 0, 52),
@@ -249,14 +249,14 @@ VALUES
 (61629, 51454, 32000, 0, 0, 52);
 
 -- Druid: Barkskin (Feral) Rank 3 - Barkskin (Feral) Rank 3 added (1.17.2_cleaned.txt:288)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (543, 51455, 50000, 0, 0, 60),
@@ -290,14 +290,14 @@ VALUES
 (61629, 51455, 50000, 0, 0, 60);
 
 -- Druid: Efflorescence Passive - Efflorescence passive added (1.17.2_cleaned.txt:348)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (543, 51418, 50000, 0, 0, 60),
@@ -331,14 +331,14 @@ VALUES
 (61629, 51418, 50000, 0, 0, 60);
 
 -- Druid: Reshift Shapeshift - Reshift added (1.18.0_cleaned.txt:92)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (543, 47380, 50000, 0, 0, 60),
@@ -372,14 +372,14 @@ VALUES
 (61629, 47380, 50000, 0, 0, 60);
 
 -- Hunter: Aimed Shot Rank 1 - Aimed Shot Rank 1 made baseline (1.17.2_cleaned.txt:440)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (987, 51508, 2200, 0, 0, 20),
@@ -425,14 +425,14 @@ VALUES
 
 -- Hunter: Steady Shot Rank 1 - Steady Shot Rank 1 trainer level updated (1.18.1_cleaned.txt:134)
 -- spellcost 14000 -> 2200, reqlevel 36 -> 20.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (987, 47319, 2200, 0, 0, 20),
@@ -478,14 +478,14 @@ VALUES
 
 -- Hunter: Steady Shot Rank 2 - Steady Shot Rank 2 trainer level updated (1.17.2_cleaned.txt:442)
 -- spellcost 22000 -> 8000, reqlevel 42 -> 30.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (987, 47320, 8000, 0, 0, 30),
@@ -531,14 +531,14 @@ VALUES
 
 -- Hunter: Steady Shot Rank 3 - Steady Shot Rank 3 trainer level updated (1.17.2_cleaned.txt:442)
 -- spellcost 28000 -> 18000, reqlevel 48 -> 40.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (987, 47321, 18000, 0, 0, 40),
@@ -584,14 +584,14 @@ VALUES
 
 -- Hunter: Steady Shot Rank 4 - Steady Shot Rank 4 trainer level updated (1.17.2_cleaned.txt:442)
 -- spellcost 40000 -> 30000, reqlevel 54 -> 50.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (987, 47322, 30000, 0, 0, 50),
@@ -636,14 +636,14 @@ VALUES
 (81050, 47322, 30000, 0, 0, 50);
 
 -- Hunter: Aspect of the Viper - Aspect of the Viper added (1.18.1_cleaned.txt:119)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (987, 47338, 42000, 0, 0, 56),
@@ -689,14 +689,14 @@ VALUES
 
 -- Hunter: Trueshot Aura - Trueshot Aura made baseline (1.18.1_cleaned.txt:128)
 -- spellcost 1800 -> 18000, reqlevel 50 -> 40.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (987, 1563, 18000, 0, 0, 40),
@@ -741,14 +741,14 @@ VALUES
 (81050, 1563, 18000, 0, 0, 40);
 
 -- Mage: Arcane Surge Rank 1 - Arcane Surge Rank 1 added (1.17.2_cleaned.txt:718)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (313, 51940, 10000, 0, 0, 32),
@@ -788,14 +788,14 @@ VALUES
 (80964, 51940, 10000, 0, 0, 32);
 
 -- Mage: Arcane Surge Rank 2 - Arcane Surge Rank 2 added (1.17.2_cleaned.txt:718)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (313, 51939, 18000, 0, 0, 40),
@@ -835,14 +835,14 @@ VALUES
 (80964, 51939, 18000, 0, 0, 40);
 
 -- Mage: Arcane Surge Rank 3 - Arcane Surge Rank 3 added (1.17.2_cleaned.txt:718)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (313, 51938, 28000, 0, 0, 48),
@@ -882,14 +882,14 @@ VALUES
 (80964, 51938, 28000, 0, 0, 48);
 
 -- Mage: Arcane Surge Rank 4 - Arcane Surge Rank 4 added (1.17.2_cleaned.txt:718)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (313, 51937, 38000, 0, 0, 56),
@@ -929,14 +929,14 @@ VALUES
 (80964, 51937, 38000, 0, 0, 56);
 
 -- Paladin: Holy Strike Rank 1 - Holy Strike Rank 1 moved to class trainers (1.17.2_cleaned.txt:994)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (925, 1888, 10, 0, 0, 4),
@@ -955,14 +955,14 @@ VALUES
 
 -- Paladin: Holy Strike Rank 3 - Holy Strike Rank 3 trainer level updated (1.17.2_cleaned.txt:941)
 -- spellcost 4000 -> 2200, reqlevel 22 -> 20.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (927, 1890, 2200, 0, 0, 20),
@@ -978,14 +978,14 @@ VALUES
 
 -- Paladin: Holy Strike Rank 4 - Holy Strike Rank 4 trainer level updated (1.17.2_cleaned.txt:941)
 -- spellcost 13000 -> 7000, reqlevel 34 -> 28.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (927, 1891, 7000, 0, 0, 28),
@@ -1001,14 +1001,14 @@ VALUES
 
 -- Paladin: Holy Strike Rank 5 - Holy Strike Rank 5 trainer level updated (1.17.2_cleaned.txt:941)
 -- spellcost 21000 -> 14000, reqlevel 42 -> 36.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (927, 2496, 14000, 0, 0, 36),
@@ -1024,14 +1024,14 @@ VALUES
 
 -- Paladin: Holy Strike Rank 6 - Holy Strike Rank 6 trainer level updated (1.17.2_cleaned.txt:941)
 -- spellcost 26000 -> 23000, reqlevel 48 -> 44.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (927, 5571, 23000, 0, 0, 44),
@@ -1046,14 +1046,14 @@ VALUES
 (80244, 5571, 23000, 0, 0, 44);
 
 -- Paladin: spell 10319 - Holy Strike Rank 7 trainer level updated (1.17.2_cleaned.txt:941)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (927, 10319, 32000, 0, 0, 52),
@@ -1068,14 +1068,14 @@ VALUES
 (80244, 10319, 32000, 0, 0, 52);
 
 -- Paladin: Hand of Reckoning - Hand of Reckoning added (1.17.2_cleaned.txt:971)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (927, 51303, 300, 0, 0, 10),
@@ -1091,14 +1091,14 @@ VALUES
 
 -- Priest: Pain Spike Rank 1 - Pain Spike Rank 1 trainer level updated (1.17.2_cleaned.txt:1305)
 -- 25 existing rows change spellcost 46000 -> 8000, reqlevel 60 -> 30.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (376, 47285, 8000, 0, 0, 30),
@@ -1135,14 +1135,14 @@ VALUES
 (80401, 47285, 8000, 0, 0, 30);
 
 -- Priest: Pain Spike Rank 2 - Pain Spike Rank 2 added (1.17.2_cleaned.txt:1305)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (376, 57700, 18000, 0, 0, 40),
@@ -1179,14 +1179,14 @@ VALUES
 (80401, 57700, 18000, 0, 0, 40);
 
 -- Priest: Pain Spike Rank 3 - Pain Spike Rank 3 added (1.17.2_cleaned.txt:1305)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (376, 57703, 30000, 0, 0, 50),
@@ -1223,14 +1223,14 @@ VALUES
 (80401, 57703, 30000, 0, 0, 50);
 
 -- Priest: Pain Spike Rank 4 - Pain Spike Rank 4 added (1.17.2_cleaned.txt:1305)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (376, 57706, 50000, 0, 0, 60),
@@ -1267,14 +1267,14 @@ VALUES
 (80401, 57706, 50000, 0, 0, 60);
 
 -- Priest: Fear Ward - Fear Ward made baseline (1.17.2_cleaned.txt:1320)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (376, 19337, 2200, 0, 0, 20),
@@ -1311,14 +1311,14 @@ VALUES
 (80401, 19337, 2200, 0, 0, 20);
 
 -- Rogue: Ghostly Strike - Ghostly Strike made baseline (1.17.2_cleaned.txt:1568)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (917, 14306, 4000, 0, 0, 20),
@@ -1344,14 +1344,14 @@ VALUES
 (80248, 14306, 4000, 0, 0, 20);
 
 -- Rogue: Heightened Senses Passive - Heightened Senses made baseline (1.17.2_cleaned.txt:1568)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (917, 51926, 8000, 0, 0, 30),
@@ -1377,14 +1377,14 @@ VALUES
 (80248, 51926, 8000, 0, 0, 30);
 
 -- Rogue: Corrosive Poison Rank 1 - Corrosive Poison Rank 1 added (1.17.2_cleaned.txt:1574)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (917, 51925, 42000, 0, 0, 56),
@@ -1411,14 +1411,14 @@ VALUES
 
 -- Rogue: Deadly Throw - Deadly Throw added; no level stated in patch notes (1.17.2_cleaned.txt:1587)
 -- reqlevel 60 -> 42.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (917, 47274, 21000, 0, 0, 42),
@@ -1444,14 +1444,14 @@ VALUES
 (80248, 47274, 21000, 0, 0, 42);
 
 -- Rogue: Quickfooted Passive - Quickfooted passive added (1.18.0_cleaned.txt:629)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (917, 340, 8000, 0, 0, 30),
@@ -1477,14 +1477,14 @@ VALUES
 (80248, 340, 8000, 0, 0, 30);
 
 -- Rogue: Blade Flurry - Blade Flurry made baseline (1.18.0_cleaned.txt:636)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (917, 52721, 8000, 0, 0, 30),
@@ -1511,14 +1511,14 @@ VALUES
 
 -- Rogue: Expose Armor Rank 1 - Expose Armor Rank 1 trainer level updated (1.18.0_cleaned.txt:645)
 -- spellcost 1200 -> 400, reqlevel 14 -> 10.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (917, 8648, 400, 0, 0, 10),
@@ -1545,14 +1545,14 @@ VALUES
 
 -- Rogue: Expose Armor Rank 2 - Expose Armor Rank 2 trainer level updated (1.18.0_cleaned.txt:645)
 -- spellcost 6000 -> 4000, reqlevel 26 -> 22.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (917, 8651, 4000, 0, 0, 22),
@@ -1579,14 +1579,14 @@ VALUES
 
 -- Rogue: Expose Armor Rank 3 - Expose Armor Rank 3 trainer level updated (1.18.0_cleaned.txt:645)
 -- spellcost 16000 -> 12000, reqlevel 36 -> 34.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (917, 8652, 12000, 0, 0, 34),
@@ -1612,14 +1612,14 @@ VALUES
 (80248, 8652, 12000, 0, 0, 34);
 
 -- Rogue: Dissolvent Poison Rank 1 - Dissolvent Poison Rank 1 added (1.18.0_cleaned.txt:652)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (917, 45879, 32000, 0, 0, 52),
@@ -1645,14 +1645,14 @@ VALUES
 (80248, 45879, 32000, 0, 0, 52);
 
 -- Shaman: Earthshaker Slam - Earthshaker Slam added in patch notes (1.17.2_cleaned.txt:1830)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 51366, 400, 0, 0, 10),
@@ -1669,14 +1669,14 @@ VALUES
 
 -- Shaman: Earth Shield Rank 1 - Earth Shield Rank 1 trainer level updated (1.17.2_cleaned.txt:1832)
 -- spellcost 62000 -> 18000, reqlevel 60 -> 40.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 47266, 18000, 0, 0, 40),
@@ -1692,14 +1692,14 @@ VALUES
 (13417, 47266, 18000, 0, 0, 40);
 
 -- Shaman: Earth Shield Rank 2 - Earth Shield Rank 2 added (1.17.2_cleaned.txt:1832)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 51527, 28000, 0, 0, 48),
@@ -1715,14 +1715,14 @@ VALUES
 (13417, 51527, 28000, 0, 0, 48);
 
 -- Shaman: Earth Shield Rank 3 - Earth Shield Rank 3 added (1.17.2_cleaned.txt:1832)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 51528, 42000, 0, 0, 56),
@@ -1739,14 +1739,14 @@ VALUES
 
 -- Shaman: Water Shield Rank 1 - Water Shield Rank 1 trainer level updated (1.17.2_cleaned.txt:1842)
 -- spellcost 62000 -> 6000, reqlevel 60 -> 26.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 47267, 6000, 0, 0, 26),
@@ -1762,14 +1762,14 @@ VALUES
 (13417, 47267, 6000, 0, 0, 26);
 
 -- Shaman: Water Shield Rank 2 - Water Shield Rank 2 added (1.17.2_cleaned.txt:1842)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 51537, 12000, 0, 0, 34),
@@ -1785,14 +1785,14 @@ VALUES
 (13417, 51537, 12000, 0, 0, 34);
 
 -- Shaman: Water Shield Rank 3 - Water Shield Rank 3 added (1.17.2_cleaned.txt:1842)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 51538, 21000, 0, 0, 42),
@@ -1808,14 +1808,14 @@ VALUES
 (13417, 51538, 21000, 0, 0, 42);
 
 -- Shaman: Water Shield Rank 4 - Water Shield Rank 4 added (1.17.2_cleaned.txt:1842)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 51539, 30000, 0, 0, 50),
@@ -1831,14 +1831,14 @@ VALUES
 (13417, 51539, 30000, 0, 0, 50);
 
 -- Shaman: Water Shield Rank 5 - Water Shield Rank 5 added (1.17.2_cleaned.txt:1842)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 51540, 44000, 0, 0, 58),
@@ -1854,14 +1854,14 @@ VALUES
 (13417, 51540, 44000, 0, 0, 58);
 
 -- Shaman: Molten Blast Rank 1 - Molten Blast Rank 1 added (1.18.0_cleaned.txt:508)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 36922, 2200, 0, 0, 20),
@@ -1877,14 +1877,14 @@ VALUES
 (13417, 36922, 2200, 0, 0, 20);
 
 -- Shaman: Molten Blast Rank 2 - Molten Blast Rank 2 added (1.18.0_cleaned.txt:508)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 36923, 7000, 0, 0, 28),
@@ -1900,14 +1900,14 @@ VALUES
 (13417, 36923, 7000, 0, 0, 28);
 
 -- Shaman: Molten Blast Rank 3 - Molten Blast Rank 3 added (1.18.0_cleaned.txt:508)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 36924, 14000, 0, 0, 36),
@@ -1923,14 +1923,14 @@ VALUES
 (13417, 36924, 14000, 0, 0, 36);
 
 -- Shaman: Molten Blast Rank 4 - Molten Blast Rank 4 added (1.18.0_cleaned.txt:508)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 36925, 23000, 0, 0, 44),
@@ -1946,14 +1946,14 @@ VALUES
 (13417, 36925, 23000, 0, 0, 44);
 
 -- Shaman: Molten Blast Rank 5 - Molten Blast Rank 5 added (1.18.0_cleaned.txt:508)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (986, 36926, 32000, 0, 0, 52),
@@ -1970,14 +1970,14 @@ VALUES
 
 -- Warlock: Soul Fire Rank 1 - Soul Fire Rank 1 trainer level updated (1.17.2_cleaned.txt:2094)
 -- spellcost 14000 -> 8000, reqlevel 48 -> 30.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (461, 1571, 8000, 0, 0, 30),
@@ -2004,14 +2004,14 @@ VALUES
 
 -- Warlock: Soul Fire Rank 2 - Soul Fire Rank 2 trainer level updated (1.17.2_cleaned.txt:2094)
 -- spellcost 22000 -> 14000, reqlevel 56 -> 38.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (461, 18160, 14000, 0, 0, 38),
@@ -2037,14 +2037,14 @@ VALUES
 (61636, 18160, 14000, 0, 0, 38);
 
 -- Warlock: Soul Fire Rank 3 - Soul Fire Rank 3 added (1.17.2_cleaned.txt:2094)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (461, 51685, 26000, 0, 0, 46),
@@ -2070,14 +2070,14 @@ VALUES
 (61636, 51685, 26000, 0, 0, 46);
 
 -- Warlock: Soul Fire Rank 4 - Soul Fire Rank 4 added (1.17.2_cleaned.txt:2094)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (461, 51686, 36000, 0, 0, 54),
@@ -2103,14 +2103,14 @@ VALUES
 (61636, 51686, 36000, 0, 0, 54);
 
 -- Warlock: Create Firestone - Create Firestone consolidated rank added (1.17.2_cleaned.txt:2131)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (461, 51693, 4000, 0, 0, 22),
@@ -2136,14 +2136,14 @@ VALUES
 (61636, 51693, 4000, 0, 0, 22);
 
 -- Warlock: Create Felstone - Create Felstone added (1.17.2_cleaned.txt:2138)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (461, 51699, 10000, 0, 0, 32),
@@ -2169,14 +2169,14 @@ VALUES
 (61636, 51699, 10000, 0, 0, 32);
 
 -- Warlock: Create Wrathstone - Create Wrathstone added (1.17.2_cleaned.txt:2140)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (461, 51702, 21000, 0, 0, 42),
@@ -2203,14 +2203,14 @@ VALUES
 
 -- Warlock: Create Spellstone - Create Spellstone trainer level refreshed after 1.18.0 change (1.18.0_cleaned.txt:51)
 -- spellcost 9000 -> 14000.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (461, 6485, 14000, 0, 0, 36),
@@ -2236,14 +2236,14 @@ VALUES
 (61636, 6485, 14000, 0, 0, 36);
 
 -- Warlock: Create Voidstone - Create Voidstone added (1.18.0_cleaned.txt:52)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (461, 52753, 32000, 0, 0, 52),
@@ -2270,14 +2270,14 @@ VALUES
 
 -- Warrior: Dual Wield - Dual Wield trainer level updated (1.17.2_cleaned.txt:2355)
 -- spellcost 4000 -> 400, reqlevel 20 -> 10.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (913, 1424, 400, 0, 0, 10),
@@ -2309,14 +2309,14 @@ VALUES
 (80247, 1424, 400, 0, 0, 10);
 
 -- Warrior: Intervene - Intervene moved from book to trainer (1.17.2_cleaned.txt:2355)
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (913, 47277, 2200, 0, 0, 20),
@@ -2349,14 +2349,14 @@ VALUES
 
 -- Warrior: Pummel - Pummel single rank trainer level updated (1.17.2_cleaned.txt:2356)
 -- spellcost 20000 -> 2000, reqlevel 38 -> 18.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (913, 6553, 2000, 0, 0, 18),
@@ -2389,14 +2389,14 @@ VALUES
 
 -- Warrior: Slam Rank 1 - Slam Rank 1 trainer level updated (1.17.2_cleaned.txt:2357)
 -- spellcost 12000 -> 1200, reqlevel 30 -> 14.
-REPLACE INTO npc_trainer
+REPLACE INTO `npc_trainer`
 (
-    entry,
-    spell,
-    spellcost,
-    reqskill,
-    reqskillvalue,
-    reqlevel
+    `entry`,
+    `spell`,
+    `spellcost`,
+    `reqskill`,
+    `reqskillvalue`,
+    `reqlevel`
 )
 VALUES
 (913, 1482, 1200, 0, 0, 14),
@@ -2431,8 +2431,8 @@ VALUES
 -- Avatar, Searing Shot, and Totemic Slam are racial/quest-sourced spells; not added to all class trainers automatically.
 
 -- Remove non-starter-level class trainer spells from starter trainers
-DELETE FROM npc_trainer
-WHERE entry IN (
+DELETE FROM `npc_trainer`
+WHERE `entry` IN (
     198,
     375,
     459,
@@ -2483,5 +2483,5 @@ WHERE entry IN (
     80221,
     80223
 )
-AND reqlevel > 6;
+AND `reqlevel` > 6;
 

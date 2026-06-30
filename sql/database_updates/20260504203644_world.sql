@@ -4,22 +4,22 @@
 -- ==============================================
 
 -- Gnome/High Elf Arcane Resistance, Undead Shadow Resistance, and Goblin Chemical Superfreak removed.
-DELETE FROM playercreateinfo_spell
-WHERE (race IN (7, 10) AND spell = 20592)
-   OR (race = 5 AND spell = 20579)
-   OR (race = 9 AND spell = 46015);
+DELETE FROM `playercreateinfo_spell`
+WHERE (`race` IN (7, 10) AND `spell` = 20592)
+   OR (`race` = 5 AND `spell` = 20579)
+   OR (`race` = 9 AND `spell` = 46015);
 
 -- High Elf Quel'dorei Meditation now has resource-specific versions.
-DELETE FROM playercreateinfo_spell
-WHERE race = 10
-  AND spell = 46021;
+DELETE FROM `playercreateinfo_spell`
+WHERE `race` = 10
+  AND `spell` = 46021;
 
-REPLACE INTO playercreateinfo_spell
+REPLACE INTO `playercreateinfo_spell`
 (
-    race,
-    class,
-    spell,
-    note
+    `race`,
+    `class`,
+    `spell`,
+    `note`
 )
 VALUES
 (7, 1, 57733, 'Disassembler'),

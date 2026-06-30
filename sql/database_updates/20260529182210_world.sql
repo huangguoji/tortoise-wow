@@ -3,8 +3,8 @@
 -- GENERATED: 20260529182210
 -- ==============================================
 -- Nukes old Dragonmaw entries for objects and creatures
-DELETE FROM gameobject WHERE guid >= 2816000 AND guid <= 2816999;
-DELETE FROM creature WHERE guid >= 2816000 AND guid <= 2816999;
+DELETE FROM `gameobject` WHERE `guid` >= 2816000 AND `guid` <= 2816999;
+DELETE FROM `creature` WHERE `guid` >= 2816000 AND `guid` <= 2816999;
 
 -- ==============================================
 -- FILE: areatrigger_teleport_dragonmaw.sql
@@ -785,449 +785,449 @@ VALUES
 -- GENERATED: 20260529182210
 -- ==============================================
 
-UPDATE creature_template
-SET display_id1 = 1141,
-    display_id2 = 1418,
-    display_id3 = 2176,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 0.857143,
-    unit_flags = 524288,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 4075;
+UPDATE `creature_template`
+SET `display_id1` = 1141,
+    `display_id2` = 1418,
+    `display_id3` = 2176,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 0.857143,
+    `unit_flags` = 524288,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 4075;
 
-UPDATE creature_template
-SET display_id1 = 9330,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 33536,
-    dynamic_flags = 0,
-    auras = NULL
-WHERE entry = 10116;
+UPDATE `creature_template`
+SET `display_id1` = 9330,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 33536,
+    `dynamic_flags` = 0,
+    `auras` = NULL
+WHERE `entry` = 10116;
 
-UPDATE creature_template
-SET display_id1 = 1160,
-    display_id2 = 2536,
-    display_id3 = 9829,
-    display_id4 = 14952,
-    speed_walk = 1,
-    speed_run = 0.857143,
-    unit_flags = 32768,
-    dynamic_flags = 0,
-    auras = NULL
-WHERE entry = 14881;
+UPDATE `creature_template`
+SET `display_id1` = 1160,
+    `display_id2` = 2536,
+    `display_id3` = 9829,
+    `display_id4` = 14952,
+    `speed_walk` = 1,
+    `speed_run` = 0.857143,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 0,
+    `auras` = NULL
+WHERE `entry` = 14881;
 
-UPDATE creature_template
-SET display_id1 = 20663,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32832,
-    dynamic_flags = 2,
-    auras = NULL
-WHERE entry = 62035;
+UPDATE `creature_template`
+SET `display_id1` = 20663,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32832,
+    `dynamic_flags` = 2,
+    `auras` = NULL
+WHERE `entry` = 62035;
 
-UPDATE creature_template
-SET display_id1 = 20664,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 2,
-    auras = NULL
-WHERE entry = 62036;
+UPDATE `creature_template`
+SET `display_id1` = 20664,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 2,
+    `auras` = NULL
+WHERE `entry` = 62036;
 
-UPDATE creature_template
-SET display_id1 = 20665,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 2,
-    auras = NULL
-WHERE entry = 62037;
+UPDATE `creature_template`
+SET `display_id1` = 20665,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 2,
+    `auras` = NULL
+WHERE `entry` = 62037;
 
-UPDATE creature_template
-SET display_id1 = 20666,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 2,
-    auras = NULL
-WHERE entry = 62038;
+UPDATE `creature_template`
+SET `display_id1` = 20666,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 2,
+    `auras` = NULL
+WHERE `entry` = 62038;
 
-UPDATE creature_template
-SET display_id1 = 20667,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 2,
-    auras = NULL
-WHERE entry = 62039;
+UPDATE `creature_template`
+SET `display_id1` = 20667,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 2,
+    `auras` = NULL
+WHERE `entry` = 62039;
 
-UPDATE creature_template
-SET display_id1 = 20668,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62040;
+UPDATE `creature_template`
+SET `display_id1` = 20668,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62040;
 
-UPDATE creature_template
-SET display_id1 = 956,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62041;
+UPDATE `creature_template`
+SET `display_id1` = 956,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62041;
 
-UPDATE creature_template
-SET display_id1 = 20670,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 2,
-    auras = NULL
-WHERE entry = 62045;
+UPDATE `creature_template`
+SET `display_id1` = 20670,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 2,
+    `auras` = NULL
+WHERE `entry` = 62045;
 
-UPDATE creature_template
-SET display_id1 = 20671,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 2,
-    auras = NULL
-WHERE entry = 62046;
+UPDATE `creature_template`
+SET `display_id1` = 20671,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 2,
+    `auras` = NULL
+WHERE `entry` = 62046;
 
-UPDATE creature_template
-SET display_id1 = 20672,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62047;
+UPDATE `creature_template`
+SET `display_id1` = 20672,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62047;
 
-UPDATE creature_template
-SET display_id1 = 4926,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62048;
+UPDATE `creature_template`
+SET `display_id1` = 4926,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62048;
 
-UPDATE creature_template
-SET display_id1 = 4913,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62051;
+UPDATE `creature_template`
+SET `display_id1` = 4913,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62051;
 
-UPDATE creature_template
-SET display_id1 = 355,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62052;
+UPDATE `creature_template`
+SET `display_id1` = 355,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62052;
 
-UPDATE creature_template
-SET display_id1 = 502,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62053;
+UPDATE `creature_template`
+SET `display_id1` = 502,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62053;
 
-UPDATE creature_template
-SET display_id1 = 10791,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62054;
+UPDATE `creature_template`
+SET `display_id1` = 10791,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62054;
 
-UPDATE creature_template
-SET display_id1 = 512,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62055;
+UPDATE `creature_template`
+SET `display_id1` = 512,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62055;
 
-UPDATE creature_template
-SET display_id1 = 3197,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62056;
+UPDATE `creature_template`
+SET `display_id1` = 3197,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62056;
 
-UPDATE creature_template
-SET display_id1 = 543,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32832,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62057;
+UPDATE `creature_template`
+SET `display_id1` = 543,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32832,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62057;
 
-UPDATE creature_template
-SET display_id1 = 959,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1.2,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 2,
-    auras = NULL
-WHERE entry = 62066;
+UPDATE `creature_template`
+SET `display_id1` = 959,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1.2,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 2,
+    `auras` = NULL
+WHERE `entry` = 62066;
 
-UPDATE creature_template
-SET display_id1 = 20743,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 2,
-    auras = NULL
-WHERE entry = 62067;
+UPDATE `creature_template`
+SET `display_id1` = 20743,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 2,
+    `auras` = NULL
+WHERE `entry` = 62067;
 
-UPDATE creature_template
-SET display_id1 = 10806,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62068;
+UPDATE `creature_template`
+SET `display_id1` = 10806,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62068;
 
-UPDATE creature_template
-SET display_id1 = 18949,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 2,
-    auras = '22650'
-WHERE entry = 62069;
+UPDATE `creature_template`
+SET `display_id1` = 18949,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 2,
+    `auras` = '22650'
+WHERE `entry` = 62069;
 
-UPDATE creature_template
-SET display_id1 = 4560,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 2,
-    auras = NULL
-WHERE entry = 62070;
+UPDATE `creature_template`
+SET `display_id1` = 4560,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 2,
+    `auras` = NULL
+WHERE `entry` = 62070;
 
-UPDATE creature_template
-SET display_id1 = 20741,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 2,
-    auras = NULL
-WHERE entry = 62071;
+UPDATE `creature_template`
+SET `display_id1` = 20741,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 2,
+    `auras` = NULL
+WHERE `entry` = 62071;
 
-UPDATE creature_template
-SET display_id1 = 6371,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62072;
+UPDATE `creature_template`
+SET `display_id1` = 6371,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62072;
 
-UPDATE creature_template
-SET display_id1 = 959,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1.2,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62073;
+UPDATE `creature_template`
+SET `display_id1` = 959,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1.2,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62073;
 
-UPDATE creature_template
-SET display_id1 = 959,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1.2,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62074;
+UPDATE `creature_template`
+SET `display_id1` = 959,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1.2,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62074;
 
-UPDATE creature_template
-SET display_id1 = 711,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1.2,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62075;
+UPDATE `creature_template`
+SET `display_id1` = 711,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1.2,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62075;
 
-UPDATE creature_template
-SET display_id1 = 3086,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = '22650'
-WHERE entry = 62076;
+UPDATE `creature_template`
+SET `display_id1` = 3086,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = '22650'
+WHERE `entry` = 62076;
 
-UPDATE creature_template
-SET display_id1 = 3088,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1.2,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = '22650'
-WHERE entry = 62077;
+UPDATE `creature_template`
+SET `display_id1` = 3088,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1.2,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = '22650'
+WHERE `entry` = 62077;
 
-UPDATE creature_template
-SET display_id1 = 10801,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 2,
-    auras = NULL
-WHERE entry = 62078;
+UPDATE `creature_template`
+SET `display_id1` = 10801,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 2,
+    `auras` = NULL
+WHERE `entry` = 62078;
 
-UPDATE creature_template
-SET display_id1 = 20801,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62263;
+UPDATE `creature_template`
+SET `display_id1` = 20801,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62263;
 
-UPDATE creature_template
-SET display_id1 = 20803,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = NULL
-WHERE entry = 62264;
+UPDATE `creature_template`
+SET `display_id1` = 20803,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = NULL
+WHERE `entry` = 62264;
 
-UPDATE creature_template
-SET display_id1 = 20798,
-    display_id2 = 0,
-    display_id3 = 0,
-    display_id4 = 0,
-    speed_walk = 1,
-    speed_run = 1.14286,
-    unit_flags = 32768,
-    dynamic_flags = 12,
-    auras = '21392'
-WHERE entry = 62453;
+UPDATE `creature_template`
+SET `display_id1` = 20798,
+    `display_id2` = 0,
+    `display_id3` = 0,
+    `display_id4` = 0,
+    `speed_walk` = 1,
+    `speed_run` = 1.14286,
+    `unit_flags` = 32768,
+    `dynamic_flags` = 12,
+    `auras` = '21392'
+WHERE `entry` = 62453;
 
 
 -- ==============================================
@@ -1610,209 +1610,209 @@ VALUES
 -- FILE: scale_dragonmaw.sql
 -- GENERATED: 20260529182210
 -- ==============================================
-UPDATE creature_template
-SET scale = 1.149999976158142
-WHERE entry = 1010;
+UPDATE `creature_template`
+SET `scale` = 1.149999976158142
+WHERE `entry` = 1010;
 
-UPDATE creature_template
-SET scale = 0.8500000238418579
-WHERE entry = 1042;
+UPDATE `creature_template`
+SET `scale` = 0.8500000238418579
+WHERE `entry` = 1042;
 
-UPDATE creature_template
-SET scale = 1.2999999523162842
-WHERE entry = 1048;
+UPDATE `creature_template`
+SET `scale` = 1.2999999523162842
+WHERE `entry` = 1048;
 
-UPDATE creature_template
-SET scale = 1.25
-WHERE entry = 1049;
+UPDATE `creature_template`
+SET `scale` = 1.25
+WHERE `entry` = 1049;
 
-UPDATE creature_template
-SET scale = 0.699999988079071
-WHERE entry = 1172;
+UPDATE `creature_template`
+SET `scale` = 0.699999988079071
+WHERE `entry` = 1172;
 
-UPDATE creature_template
-SET scale = 0.8500000238418579
-WHERE entry = 1173;
+UPDATE `creature_template`
+SET `scale` = 0.8500000238418579
+WHERE `entry` = 1173;
 
-UPDATE creature_template
-SET scale = 0.4699999988079071
-WHERE entry = 1417;
+UPDATE `creature_template`
+SET `scale` = 0.4699999988079071
+WHERE `entry` = 1417;
 
-UPDATE creature_template
-SET scale = 0.699999988079071
-WHERE entry = 6017;
+UPDATE `creature_template`
+SET `scale` = 0.699999988079071
+WHERE `entry` = 6017;
 
-UPDATE creature_template
-SET scale = 0.800000011920929
-WHERE entry = 10116;
+UPDATE `creature_template`
+SET `scale` = 0.800000011920929
+WHERE `entry` = 10116;
 
-UPDATE creature_template
-SET scale = 0.20000000298023224
-WHERE entry = 14881;
+UPDATE `creature_template`
+SET `scale` = 0.20000000298023224
+WHERE `entry` = 14881;
 
-UPDATE creature_template
-SET scale = 1.5
-WHERE entry = 61890;
+UPDATE `creature_template`
+SET `scale` = 1.5
+WHERE `entry` = 61890;
 
-UPDATE creature_template
-SET scale = 1.600000023841858
-WHERE entry = 61893;
+UPDATE `creature_template`
+SET `scale` = 1.600000023841858
+WHERE `entry` = 61893;
 
-UPDATE creature_template
-SET scale = 1.2000000476837158
-WHERE entry = 62037;
+UPDATE `creature_template`
+SET `scale` = 1.2000000476837158
+WHERE `entry` = 62037;
 
-UPDATE creature_template
-SET scale = 1.100000023841858
-WHERE entry = 62038;
+UPDATE `creature_template`
+SET `scale` = 1.100000023841858
+WHERE `entry` = 62038;
 
-UPDATE creature_template
-SET scale = 1.100000023841858
-WHERE entry = 62052;
+UPDATE `creature_template`
+SET `scale` = 1.100000023841858
+WHERE `entry` = 62052;
 
-UPDATE creature_template
-SET scale = 1.2000000476837158
-WHERE entry = 62054;
+UPDATE `creature_template`
+SET `scale` = 1.2000000476837158
+WHERE `entry` = 62054;
 
-UPDATE creature_template
-SET scale = 1.2999999523162842
-WHERE entry = 62055;
+UPDATE `creature_template`
+SET `scale` = 1.2999999523162842
+WHERE `entry` = 62055;
 
-UPDATE creature_template
-SET scale = 1.2999999523162842
-WHERE entry = 62056;
+UPDATE `creature_template`
+SET `scale` = 1.2999999523162842
+WHERE `entry` = 62056;
 
-UPDATE creature_template
-SET scale = 1.600000023841858
-WHERE entry = 62057;
+UPDATE `creature_template`
+SET `scale` = 1.600000023841858
+WHERE `entry` = 62057;
 
-UPDATE creature_template
-SET scale = 2.0
-WHERE entry = 62066;
+UPDATE `creature_template`
+SET `scale` = 2.0
+WHERE `entry` = 62066;
 
-UPDATE creature_template
-SET scale = 2.5199999809265137
-WHERE entry = 62068;
+UPDATE `creature_template`
+SET `scale` = 2.5199999809265137
+WHERE `entry` = 62068;
 
-UPDATE creature_template
-SET scale = 0.800000011920929
-WHERE entry = 62073;
+UPDATE `creature_template`
+SET `scale` = 0.800000011920929
+WHERE `entry` = 62073;
 
-UPDATE creature_template
-SET scale = 0.699999988079071
-WHERE entry = 62074;
+UPDATE `creature_template`
+SET `scale` = 0.699999988079071
+WHERE `entry` = 62074;
 
-UPDATE creature_template
-SET scale = 0.8999999761581421
-WHERE entry = 62075;
+UPDATE `creature_template`
+SET `scale` = 0.8999999761581421
+WHERE `entry` = 62075;
 
-UPDATE creature_template
-SET scale = 1.2999999523162842
-WHERE entry = 62078;
+UPDATE `creature_template`
+SET `scale` = 1.2999999523162842
+WHERE `entry` = 62078;
 
-UPDATE creature_template
-SET scale = 1.1399999856948853
-WHERE entry = 62263;
+UPDATE `creature_template`
+SET `scale` = 1.1399999856948853
+WHERE `entry` = 62263;
 
-UPDATE creature_template
-SET scale = 1.2000000476837158
-WHERE entry = 91291;
+UPDATE `creature_template`
+SET `scale` = 1.2000000476837158
+WHERE `entry` = 91291;
 
-UPDATE gameobject_template
-SET size = 0.30000001192092896
-WHERE entry = 1620;
+UPDATE `gameobject_template`
+SET `size` = 0.30000001192092896
+WHERE `entry` = 1620;
 
-UPDATE gameobject_template
-SET size = 0.699999988079071
-WHERE entry = 1622;
+UPDATE `gameobject_template`
+SET `size` = 0.699999988079071
+WHERE `entry` = 1622;
 
-UPDATE gameobject_template
-SET size = 0.4000000059604645
-WHERE entry = 1624;
+UPDATE `gameobject_template`
+SET `size` = 0.4000000059604645
+WHERE `entry` = 1624;
 
-UPDATE gameobject_template
-SET size = 0.5
-WHERE entry = 1731;
+UPDATE `gameobject_template`
+SET `size` = 0.5
+WHERE `entry` = 1731;
 
-UPDATE gameobject_template
-SET size = 0.5
-WHERE entry = 1732;
+UPDATE `gameobject_template`
+SET `size` = 0.5
+WHERE `entry` = 1732;
 
-UPDATE gameobject_template
-SET size = 0.5
-WHERE entry = 1733;
+UPDATE `gameobject_template`
+SET `size` = 0.5
+WHERE `entry` = 1733;
 
-UPDATE gameobject_template
-SET size = 0.5
-WHERE entry = 1734;
+UPDATE `gameobject_template`
+SET `size` = 0.5
+WHERE `entry` = 1734;
 
-UPDATE gameobject_template
-SET size = 0.5
-WHERE entry = 1735;
+UPDATE `gameobject_template`
+SET `size` = 0.5
+WHERE `entry` = 1735;
 
-UPDATE gameobject_template
-SET size = 0.6000000238418579
-WHERE entry = 2041;
+UPDATE `gameobject_template`
+SET `size` = 0.6000000238418579
+WHERE `entry` = 2041;
 
-UPDATE gameobject_template
-SET size = 2.0
-WHERE entry = 180322;
+UPDATE `gameobject_template`
+SET `size` = 2.0
+WHERE `entry` = 180322;
 
-UPDATE gameobject_template
-SET size = 0.800000011920929
-WHERE entry = 2001566;
+UPDATE `gameobject_template`
+SET `size` = 0.800000011920929
+WHERE `entry` = 2001566;
 
-UPDATE gameobject_template
-SET size = 2.0
-WHERE entry = 2003227;
+UPDATE `gameobject_template`
+SET `size` = 2.0
+WHERE `entry` = 2003227;
 
-UPDATE gameobject_template
-SET size = 4.0
-WHERE entry = 2010866;
+UPDATE `gameobject_template`
+SET `size` = 4.0
+WHERE `entry` = 2010866;
 
-UPDATE gameobject_template
-SET size = 0.4000000059604645
-WHERE entry = 2020197;
+UPDATE `gameobject_template`
+SET `size` = 0.4000000059604645
+WHERE `entry` = 2020197;
 
-UPDATE gameobject_template
-SET size = 2.0
-WHERE entry = 2020214;
+UPDATE `gameobject_template`
+SET `size` = 2.0
+WHERE `entry` = 2020214;
 
-UPDATE gameobject_template
-SET size = 2.0
-WHERE entry = 2020215;
+UPDATE `gameobject_template`
+SET `size` = 2.0
+WHERE `entry` = 2020215;
 
-UPDATE gameobject_template
-SET size = 2.0
-WHERE entry = 2020216;
+UPDATE `gameobject_template`
+SET `size` = 2.0
+WHERE `entry` = 2020216;
 
-UPDATE gameobject_template
-SET size = 1.7999999523162842
-WHERE entry = 2020219;
+UPDATE `gameobject_template`
+SET `size` = 1.7999999523162842
+WHERE `entry` = 2020219;
 
-UPDATE gameobject_template
-SET size = 1.399999976158142
-WHERE entry = 2020220;
+UPDATE `gameobject_template`
+SET `size` = 1.399999976158142
+WHERE `entry` = 2020220;
 
-UPDATE gameobject_template
-SET size = 1.149999976158142
-WHERE entry = 2020232;
+UPDATE `gameobject_template`
+SET `size` = 1.149999976158142
+WHERE `entry` = 2020232;
 
-UPDATE gameobject_template
-SET size = 0.9097890257835388
-WHERE entry = 2020251;
+UPDATE `gameobject_template`
+SET `size` = 0.9097890257835388
+WHERE `entry` = 2020251;
 
-UPDATE gameobject_template
-SET size = 0.20000000298023224
-WHERE entry = 2020277;
+UPDATE `gameobject_template`
+SET `size` = 0.20000000298023224
+WHERE `entry` = 2020277;
 
-UPDATE gameobject_template
-SET size = 0.4000000059604645
-WHERE entry = 2020280;
+UPDATE `gameobject_template`
+SET `size` = 0.4000000059604645
+WHERE `entry` = 2020280;
 
-UPDATE gameobject_template
-SET size = 2.5
-WHERE entry = 3002965;
+UPDATE `gameobject_template`
+SET `size` = 2.5
+WHERE `entry` = 3002965;
 
 
 -- ==============================================
