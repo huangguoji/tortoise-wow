@@ -8064,7 +8064,8 @@ void Spell::EffectPlayerPull(SpellEffectIndex eff_idx)
 
     switch (m_spellInfo->Id)
     {
-    case 28337: // thaddius Magnetic Pull
+    case 28337: // Thaddius - Magnetic Pull
+    case 42036: // Incindis - Quaking Stomp
     {
         float speedXY = float(m_spellInfo->EffectMiscValue[eff_idx]) * 0.1f;
         float speedZ = unitTarget->GetDistance(m_caster) / speedXY * 0.5f * 20.0f;

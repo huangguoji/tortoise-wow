@@ -137,12 +137,15 @@ dungeons/molten_core/boss_baron_geddon.cpp
 dungeons/molten_core/boss_garr.cpp
 dungeons/molten_core/boss_gehennas.cpp
 dungeons/molten_core/boss_golemagg.cpp
+dungeons/molten_core/boss_incindis.cpp
 dungeons/molten_core/boss_lucifron.cpp
 dungeons/molten_core/boss_magmadar.cpp
 dungeons/molten_core/boss_majordomo_executus.cpp
 dungeons/molten_core/boss_ragnaros.cpp
 dungeons/molten_core/boss_shazzrah.cpp
 dungeons/molten_core/boss_sulfuron_harbinger.cpp
+dungeons/molten_core/boss_thane.cpp
+dungeons/molten_core/boss_twin_golems.cpp
 dungeons/molten_core/instance_molten_core.cpp
 dungeons/molten_core/molten_core.cpp
 dungeons/molten_core/molten_core.h
