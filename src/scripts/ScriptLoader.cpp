@@ -270,6 +270,7 @@ void AddSC_feralas();
 void AddSC_moonglade();
 void AddSC_moonwhisper_coast();
 void AddSC_mulgore();
+void AddSC_northwind();
 void AddSC_orgrimmar();
 void AddSC_silithus();
 void AddSC_stonetalon_mountains();
@@ -631,6 +632,7 @@ void AddScripts()
     AddSC_moonglade();
     AddSC_moonwhisper_coast();
     AddSC_mulgore();
+    AddSC_northwind();
     AddSC_orgrimmar();
     AddSC_silithus();
     RegisterScripts_Silithus();

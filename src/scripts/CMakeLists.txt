@@ -360,6 +360,7 @@ world/loch_modan.cpp
 world/moonglade.cpp
 world/moonwhisper_coast.cpp
 world/mulgore.cpp
+world/northwind.cpp
 world/orgrimmar.cpp
 world/redridge_mountains.cpp
 world/searing_gorge.cpp
