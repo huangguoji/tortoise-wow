@@ -403,7 +403,9 @@ void WorldSession::HandleNpcTextQueryOpcode(WorldPacket & recv_data)
 void WorldSession::HandlePageTextQueryOpcode(WorldPacket & recv_data)
 {
     uint32 pageID;
-    recv_data >> pageID;
+    ObjectGuid guid;
+
+    recv_data >> pageID >> guid;
 
     while (pageID)
     {

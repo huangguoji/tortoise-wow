@@ -56,8 +56,8 @@ class TransmogMgr
 
         const std::unordered_set<uint32>& GetTransmogs() const { return _transmogs; }
         
-		std::vector<uint32> GetAvailableTransmogs(uint8 InventorySlotId, uint8 invType, uint32 destItemId);
-		void SendAvailableTransmogs(uint8 InventorySlotId, uint8 invType, uint32 destItemId);
+		std::vector<uint32> GetAvailableTransmogs(uint32 destItemId);
+		void SendAvailableTransmogs(uint8 InventorySlotId, uint32 destItemId);
         
 		uint8 ServerSlotToClientInventorySlotId(uint8 InventorySlotId);
 

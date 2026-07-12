@@ -9686,6 +9686,7 @@ bool ObjectMgr::IsItemTypeTransmoggable(uint32 invType)
     std::vector<uint32> TransmoggableItemTypes = {
     INVTYPE_HEAD,
     INVTYPE_SHOULDERS,
+    INVTYPE_BODY,
     INVTYPE_CHEST,
     INVTYPE_WAIST,
     INVTYPE_LEGS,
@@ -9703,6 +9704,7 @@ bool ObjectMgr::IsItemTypeTransmoggable(uint32 invType)
     INVTYPE_HOLDABLE,
     INVTYPE_THROWN,
     INVTYPE_RANGEDRIGHT,
+    INVTYPE_TABARD,
     };
 
     return std::find(TransmoggableItemTypes.begin(), TransmoggableItemTypes.end(), invType) != TransmoggableItemTypes.end();
@@ -9747,7 +9749,7 @@ void ObjectMgr::FillPossibleTransmogs()
 {
     for (uint32 i = 1; i < MAX_CLASSES; ++i)
         for (uint32 j = 1; j < MAX_ITEM_CLASS; ++j)
-            for (uint32 k = 1; k < MAX_ITEM_SUBCLASS_WEAPON; ++k)
+            for (uint32 k = 0; k < MAX_ITEM_SUBCLASS_WEAPON; ++k)
                 for (uint32 l = 1; l < MAX_INVTYPE; ++l)
                     NumPossibleTransmogs[i][j][k][l].clear();
 
@@ -9779,6 +9781,9 @@ uint32 ObjectMgr::GetPossibleTransmogs(uint8 pClass, uint32 itemClass, uint32 it
         return NumPossibleTransmogs[pClass][itemClass][itemSubClass][invType].size();
 
     uint32 numItems = 0;
+
+    if (itemClass == ITEM_CLASS_ARMOR && (invType == INVTYPE_BODY || invType == INVTYPE_TABARD))
+        return NumPossibleTransmogs[pClass][itemClass][ITEM_SUBCLASS_ARMOR_MISC][invType].size();
 
     if (itemClass == ITEM_CLASS_ARMOR && itemSubClass != ITEM_SUBCLASS_ARMOR_SHIELD)
     {
