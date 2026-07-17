@@ -2971,10 +2971,6 @@ void Player::RewardRage(uint32 damage, bool attacker)
     else
     {
         addRage = damage / rageconversion * 2.5f;
-
-        // Berserker Rage effect
-        if (HasAura(18499, EFFECT_INDEX_0))
-            addRage *= 1.3f;
     }
 
     addRage *= sWorld.getConfig(CONFIG_FLOAT_RATE_POWER_RAGE_INCOME);
@@ -3034,7 +3030,13 @@ void Player::RegenerateAll()
     Regenerate(POWER_ENERGY);
     Regenerate(POWER_MANA);
 
-    m_regenTimer += REGEN_TIME_FULL;
+    // Energy regen tick time mod, placeholder formula
+    // This will need quite a bit of testing to derive something close to the actual formula
+    int32 energyRegenTimeMod = GetTotalAuraModifier(SPELL_AURA_MOD_ENERGY_REGEN_TIME);
+    if (energyRegenTimeMod > 0)
+        energyRegenTimeMod = int32(energyRegenTimeMod * GetStat(STAT_AGILITY) / 10.0f);
+
+    m_regenTimer += std::max<int32>(1, REGEN_TIME_FULL - energyRegenTimeMod);
 }
 
 void Player::Regenerate(Powers power)
@@ -8781,6 +8783,8 @@ void Player::CastItemCombatSpell(Unit* Target, WeaponAttackType attType, float c
         }
         else if (chance > 100.0f)
             chance = GetPPMProcChance(WeaponSpeed, 1.0f);   // default to 1 PPM for unknown proc rates
+
+        chance *= (100.0f + GetTotalAuraModifier(SPELL_AURA_MOD_ITEM_PROC_CHANCE)) / 100.0f;
 
         if (roll_chance_f(chance * chanceMultiplier))
             CastSpell(Target, spellInfo->Id, true, item);

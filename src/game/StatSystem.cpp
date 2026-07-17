@@ -667,6 +667,14 @@ void Player::UpdateManaRegen()
     m_modManaRegenInterrupt = power_regen_mp5 + power_regen * modManaRegenInterrupt / 100.0f;
 
     m_modManaRegen = power_regen_mp5 + power_regen;
+
+    int32 manaRegenMod = GetTotalAuraModifier(SPELL_AURA_MOD_MANA_GAIN_PERCENT);
+    if (manaRegenMod)
+    {
+        float const multiplier = std::max(0.0f, (100.0f + manaRegenMod) / 100.0f);
+        m_modManaRegenInterrupt *= multiplier;
+        m_modManaRegen *= multiplier;
+    }
 }
 
 void Player::_ApplyAllStatBonuses()
@@ -894,6 +902,22 @@ bool Pet::UpdateStats(Stats stat)
 
     // value = ((base_value * base_pct) + total_value) * total_pct
     float value  = GetTotalStatValue(stat);
+    if (Unit* owner = GetOwner())
+    {
+        AuraList const& petStatAuras = GetAurasByType(SPELL_AURA_MOD_PET_STAT_PERCENT_OF_OWNER);
+        for (const auto aura : petStatAuras)
+        {
+            if (aura->GetModifier()->m_miscvalue == int32(stat))
+                value += owner->GetStat(stat) * aura->GetModifier()->m_amount / 100.0f;
+        }
+
+        AuraList const& ownerPetStatAuras = owner->GetAurasByType(SPELL_AURA_MOD_PET_STAT_PERCENT_OF_OWNER);
+        for (const auto aura : ownerPetStatAuras)
+        {
+            if (aura->GetModifier()->m_miscvalue == int32(stat))
+                value += owner->GetStat(stat) * aura->GetModifier()->m_amount / 100.0f;
+        }
+    }
 
     SetStat(stat, int32(value));
 
@@ -942,7 +966,31 @@ bool Pet::UpdateAllStats()
 void Pet::UpdateResistances(uint32 school)
 {
     if (school > SPELL_SCHOOL_NORMAL)
-        return Creature::UpdateResistances(school);
+    {
+        Creature::UpdateResistances(school);
+        if (Unit* owner = GetOwner())
+        {
+            int32 inherited = 0;
+            AuraList const& petResistanceAuras = GetAurasByType(SPELL_AURA_MOD_PET_RESISTANCE_PERCENT_OF_OWNER);
+            for (const auto aura : petResistanceAuras)
+            {
+                if (aura->GetModifier()->m_miscvalue & GetSchoolMask(SpellSchools(school)))
+                    inherited += int32(owner->GetResistance(SpellSchools(school)) * aura->GetModifier()->m_amount / 100.0f);
+            }
+
+            AuraList const& ownerPetResistanceAuras = owner->GetAurasByType(SPELL_AURA_MOD_PET_RESISTANCE_PERCENT_OF_OWNER);
+            for (const auto aura : ownerPetResistanceAuras)
+            {
+                if (aura->GetModifier()->m_miscvalue & GetSchoolMask(SpellSchools(school)))
+                    inherited += int32(owner->GetResistance(SpellSchools(school)) * aura->GetModifier()->m_amount / 100.0f);
+            }
+
+            if (inherited)
+                SetResistance(SpellSchools(school), GetResistance(SpellSchools(school)) + inherited);
+        }
+        return;
+    }
+
     else
         UpdateArmor();
 }
@@ -950,6 +998,16 @@ void Pet::UpdateResistances(uint32 school)
 void Pet::UpdateArmor()
 {
     float amount = (GetStat(STAT_AGILITY) * (getPetType() == HUNTER_PET ? 2.0f : 1.0f));
+    if (Unit* owner = GetOwner())
+    {
+        AuraList const& petArmorAuras = GetAurasByType(SPELL_AURA_MOD_PET_ARMOR_PERCENT_OF_OWNER);
+        for (const auto aura : petArmorAuras)
+            amount += owner->GetArmor() * aura->GetModifier()->m_amount / 100.0f;
+
+        AuraList const& ownerPetArmorAuras = owner->GetAurasByType(SPELL_AURA_MOD_PET_ARMOR_PERCENT_OF_OWNER);
+        for (const auto aura : ownerPetArmorAuras)
+            amount += owner->GetArmor() * aura->GetModifier()->m_amount / 100.0f;
+    }
 
     m_auraModifiersGroup[UNIT_MOD_ARMOR][TOTAL_VALUE] += amount;
     Creature::UpdateArmor();
@@ -995,6 +1053,16 @@ void Pet::UpdateAttackPowerAndDamage(bool ranged)
     // attack power mods are split into positive and negative field
     float attackPowerModPositive = GetAttackPowerModifierValue(unitMod, AP_MOD_POSITIVE_FLAT);
     float attackPowerModNegative = GetAttackPowerModifierValue(unitMod, AP_MOD_NEGATIVE_FLAT);
+    if (Unit* owner = GetOwner())
+    {
+        AuraList const& petAttackPowerAuras = GetAurasByType(SPELL_AURA_MOD_PET_ATTACK_POWER_PERCENT_OF_OWNER);
+        for (const auto aura : petAttackPowerAuras)
+            attackPowerModPositive += owner->GetTotalAttackPowerValue(RANGED_ATTACK) * aura->GetModifier()->m_amount / 100.0f;
+
+        AuraList const& ownerAttackPowerAuras = owner->GetAurasByType(SPELL_AURA_MOD_PET_ATTACK_POWER_PERCENT_OF_OWNER);
+        for (const auto aura : ownerAttackPowerAuras)
+            attackPowerModPositive += owner->GetTotalAttackPowerValue(RANGED_ATTACK) * aura->GetModifier()->m_amount / 100.0f;
+    }
 
     //UNIT_FIELD_(RANGED)_ATTACK_POWER field
     SetInt32Value(UNIT_FIELD_ATTACK_POWER, (int32)baseAttackPower);

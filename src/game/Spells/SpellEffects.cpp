@@ -7439,6 +7439,11 @@ void Spell::EffectSummonTotem(SpellEffectIndex eff_idx)
 
     pTotem->Summon(m_casterUnit);
 
+    Unit::AuraList const& triggerAuraOnTotemAuras = m_casterUnit->GetAurasByType(SPELL_AURA_TRIGGER_AURA_ON_TOTEMS);
+    for (const auto aura : triggerAuraOnTotemAuras)
+        if (uint32 spellId = aura->GetSpellProto()->EffectTriggerSpell[aura->GetEffIndex()])
+            pTotem->AddAura(spellId, ADD_AURA_PASSIVE, m_casterUnit);
+
     AddExecuteLogInfo(eff_idx, ExecuteLogInfo(pTotem->GetObjectGuid()));
 }
 
@@ -7906,6 +7911,15 @@ void Spell::EffectSelfResurrect(SpellEffectIndex eff_idx)
         health = uint32(damage / 100.0f * unitTarget->GetMaxHealth());
         if (unitTarget->GetMaxPower(POWER_MANA) > 0)
             mana = uint32(damage / 100.0f * unitTarget->GetMaxPower(POWER_MANA));
+    }
+
+    int32 const recoveryMod = unitTarget->GetTotalAuraModifier(SPELL_AURA_MOD_SELF_RESURRECTION_RECOVERY);
+    if (recoveryMod > 0)
+    {
+        health += health * uint32(recoveryMod) / 100;
+        mana += mana * uint32(recoveryMod) / 100;
+        health = std::min<uint32>(health, unitTarget->GetMaxHealth());
+        mana = std::min<uint32>(mana, unitTarget->GetMaxPower(POWER_MANA));
     }
 
     Player *plr = ((Player*)unitTarget);

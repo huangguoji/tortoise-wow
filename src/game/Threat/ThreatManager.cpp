@@ -417,6 +417,19 @@ void ThreatManager::addThreat(Unit* pVictim, float threat, bool crit, SpellSchoo
             threat = 0.0f;
     
     float totalThreat = ThreatCalcHelper::CalcThreat(pVictim, threat, crit, schoolMask, pThreatSpell);
+    if (pVictim->IsCreature() && static_cast<Creature*>(pVictim)->IsTotem())
+    {
+        if (Unit* owner = pVictim->GetOwner())
+        {
+            int32 const transferPercent = pVictim->GetTotalAuraModifier(SPELL_AURA_TRANSFER_TOTEM_THREAT);
+            if (transferPercent > 0)
+            {
+                float const transferredThreat = totalThreat * transferPercent / 100.0f;
+                addThreatDirectly(owner, transferredThreat);
+                totalThreat -= transferredThreat;
+            }
+        }
+    }
     addThreatDirectly(pVictim, totalThreat);
 }
 

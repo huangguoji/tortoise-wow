@@ -5644,6 +5644,19 @@ void Spell::TakeReagents()
         uint32 itemid = m_spellInfo->Reagent[x];
         uint32 itemcount = m_spellInfo->ReagentCount[x];
 
+        Unit::AuraList const& reagentChanceAuras = p_caster->GetAurasByType(SPELL_AURA_MOD_REAGENT_CONSUMPTION_CHANCE);
+        bool skipReagent = false;
+        for (const auto aura : reagentChanceAuras)
+        {
+            if (aura->GetModifier()->m_miscvalue == int32(itemid) && roll_chance_i(aura->GetModifier()->m_amount))
+            {
+                skipReagent = true;
+                break;
+            }
+        }
+        if (skipReagent)
+            continue;
+
         // if CastItem is also spell reagent
         if (m_CastItem)
         {
@@ -7755,6 +7768,8 @@ SpellCastResult Spell::CheckRange(bool strict)
                         float base = ATTACK_DISTANCE;
                         range_mod += modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_RANGE, base, this);
                     }
+
+                    range_mod += m_casterUnit->GetTotalAuraModifier(SPELL_AURA_MOD_ATTACK_AND_SPELL_RANGE) / 1000.0f / ATTACK_DISTANCE;
                 }
                 
                 // with additional 5 dist for non stricted case (some melee spells have delay in apply
@@ -7776,6 +7791,8 @@ SpellCastResult Spell::CheckRange(bool strict)
     {
         if (Player* modOwner = m_casterUnit->GetSpellModOwner())
             modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_RANGE, max_range, this);
+
+        max_range += m_casterUnit->GetTotalAuraModifier(SPELL_AURA_MOD_ATTACK_AND_SPELL_RANGE) / 1000.0f;
     }
 
     max_range += range_mod;

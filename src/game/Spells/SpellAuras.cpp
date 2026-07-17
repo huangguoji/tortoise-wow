@@ -266,6 +266,33 @@ pAuraHandler AuraHandler[TOTAL_AURAS] =
     &Aura::HandleNoImmediateEffect,                         //197 SPELL_AURA_MOD_PERIODIC_DAMAGE_PERCENT_TAKEN implemented in Unit::MeleeDamageBonusTaken and Unit::SpellDamageBonusTaken
     &Aura::HandleNoImmediateEffect,                         //198 SPELL_AURA_MOD_CRIT_DAMAGE_BONUS_TAKEN  implemented in WorldObject::SpellCriticalDamageBonus
     &Aura::HandleModHealingFromArmor,                       //199 SPELL_AURA_MOD_SPELL_HEALING_OF_ARMOR_PERCENT implemented in WorldObject::SpellBaseHealingBonusDone
+    &Aura::HandleNoImmediateEffect,                         //200 SPELL_AURA_TRANSFER_TOTEM_THREAT implemented in ThreatManager::addThreat
+    &Aura::HandleAuraAuraSpell,                             //201 SPELL_AURA_TRIGGER_AURA_ON_TOTEMS
+    &Aura::HandleAuraModPetStatsFromOwner,                  //202 SPELL_AURA_MOD_PET_STAT_PERCENT_OF_OWNER implemented in Pet::UpdateStats
+    &Aura::HandleAuraModPetStatsFromOwner,                  //203 SPELL_AURA_MOD_PET_ARMOR_PERCENT_OF_OWNER implemented in Pet::UpdateArmor
+    &Aura::HandleAuraModPetStatsFromOwner,                  //204 SPELL_AURA_MOD_PET_RESISTANCE_PERCENT_OF_OWNER implemented in Pet::UpdateResistances
+    &Aura::HandleAuraModPetStatsFromOwner,                  //205 SPELL_AURA_MOD_PET_ATTACK_POWER_PERCENT_OF_OWNER implemented in Pet::UpdateAttackPowerAndDamage
+    &Aura::HandleAuraModPetStatsFromOwner,                  //206 SPELL_AURA_MOD_PET_SPELL_DAMAGE_PERCENT_OF_OWNER implemented in WorldObject::SpellBaseDamageBonusDone and SpellBaseHealingBonusDone
+    &Aura::HandleNoImmediateEffect,                         //207 SPELL_AURA_MOD_ATTACK_AND_SPELL_RANGE implemented in Spell::CheckRange
+    &Aura::HandleNoImmediateEffect,                         //208 SPELL_AURA_MOD_REAGENT_CONSUMPTION_CHANCE implemented in Spell::TakeReagents
+    &Aura::HandleNoImmediateEffect,                         //209 SPELL_AURA_MOD_MECHANIC_DURATION implemented in SpellAuraHolder constructor
+    &Aura::HandleNoImmediateEffect,                         //210 SPELL_AURA_MOD_SELF_RESURRECTION_RECOVERY implemented in Spell::EffectSelfResurrect
+    &Aura::HandleAuraModPetStatsFromOwner,                  //211 SPELL_AURA_MOD_PET_SPELL_CRIT_PERCENT_OF_OWNER implemented in Unit::IsSpellCrit
+    &Aura::HandleNoImmediateEffect,                         //212 SPELL_AURA_MOD_IGNORE_TARGET_ARMOR implemented in Unit::MeleeDamageBonusTaken
+    &Aura::HandleNoImmediateEffect,                         //213 SPELL_AURA_MOD_SPELL_DAMAGE_OF_INTELLECT_PERCENT implemented in WorldObject::SpellBaseDamageBonusDone
+    &Aura::HandleNoImmediateEffect,                         //214 SPELL_AURA_MOD_MANA_GAIN_PERCENT implemented in Player::UpdateManaRegen
+    &Aura::HandleAuraModPetStatsFromOwner,                  //215 SPELL_AURA_MOD_PET_SPELL_HIT_PERCENT_OF_OWNER implemented in WorldObject::MagicSpellHitChance
+    &Aura::HandleAuraModPetStatsFromOwner,                  //216 SPELL_AURA_MOD_PET_MELEE_HIT_PERCENT_OF_OWNER implemented in WorldObject::MeleeSpellMissChance and Unit::MeleeMissChanceCalc
+    &Aura::HandleNoImmediateEffect,                         //217 SPELL_AURA_MOD_ENERGY_REGEN_TIME implemented in Player::RegenerateAll
+    &Aura::HandlePeriodicTriggerSpellWithValue,              //218 SPELL_AURA_PERIODIC_TRIGGER_SPELL2
+    &Aura::HandleUnused,                                    //219 SPELL_AURA_219
+    &Aura::HandleNoImmediateEffect,                         //220 SPELL_AURA_MOD_DAMAGE_TAKEN_FROM_CASTER_PET implemented in Unit::MeleeDamageBonusTaken and SpellDamageBonusTaken
+    &Aura::HandleAuraModAttackPower,                        //221 SPELL_AURA_MOD_ATTACK_POWER_AREA
+    &Aura::HandleAuraModAttackPowerPercent,                 //222 SPELL_AURA_MOD_ATTACK_POWER_PERCENT_AREA
+    &Aura::HandleNoImmediateEffect,                         //223 SPELL_AURA_MOD_ITEM_PROC_CHANCE implemented in Player::CastItemCombatSpell
+    &Aura::HandleNoImmediateEffect,                         //224 SPELL_AURA_MOD_BLOCK_DAMAGE_PERCENT implemented in Unit::CalculateAbsorbResistBlock
+    &Aura::HandleNoImmediateEffect,                         //225 SPELL_AURA_MOD_GATHERING_ITEM_CHANCE
+    &Aura::HandleNoImmediateEffect,                         //226 SPELL_AURA_MOD_RAGE_FROM_DAMAGE_DEALT implemented in Unit::HandleModRageFromDamageDealtAuraProc
 };
 
 static AuraType const frozenAuraTypes[] = { SPELL_AURA_MOD_ROOT, SPELL_AURA_MOD_STUN, SPELL_AURA_NONE };
@@ -662,6 +689,11 @@ void AreaAura::Update(uint32 diff)
                 {
                     if (owner != caster && caster->IsWithinDistInMap(owner, m_radius))
                         targets.push_back(owner);
+                    else if (Unit* pet = caster->GetPet())
+                    {
+                        if (pet->IsAlive() && caster->IsWithinDistInMap(pet, m_radius))
+                            targets.push_back(pet);
+                    }
                     break;
                 }
                 case AREA_AURA_PET:
@@ -5140,6 +5172,20 @@ void Aura::HandleAuraModStat(bool apply, bool /*Real*/)
     }
 }
 
+void Aura::HandleAuraModPetStatsFromOwner(bool /*apply*/, bool /*Real*/)
+{
+    Unit* target = GetTarget();
+    Pet* pet = nullptr;
+
+    if (target->GetTypeId() == TYPEID_PLAYER)
+        pet = static_cast<Player*>(target)->GetPet();
+    else if (target->IsPet())
+        pet = static_cast<Pet*>(target);
+
+    if (pet)
+        pet->UpdateAllStats();
+}
+
 void Aura::HandleModPercentStat(bool apply, bool /*Real*/)
 {
     if (m_modifier.m_miscvalue < -1 || m_modifier.m_miscvalue > 4)
@@ -7006,6 +7052,7 @@ void Aura::PeriodicTick(SpellEntry const* sProto, AuraType auraType, uint32 data
             break;
         }
         case SPELL_AURA_PERIODIC_TRIGGER_SPELL:
+        case SPELL_AURA_PERIODIC_TRIGGER_SPELL2:
         {
             TriggerSpell();
             break;
@@ -7473,6 +7520,25 @@ SpellAuraHolder::SpellAuraHolder(SpellEntry const* spellproto, Unit *target, Uni
     Unit* unitCaster = caster && caster->isType(TYPEMASK_UNIT) ? (Unit*)caster : nullptr;
 
     m_duration = m_maxDuration = spellproto->CalculateDuration(unitCaster);
+    if (m_maxDuration > 0)
+    {
+        uint32 const mechanicMask = spellproto->GetAllSpellMechanicMask();
+        if (mechanicMask)
+        {
+            Unit::AuraList const& mechanicDurationAuras = target->GetAurasByType(SPELL_AURA_MOD_MECHANIC_DURATION);
+            for (const auto aura : mechanicDurationAuras)
+            {
+                uint32 const mechanic = aura->GetModifier()->m_miscvalue;
+                if (mechanic && (mechanicMask & (1 << (mechanic - 1))))
+                {
+                    m_maxDuration += m_maxDuration * aura->GetModifier()->m_amount / 100;
+                    if (m_maxDuration < 0)
+                        m_maxDuration = 0;
+                }
+            }
+            m_duration = m_maxDuration;
+        }
+    }
 
     if (m_maxDuration == -1 || (m_isPassive && spellproto->DurationIndex == 0))
         m_permanent = true;
@@ -8918,7 +8984,32 @@ void Aura::HandleAuraAuraSpell(bool apply, bool real)
     Unit* target = GetTarget();
     if (!real || !target)
         return;
+
     uint32 spell = GetSpellProto()->EffectTriggerSpell[m_effIndex];
+    if (m_modifier.m_auraname == SPELL_AURA_TRIGGER_AURA_ON_TOTEMS)
+    {
+        if (!spell)
+            return;
+
+        struct TriggerAuraOnTotemHelper
+        {
+            TriggerAuraOnTotemHelper(uint32 spellId, bool applyAura, Unit* caster) : spell(spellId), apply(applyAura), owner(caster) {}
+            void operator()(Unit* unit) const
+            {
+                if (apply)
+                    unit->AddAura(spell, ADD_AURA_PASSIVE, owner);
+                else
+                    unit->RemoveAurasDueToSpell(spell);
+            }
+            uint32 spell;
+            bool apply;
+            Unit* owner;
+        };
+
+        target->CallForAllControlledUnits(TriggerAuraOnTotemHelper(spell, apply, target), CONTROLLED_TOTEMS);
+        return;
+    }
+
     if (apply)
         target->AddAura(spell, ADD_AURA_PASSIVE, target);
     else

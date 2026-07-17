@@ -236,6 +236,33 @@ pAuraProcHandler AuraProcHandler[TOTAL_AURAS] =
     &Unit::HandleNULLProc,                                  //197 SPELL_AURA_MOD_PERIODIC_DAMAGE_PERCENT_TAKEN
     &Unit::HandleNULLProc,                                  //198 SPELL_AURA_MOD_CRIT_DAMAGE_BONUS_TAKEN
     &Unit::HandleNULLProc,                                  //199 SPELL_AURA_MOD_SPELL_HEALING_OF_ARMOR_PERCENT
+    &Unit::HandleNULLProc,                                  //200 SPELL_AURA_TRANSFER_TOTEM_THREAT
+    &Unit::HandleNULLProc,                                  //201 SPELL_AURA_TRIGGER_AURA_ON_TOTEMS
+    &Unit::HandleNULLProc,                                  //202 SPELL_AURA_MOD_PET_STAT_PERCENT_OF_OWNER
+    &Unit::HandleNULLProc,                                  //203 SPELL_AURA_MOD_PET_ARMOR_PERCENT_OF_OWNER
+    &Unit::HandleNULLProc,                                  //204 SPELL_AURA_MOD_PET_RESISTANCE_PERCENT_OF_OWNER
+    &Unit::HandleNULLProc,                                  //205 SPELL_AURA_MOD_PET_ATTACK_POWER_PERCENT_OF_OWNER
+    &Unit::HandleNULLProc,                                  //206 SPELL_AURA_MOD_PET_SPELL_DAMAGE_PERCENT_OF_OWNER
+    &Unit::HandleNULLProc,                                  //207 SPELL_AURA_MOD_ATTACK_AND_SPELL_RANGE
+    &Unit::HandleNULLProc,                                  //208 SPELL_AURA_MOD_REAGENT_CONSUMPTION_CHANCE
+    &Unit::HandleNULLProc,                                  //209 SPELL_AURA_MOD_MECHANIC_DURATION
+    &Unit::HandleNULLProc,                                  //210 SPELL_AURA_MOD_SELF_RESURRECTION_RECOVERY
+    &Unit::HandleNULLProc,                                  //211 SPELL_AURA_MOD_PET_SPELL_CRIT_PERCENT_OF_OWNER
+    &Unit::HandleNULLProc,                                  //212 SPELL_AURA_MOD_IGNORE_TARGET_ARMOR
+    &Unit::HandleNULLProc,                                  //213 SPELL_AURA_MOD_SPELL_DAMAGE_OF_INTELLECT_PERCENT
+    &Unit::HandleNULLProc,                                  //214 SPELL_AURA_MOD_MANA_GAIN_PERCENT
+    &Unit::HandleNULLProc,                                  //215 SPELL_AURA_MOD_PET_SPELL_HIT_PERCENT_OF_OWNER
+    &Unit::HandleNULLProc,                                  //216 SPELL_AURA_MOD_PET_MELEE_HIT_PERCENT_OF_OWNER
+    &Unit::HandleNULLProc,                                  //217 SPELL_AURA_MOD_ENERGY_REGEN_TIME
+    &Unit::HandleNULLProc,                                  //218 SPELL_AURA_PERIODIC_TRIGGER_SPELL2
+    &Unit::HandleNULLProc,                                  //219 SPELL_AURA_219
+    &Unit::HandleNULLProc,                                  //220 SPELL_AURA_MOD_DAMAGE_TAKEN_FROM_CASTER_PET
+    &Unit::HandleNULLProc,                                  //221 SPELL_AURA_MOD_ATTACK_POWER_AREA
+    &Unit::HandleNULLProc,                                  //222 SPELL_AURA_MOD_ATTACK_POWER_PERCENT_AREA
+    &Unit::HandleNULLProc,                                  //223 SPELL_AURA_MOD_ITEM_PROC_CHANCE
+    &Unit::HandleNULLProc,                                  //224 SPELL_AURA_MOD_BLOCK_DAMAGE_PERCENT
+    &Unit::HandleNULLProc,                                  //225 SPELL_AURA_MOD_GATHERING_ITEM_CHANCE
+    &Unit::HandleModRageFromDamageDealtAuraProc,            //226 SPELL_AURA_MOD_RAGE_FROM_DAMAGE_DEALT
 };
 
 // Fonctions Nostalrius
@@ -2170,6 +2197,24 @@ SpellAuraProcResult Unit::HandleModDamageAuraProc(Unit* /*pVictim*/, uint32 /*da
     // the aura school mask must match the spell school
     return (procSpell == nullptr || (GetSchoolMask(procSpell->School) & triggeredByAura->GetModifier()->m_miscvalue))
         ? SPELL_AURA_PROC_OK : SPELL_AURA_PROC_FAILED;
+}
+
+SpellAuraProcResult Unit::HandleModRageFromDamageDealtAuraProc(Unit* pVictim, uint32 damage, int32 /*originalAmount*/, Aura* triggeredByAura, SpellEntry const* /*procSpell*/, uint32 procFlag, uint32 /*procEx*/, uint32 /*cooldown*/)
+{
+    if (!damage || !pVictim || pVictim == this || GetPowerType() != POWER_RAGE || !IsPlayer())
+        return SPELL_AURA_PROC_FAILED;
+
+    if (!(procFlag & (PROC_FLAG_TAKE_MELEE_SWING | PROC_FLAG_TAKE_MELEE_ABILITY | PROC_FLAG_TAKE_RANGED_ATTACK |
+                      PROC_FLAG_TAKE_RANGED_ABILITY | PROC_FLAG_TAKE_HARMFUL_ABILITY | PROC_FLAG_TAKE_HARMFUL_SPELL |
+                      PROC_FLAG_TAKE_HARMFUL_PERIODIC | PROC_FLAG_TAKEN_ANY_DAMAGE)))
+        return SPELL_AURA_PROC_FAILED;
+
+    int32 const percent = triggeredByAura->GetModifier()->m_amount;
+    if (percent <= 0)
+        return SPELL_AURA_PROC_FAILED;
+
+    static_cast<Player*>(this)->RewardRage(damage * uint32(percent) / 100, false);
+    return SPELL_AURA_PROC_OK;
 }
 
 SpellAuraProcResult Unit::HandleRemoveByDamageChanceProc(Unit* pVictim, uint32 damage, int32 /*originalAmount*/, Aura* triggeredByAura, SpellEntry const *procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown)

@@ -26,6 +26,9 @@
 #include "Util.h"
 #include "Conditions.h"
 #include "BattleGroundMgr.h"
+#include "Player.h"
+#include "SpellAuraDefines.h"
+#include "SpellAuras.h"
 
 static eConfigFloatValues const qualityToRate[MAX_ITEM_QUALITY] =
 {
@@ -56,7 +59,7 @@ public:
     bool HasQuestDrop() const;                          // True if group includes at least 1 quest drop entry
     bool HasQuestDropForPlayer(Player const * player) const;
     // The same for active quests of the player
-    void Process(Loot& loot) const;                     // Rolls an item from the group (if any) and adds the item to the loot
+    void Process(Loot& loot, Player const* lootOwner) const; // Rolls an item from the group (if any) and adds the item to the loot
     float RawTotalChance() const;                       // Overall chance for the group (without equal chanced items)
     float TotalChance() const;                          // Overall chance for the group
 
@@ -67,7 +70,7 @@ private:
     LootStoreItemList ExplicitlyChanced;                // Entries with chances defined in DB
     LootStoreItemList EqualChanced;                     // Zero chances - every entry takes the same chance
 
-    LootStoreItem const * Roll(Loot const& loot) const;                 // Rolls an item from the group, returns nullptr if all miss their chances
+    LootStoreItem const * Roll(Loot const& loot, Player const* lootOwner) const; // Rolls an item from the group, returns nullptr if all miss their chances
     bool hasConditionalEqualChancedItem;
 };
 
@@ -266,13 +269,27 @@ void LootStore::ReportNotExistedId(uint32 id) const
     sLog.outErrorDb("Table '%s' entry %d (%s) not exist but used as loot id in DB.", GetName(), id, GetEntryName());
 }
 
+static float GetGatheringItemChanceMod(Player const* lootOwner, uint32 itemId)
+{
+    if (!lootOwner)
+        return 0.0f;
+
+    float chanceMod = 0.0f;
+    Unit::AuraList const& auras = lootOwner->GetAurasByType(SPELL_AURA_MOD_GATHERING_ITEM_CHANCE);
+    for (const auto aura : auras)
+        if (aura->GetModifier()->m_miscvalue == int32(itemId))
+            chanceMod += aura->GetModifier()->m_amount;
+
+    return chanceMod;
+}
+
 //
 // --------- LootStoreItem ---------
 //
 
 // Checks if the entry (quest, non-quest, reference) takes it's chance (at loot generation)
 // RATE_DROP_ITEMS is no longer used for all types of entries
-bool LootStoreItem::Roll(bool rate) const
+bool LootStoreItem::Roll(bool rate, Player const* lootOwner) const
 {
     if (chance >= 100.0f)
         return true;
@@ -284,7 +301,7 @@ bool LootStoreItem::Roll(bool rate) const
 
     float qualityModifier = pProto && rate ? sWorld.getConfig(qualityToRate[pProto->Quality]) : 1.0f;
 
-    return roll_chance_f(chance * qualityModifier);
+    return roll_chance_f(chance * qualityModifier * (100.0f + GetGatheringItemChanceMod(lootOwner, itemid)) / 100.0f);
 }
 
 // Checks correctness of values
@@ -516,7 +533,7 @@ bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* loot_owner, 
     items.reserve(MAX_NR_LOOT_ITEMS);
     m_questItems.reserve(MAX_NR_QUEST_ITEMS);
 
-    tab->Process(*this, store, store.IsRatesAllowed());     // Processing is done there, callback via Loot::AddItem()
+    tab->Process(*this, store, store.IsRatesAllowed(), loot_owner); // Processing is done there, callback via Loot::AddItem()
 
     // Setting access rights for group loot case
     Group* group = loot_owner->GetGroup();
@@ -1131,7 +1148,7 @@ void LootTemplate::LootGroup::AddEntry(LootStoreItem& item)
 }
 
 // Rolls an item from the group, returns nullptr if all miss their chances
-LootStoreItem const * LootTemplate::LootGroup::Roll(Loot const& loot) const
+LootStoreItem const * LootTemplate::LootGroup::Roll(Loot const& loot, Player const* lootOwner) const
 {
     if (!ExplicitlyChanced.empty())                         // First explicitly chanced entries are checked
     {
@@ -1145,7 +1162,7 @@ LootStoreItem const * LootTemplate::LootGroup::Roll(Loot const& loot) const
             if (i.chance >= 100.0f)
                 return &i;
 
-            Roll -= i.chance;
+            Roll -= i.chance * (100.0f + GetGatheringItemChanceMod(lootOwner, i.itemid)) / 100.0f;
             if (Roll < 0)
                 return &i;
         }
@@ -1218,9 +1235,9 @@ bool LootTemplate::LootGroup::HasQuestDropForPlayer(Player const* player) const
 }
 
 // Rolls an item from the group (if any takes its chance) and adds the item to the loot
-void LootTemplate::LootGroup::Process(Loot& loot) const
+void LootTemplate::LootGroup::Process(Loot& loot, Player const* lootOwner) const
 {
-    LootStoreItem const * item = Roll(loot);
+    LootStoreItem const * item = Roll(loot, lootOwner);
     if (item != nullptr)
         loot.AddItem(*item);
 }
@@ -1304,21 +1321,21 @@ void LootTemplate::AddEntry(LootStoreItem& item)
 }
 
 // Rolls for every item in the template and adds the rolled items the the loot
-void LootTemplate::Process(Loot& loot, LootStore const& store, bool rate, uint8 groupId) const
+void LootTemplate::Process(Loot& loot, LootStore const& store, bool rate, Player const* lootOwner, uint8 groupId) const
 {
     if (groupId)                                            // Group reference uses own processing of the group
     {
         if (groupId > Groups.size())
             return;                                         // Error message already printed at loading stage
 
-        Groups[groupId - 1].Process(loot);
+        Groups[groupId - 1].Process(loot, lootOwner);
         return;
     }
 
     // Rolling non-grouped items
     for (const auto& itr : Entries)
     {
-        if (!itr.Roll(rate))
+        if (!itr.Roll(rate, lootOwner))
             continue;                                       // Bad luck for the entry
 
         if (itr.mincountOrRef < 0)                          // References processing
@@ -1329,7 +1346,7 @@ void LootTemplate::Process(Loot& loot, LootStore const& store, bool rate, uint8 
                 continue;                                   // Error message already printed at loading stage
 
             for (uint32 loop = 0; loop < itr.maxcount; ++loop) // Ref multiplicator
-                Referenced->Process(loot, store, rate, itr.group);
+                Referenced->Process(loot, store, rate, lootOwner, itr.group);
         }
         else                                                // Plain entries (not a reference, not grouped)
             loot.AddItem(itr);                               // Chance is already checked, just add
@@ -1337,7 +1354,7 @@ void LootTemplate::Process(Loot& loot, LootStore const& store, bool rate, uint8 
 
     // Now processing groups
     for (const auto& group : Groups)
-        group.Process(loot);
+        group.Process(loot, lootOwner);
 }
 
 // True if template includes at least 1 quest drop entry

@@ -30,6 +30,7 @@
 #include "Database/DatabaseEnv.h"
 #include "ChannelMgr.h"
 #include "Group.h"
+#include "LFTMgr.h"
 #include "Guild.h"
 #include "GuildMgr.h"
 #include "Player.h"
@@ -999,6 +1000,9 @@ bool WorldSession::HandleTurtleAddonMessages(uint32 lang, uint32 type, std::stri
     {
         return false;
     }
+
+    if (sLFTMgr.HandleAddonMessage(_player, type, msg))
+        return true;
 
     //guild bank
     // no type == CHAT_MSG_GUILD on this, to protecc fraudulent messages

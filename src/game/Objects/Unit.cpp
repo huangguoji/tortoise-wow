@@ -1673,6 +1673,13 @@ void Unit::CalculateMeleeDamage(Unit* pVictim, uint32 damage, CalcDamageInfo *da
         {
             damageInfo->TargetState = VICTIMSTATE_NORMAL;
             damageInfo->procEx |= PROC_EX_BLOCK;
+            uint32 blockDamageReduction = damageInfo->subDamage[0].damage * uint32(std::abs(damageInfo->target->GetTotalAuraModifier(SPELL_AURA_MOD_BLOCK_DAMAGE_PERCENT))) / 100;
+            if (blockDamageReduction > damageInfo->subDamage[0].damage)
+                blockDamageReduction = damageInfo->subDamage[0].damage;
+
+            damageInfo->totalDamage -= blockDamageReduction;
+            damageInfo->subDamage[0].damage -= blockDamageReduction;
+
             damageInfo->blocked_amount = damageInfo->target->GetShieldBlockValue();
             if (damageInfo->blocked_amount >= damageInfo->subDamage[0].damage)
             {
@@ -2342,6 +2349,12 @@ void Unit::CalculateAbsorbResistBlock(WorldObject* pCaster, SpellNonMeleeDamage 
 
     if (blocked)
     {
+        uint32 blockDamageReduction = damageInfo->damage * uint32(std::abs(GetTotalAuraModifier(SPELL_AURA_MOD_BLOCK_DAMAGE_PERCENT))) / 100;
+        if (blockDamageReduction > damageInfo->damage)
+            blockDamageReduction = damageInfo->damage;
+
+        damageInfo->damage -= blockDamageReduction;
+
         damageInfo->blocked = GetShieldBlockValue();
 
         if (damageInfo->damage < damageInfo->blocked)
@@ -2889,6 +2902,20 @@ float Unit::MeleeMissChanceCalc(Unit const* pVictim, WeaponAttackType attType) c
         hitChance = m_modRangedHitChance;
     else
         hitChance = m_modMeleeHitChance;
+
+    if (IsPet())
+    {
+        if (Unit* owner = GetOwner())
+        {
+            AuraList const& petMeleeHitAuras = GetAurasByType(SPELL_AURA_MOD_PET_MELEE_HIT_PERCENT_OF_OWNER);
+            for (const auto aura : petMeleeHitAuras)
+                hitChance += owner->m_modSpellHitChance * aura->GetModifier()->m_amount / 100.0f;
+
+            AuraList const& ownerPetMeleeHitAuras = owner->GetAurasByType(SPELL_AURA_MOD_PET_MELEE_HIT_PERCENT_OF_OWNER);
+            for (const auto aura : ownerPetMeleeHitAuras)
+                hitChance += owner->m_modSpellHitChance * aura->GetModifier()->m_amount / 100.0f;
+        }
+    }
 
     // There is some code in 1.12 that explicitly adds a modifier that causes the first 1% of +hit gained from
     // talents or gear to be ignored against monsters with more than 10 Defense Skill above the attacking player’s Weapon Skill.
@@ -5767,6 +5794,22 @@ bool Unit::IsSpellCrit(Unit const* pVictim, SpellEntry const* spellProto, SpellS
                 {
                     crit_chance = float(m_baseSpellCritChance);
                     crit_chance += GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL, schoolMask);
+                }
+                if (IsPet())
+                {
+                    if (Unit* owner = GetOwner())
+                    {
+                        SpellSchools const school = GetFirstSchoolInMask(schoolMask);
+                        float const ownerCrit = owner->IsPlayer() ? static_cast<Player*>(owner)->GetSpellCritPercent(school) : float(owner->m_baseSpellCritChance);
+
+                        AuraList const& petSpellCritAuras = GetAurasByType(SPELL_AURA_MOD_PET_SPELL_CRIT_PERCENT_OF_OWNER);
+                        for (const auto aura : petSpellCritAuras)
+                            crit_chance += ownerCrit * aura->GetModifier()->m_amount / 100.0f;
+
+                        AuraList const& ownerPetSpellCritAuras = owner->GetAurasByType(SPELL_AURA_MOD_PET_SPELL_CRIT_PERCENT_OF_OWNER);
+                        for (const auto aura : ownerPetSpellCritAuras)
+                            crit_chance += ownerCrit * aura->GetModifier()->m_amount / 100.0f;
+                    }
                 }
                 // taken
                 if (!spellProto->IsPositiveSpell())

@@ -3800,6 +3800,20 @@ float WorldObject::MeleeSpellMissChance(Unit* pVictim, WeaponAttackType attType,
             hitChance += pUnit->m_modRangedHitChance;
         else
             hitChance += pUnit->m_modMeleeHitChance;
+
+        if (pUnit->IsPet())
+        {
+            if (Unit* owner = pUnit->GetOwner())
+            {
+                Unit::AuraList const& petMeleeHitAuras = pUnit->GetAurasByType(SPELL_AURA_MOD_PET_MELEE_HIT_PERCENT_OF_OWNER);
+                for (const auto aura : petMeleeHitAuras)
+                    hitChance += owner->m_modSpellHitChance * aura->GetModifier()->m_amount / 100.0f;
+
+                Unit::AuraList const& ownerPetMeleeHitAuras = owner->GetAurasByType(SPELL_AURA_MOD_PET_MELEE_HIT_PERCENT_OF_OWNER);
+                for (const auto aura : ownerPetMeleeHitAuras)
+                    hitChance += owner->m_modSpellHitChance * aura->GetModifier()->m_amount / 100.0f;
+            }
+        }
     } 
 
     // There is some code in 1.12 that explicitly adds a modifier that causes the first 1% of +hit gained from
@@ -4031,7 +4045,22 @@ int32 WorldObject::MagicSpellHitChance(Unit* pVictim, SpellEntry const* spell, S
 
     // Increase hit chance from attacker SPELL_AURA_MOD_SPELL_HIT_CHANCE and attacker ratings
     if (Unit* pUnit = ToUnit())
+    {
         modHitChance += int32(pUnit->m_modSpellHitChance);
+        if (pUnit->IsPet())
+        {
+            if (Unit* owner = pUnit->GetOwner())
+            {
+                Unit::AuraList const& petSpellHitAuras = pUnit->GetAurasByType(SPELL_AURA_MOD_PET_SPELL_HIT_PERCENT_OF_OWNER);
+                for (const auto aura : petSpellHitAuras)
+                    modHitChance += owner->m_modSpellHitChance * aura->GetModifier()->m_amount / 100.0f;
+
+                Unit::AuraList const& ownerPetSpellHitAuras = owner->GetAurasByType(SPELL_AURA_MOD_PET_SPELL_HIT_PERCENT_OF_OWNER);
+                for (const auto aura : ownerPetSpellHitAuras)
+                    modHitChance += owner->m_modSpellHitChance * aura->GetModifier()->m_amount / 100.0f;
+            }
+        }
+    }
     //DEBUG_UNIT(this, DEBUG_SPELL_COMPUTE_RESISTS, "SPELL_AURA_MOD_SPELL_HIT_CHANCE (+ %i) : %f", int32(m_modSpellHitChance), modHitChance);
 
     // Nostalrius: sorts binaires.
@@ -4316,7 +4345,10 @@ uint32 WorldObject::CalcArmorReducedDamage(Unit* pVictim, const uint32 damage) c
 
     // Ignore enemy armor by SPELL_AURA_MOD_TARGET_RESISTANCE aura
     if (pUnit)
+    {
         armor += pUnit->GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_TARGET_RESISTANCE, SPELL_SCHOOL_MASK_NORMAL);
+        armor *= std::max(0.0f, (100.0f - pUnit->GetTotalAuraModifier(SPELL_AURA_MOD_IGNORE_TARGET_ARMOR)) / 100.0f);
+    }
 
     if (armor < 0.0f)
         armor = 0.0f;
@@ -4583,6 +4615,19 @@ uint32 WorldObject::MeleeDamageBonusDone(Unit* pVictim, uint32 pdamage, WeaponAt
     if (pUnit)
         DonePercent *= pUnit->GetTotalAuraMultiplierByMiscMask(SPELL_AURA_MOD_DAMAGE_DONE_VERSUS, creatureTypeMask);
 
+    if (pUnit && pUnit->IsPet())
+    {
+        if (Unit* owner = pUnit->GetOwner())
+        {
+            Unit::AuraList const& petDamageTakenAuras = pVictim->GetAurasByType(SPELL_AURA_MOD_DAMAGE_TAKEN_FROM_CASTER_PET);
+            for (const auto aura : petDamageTakenAuras)
+            {
+                if (aura->GetCasterGuid() == owner->GetObjectGuid())
+                    DonePercent *= (aura->GetModifier()->m_amount + 100.0f) / 100.0f;
+            }
+        }
+    }
+
     // final calculation
     // =================
 
@@ -4733,6 +4778,22 @@ int32 WorldObject::SpellBaseHealingBonusDone(SpellSchoolMask schoolMask)
             if ((aura->GetModifier()->m_miscvalue & schoolMask) != 0)
                 AdvertisedBenefit += int32(float(pUnit->GetArmor()) * aura->GetModifier()->m_amount / 100.0f);
 
+        if (pUnit->IsPet())
+        {
+            if (Unit* owner = pUnit->GetOwner())
+            {
+                Unit::AuraList const& petSpellPowerAuras = pUnit->GetAurasByType(SPELL_AURA_MOD_PET_SPELL_DAMAGE_PERCENT_OF_OWNER);
+                for (const auto aura : petSpellPowerAuras)
+                    if ((aura->GetModifier()->m_miscvalue & schoolMask) != 0)
+                        AdvertisedBenefit += int32(owner->GetTotalAttackPowerValue(RANGED_ATTACK) * aura->GetModifier()->m_amount / 100.0f);
+
+                Unit::AuraList const& ownerPetSpellPowerAuras = owner->GetAurasByType(SPELL_AURA_MOD_PET_SPELL_DAMAGE_PERCENT_OF_OWNER);
+                for (const auto aura : ownerPetSpellPowerAuras)
+                    if ((aura->GetModifier()->m_miscvalue & schoolMask) != 0)
+                        AdvertisedBenefit += int32(owner->GetTotalAttackPowerValue(RANGED_ATTACK) * aura->GetModifier()->m_amount / 100.0f);
+            }
+        }
+
         // Healing bonus of spirit, intellect and strength
         if (GetTypeId() == TYPEID_PLAYER)
         {
@@ -4814,6 +4875,19 @@ uint32 WorldObject::SpellDamageBonusDone(Unit* pVictim, SpellEntry const* spellP
     // Add pct bonus from spell damage versus
     if (pUnit)
         DoneTotalMod *= pUnit->GetTotalAuraMultiplierByMiscMask(SPELL_AURA_MOD_DAMAGE_DONE_VERSUS, creatureTypeMask);
+
+    if (pUnit && pUnit->IsPet())
+    {
+        if (Unit* owner = pUnit->GetOwner())
+        {
+            Unit::AuraList const& petDamageTakenAuras = pVictim->GetAurasByType(SPELL_AURA_MOD_DAMAGE_TAKEN_FROM_CASTER_PET);
+            for (const auto aura : petDamageTakenAuras)
+            {
+                if (aura->GetCasterGuid() == owner->GetObjectGuid())
+                    DoneTotalMod *= (aura->GetModifier()->m_amount + 100.0f) / 100.0f;
+            }
+        }
+    }
 
     // Add flat bonus from spell damage creature
     if (pUnit)
@@ -4901,6 +4975,27 @@ int32 WorldObject::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
                 i->GetSpellProto()->EquippedItemInventoryTypeMask == 0)          //  0 == any inventory type (not wand then)
                 DoneAdvertisedBenefit += i->GetModifier()->m_amount;
         }
+
+        if (pUnit->IsPet())
+        {
+            if (Unit* owner = pUnit->GetOwner())
+            {
+                Unit::AuraList const& petSpellPowerAuras = pUnit->GetAurasByType(SPELL_AURA_MOD_PET_SPELL_DAMAGE_PERCENT_OF_OWNER);
+                for (const auto aura : petSpellPowerAuras)
+                    if ((aura->GetModifier()->m_miscvalue & schoolMask) != 0)
+                        DoneAdvertisedBenefit += int32(owner->GetTotalAttackPowerValue(RANGED_ATTACK) * aura->GetModifier()->m_amount / 100.0f);
+
+                Unit::AuraList const& ownerPetSpellPowerAuras = owner->GetAurasByType(SPELL_AURA_MOD_PET_SPELL_DAMAGE_PERCENT_OF_OWNER);
+                for (const auto aura : ownerPetSpellPowerAuras)
+                    if ((aura->GetModifier()->m_miscvalue & schoolMask) != 0)
+                        DoneAdvertisedBenefit += int32(owner->GetTotalAttackPowerValue(RANGED_ATTACK) * aura->GetModifier()->m_amount / 100.0f);
+            }
+        }
+
+        Unit::AuraList const& spellDamageOfStatAuras = pUnit->GetAurasByType(SPELL_AURA_MOD_SPELL_DAMAGE_OF_INTELLECT_PERCENT);
+        for (const auto aura : spellDamageOfStatAuras)
+            if ((aura->GetModifier()->m_miscvalue & schoolMask) != 0)
+                DoneAdvertisedBenefit += int32(pUnit->GetStat(STAT_INTELLECT) * aura->GetModifier()->m_amount / 100.0f);
 
         if (GetTypeId() == TYPEID_PLAYER)
         {
