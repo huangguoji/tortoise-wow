@@ -295,15 +295,15 @@ enum BG_AV_Events
 
 enum BG_AV_Graveyards
 {
-    BG_AV_GRAVE_STORM_AID          = 751,
-    BG_AV_GRAVE_STORM_GRAVE        = 689,
-    BG_AV_GRAVE_STONE_GRAVE        = 729,
-    BG_AV_GRAVE_SNOWFALL           = 169,
-    BG_AV_GRAVE_ICE_GRAVE          = 749,
-    BG_AV_GRAVE_FROSTWOLF          = 690,
-    BG_AV_GRAVE_FROST_HUT          = 750,
-    BG_AV_GRAVE_MAIN_ALLIANCE      = 611,
-    BG_AV_GRAVE_MAIN_HORDE         = 610
+    BG_AV_GRAVE_STORM_AID          = 96,
+    BG_AV_GRAVE_STORM_GRAVE        = 90,
+    BG_AV_GRAVE_STONE_GRAVE        = 93,
+    BG_AV_GRAVE_SNOWFALL           = 47,
+    BG_AV_GRAVE_ICE_GRAVE          = 94,
+    BG_AV_GRAVE_FROSTWOLF          = 91,
+    BG_AV_GRAVE_FROST_HUT          = 95,
+    BG_AV_GRAVE_MAIN_ALLIANCE      = 77,
+    BG_AV_GRAVE_MAIN_HORDE         = 76
 };
 
 const uint32 BG_AV_GraveyardIds[9]= {

@@ -24,6 +24,7 @@
 #include "CreatureAI.h"
 #include "Map.h"
 #include "Player.h"
+#include "SpellAuras.h"
 #include "ObjectAccessor.h"
 #include "UnitEvents.h"
 #include "TargetedMovementGenerator.h"
@@ -51,6 +52,18 @@ float ThreatCalcHelper::CalcThreat(Unit* pHatedUnit, float threat, bool crit, Sp
     }
 
     threat = pHatedUnit->ApplyTotalThreatModifier(threat, schoolMask);
+    Unit::SpellAuraHolderMap const& auraHolders = pHatedUnit->GetSpellAuraHolderMap();
+    for (auto const& holderItr : auraHolders)
+    {
+        SpellAuraHolder* holder = holderItr.second;
+        if (!holder || !holder->GetAuraScript())
+            continue;
+
+        for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+            if (Aura* aura = holder->GetAuraByEffectIndex(SpellEffectIndex(i)))
+                holder->GetAuraScript()->OnThreatCalculate(aura, pThreatSpell, schoolMask, threat);
+    }
+
     return threat;
 }
 

@@ -1080,7 +1080,7 @@ class Creature : public Unit
         uint32 m_lootMoney;
         ObjectGuid m_lootRecipientGuid;                     // player who will have rights for looting if m_lootGroupRecipient==0 or group disbanded
         uint32 m_lootGroupRecipientId;                      // group who will have rights for looting if set and exist
-        ObjectGuidSet m_playersPresentAtDeath;              // list of players that were in the map at time of death (for raid bosses only)
+        ObjectGuidSet m_playersPresentAtDeath;              // list of players that were in the raid map at time of death
 
         /// Timers
         uint32 m_corpseDecayTimer;                          // (msecs)timer for death or corpse disappearance

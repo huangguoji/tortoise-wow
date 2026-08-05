@@ -135,10 +135,10 @@ enum BG_SV_Items
 
 enum BG_SV_Locations
 {
-    SV_BASE_HUMAN = 930,
-    SV_BASE_ORC = 931,
-    SV_GRAVEYARD_HUMAN = 932,
-    SV_GRAVEYARD_ORC = 933,
+    SV_BASE_HUMAN = 130,
+    SV_BASE_ORC = 131,
+    SV_GRAVEYARD_HUMAN = 132,
+    SV_GRAVEYARD_ORC = 133,
 };
 
 Position const BG_SV_NodePositions[BG_SV_DYNAMIC_NODES_COUNT] =

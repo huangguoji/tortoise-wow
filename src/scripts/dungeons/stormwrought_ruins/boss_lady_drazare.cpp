@@ -1,6 +1,32 @@
 #include "scriptPCH.h"
 #include "stormwrought_ruins.h"
 
+namespace
+{
+template <class T>
+AuraScript* GetAuraScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterAuraScript(char const* name, AuraScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetAuraScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_drazares_embrace : public AuraScript
+{
+    void OnAfterApply(Aura* aura, bool apply) override
+    {
+        if (!apply && aura->GetRemoveMode() == AURA_REMOVE_BY_EXPIRE)
+            aura->GetTarget()->CastSpell(aura->GetTarget(), 44052, true, nullptr, aura);
+    }
+};
+}
+
 struct boss_lady_drazareAI : public ScriptedAI
 {
     explicit boss_lady_drazareAI(Creature* pCreature) : ScriptedAI(pCreature)
@@ -77,4 +103,6 @@ void AddSC_boss_lady_drazare()
     pNewscript->Name = "boss_lady_drazare";
     pNewscript->GetAI = &GetAI_boss_lady_drazare;
     pNewscript->RegisterSelf();
+
+    RegisterAuraScript("spell_drazares_embrace", &GetAuraScript<spell_drazares_embrace>);
 }

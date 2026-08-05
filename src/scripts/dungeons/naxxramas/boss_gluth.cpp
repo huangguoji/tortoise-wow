@@ -399,6 +399,39 @@ CreatureAI* GetAI_mob_zombieChow(Creature* pCreature)
     return new mob_zombieChow(pCreature);
 }
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_gluth_decimate : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex effIdx) const override
+    {
+        if (effIdx != EFFECT_INDEX_0)
+            return true;
+
+        Unit* target = spell->GetUnitTarget();
+        if (!target)
+            return true;
+
+        spell->damage = std::max(0, int32(target->GetHealth() - uint32(target->GetMaxHealth() * 0.05f)));
+        return true;
+    }
+};
+}
+
 void AddSC_boss_gluth()
 {
     Script* NewScript;
@@ -411,4 +444,6 @@ void AddSC_boss_gluth()
     NewScript->Name = "mob_zombie_chow";
     NewScript->GetAI = &GetAI_mob_zombieChow;
     NewScript->RegisterSelf();
+
+    RegisterSpellScript("spell_gluth_decimate", &GetSpellScript<spell_gluth_decimate>);
 }

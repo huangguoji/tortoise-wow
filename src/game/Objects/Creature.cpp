@@ -1988,9 +1988,9 @@ void Creature::SetDeathState(DeathState s)
 
     if (s == JUST_DIED)
     {
-        // Turtle: Store players in map during raid boss death,
+        // Turtle: Store players in map during raid creature death,
         // to allow trading of soulbound items among eligible players.
-        if (IsWorldBoss() && IsInWorld() && FindMap() && FindMap()->IsRaid())
+        if (IsInWorld() && FindMap() && FindMap()->IsRaid())
         {
             Map::PlayerList const& players = FindMap()->GetPlayers();
             for (auto const& itr : players)

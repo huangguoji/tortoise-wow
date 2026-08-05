@@ -1447,14 +1447,6 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
             AStartLoc[2] = start->z;
             AStartLoc[3] = sObjectMgr.GetWorldSafeLocFacing(start->ID);
         }
-        // TEMP Overrdie for Sunnyglade Valley
-        else if (start1 == 700)
-        {
-            AStartLoc[0] = 1677.1f;
-            AStartLoc[1] = 444.5f;
-            AStartLoc[2] = 115.0f;
-            AStartLoc[3] = 4.4F;
-        }
         // Override for arena
         else if (start1 == 9000)
         {
@@ -1478,14 +1470,6 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
             HStartLoc[1] = start->y;
             HStartLoc[2] = start->z;
             HStartLoc[3] = sObjectMgr.GetWorldSafeLocFacing(start->ID);
-        }
-        // TEMP Overrdie for Sunnyglade Valley
-        else if (start2 == 701)
-        {
-            HStartLoc[0] = 956.5f;
-            HStartLoc[1] = 157.1f;
-            HStartLoc[2] = 100.2f;
-            HStartLoc[3] = 0.5f;
         }
         else if (start2 == 9001)
         {

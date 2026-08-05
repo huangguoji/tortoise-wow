@@ -1060,6 +1060,52 @@ CreatureAI* GetAI_QirajiSwarmguard(Creature* pCreature)
     return new QirajiSwarmguardAI(pCreature);
 }
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_aq20_drain_mana : public SpellScript
+{
+    void OnSetTargetMap(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, uint32& /*targetMode*/, float& /*radius*/, uint32& unMaxTargets, bool& /*selectClosestTargets*/) const override
+    {
+        unMaxTargets = 6;
+    }
+
+    bool OnCheckTarget(Spell const* /*spell*/, Unit* target, SpellEffectIndex /*eff*/) const override
+    {
+        return target->GetPowerType() == POWER_MANA && target->GetPowerPercent(POWER_MANA) >= 1.0f;
+    }
+};
+
+struct spell_rajaxx_thundercrash : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex effIdx) const override
+    {
+        if (effIdx != EFFECT_INDEX_0)
+            return true;
+
+        Unit* target = spell->GetUnitTarget();
+        if (!target)
+            return true;
+
+        spell->damage = std::max<int32>(200, target->GetHealth() / 2);
+        return true;
+    }
+};
+}
+
 void AddSC_ruins_of_ahnqiraj()
 {
     Script *newscript;
@@ -1082,6 +1128,9 @@ void AddSC_ruins_of_ahnqiraj()
     newscript->Name = "mob_tornado_ossirian";
     newscript->GetAI = &GetAI_OssirianTornado;
     newscript->RegisterSelf();
+
+    RegisterSpellScript("spell_aq20_drain_mana", &GetSpellScript<spell_aq20_drain_mana>);
+    RegisterSpellScript("spell_rajaxx_thundercrash", &GetSpellScript<spell_rajaxx_thundercrash>);
 
     newscript = new Script;
     newscript->Name = "mob_qiraji_gladiator";

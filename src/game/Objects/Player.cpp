@@ -1677,7 +1677,10 @@ void Player::Update(uint32 update_diff, uint32 p_time)
             time_t time_inn = now - GetTimeInnEnter();
             if (time_inn >= 10)                             // Freeze update
             {
-                SetRestBonus(GetRestBonus() + ComputeRest(time_inn));
+                if (GetRestType() == REST_TYPE_IN_TAVERN)
+                    AddRestBonus(sObjectMgr.GetXPForLevel(GetLevel()) * RESTED_XP_TENT_RATE * time_inn, GetRestBonusCap(RESTED_XP_TAVERN_CAP));
+                else
+                    SetRestBonus(GetRestBonus() + ComputeRest(time_inn));
                 UpdateInnerTime(now);
             }
         }
@@ -8464,6 +8467,10 @@ void Player::_ApplyWeaponDependentAuraMods(Item *item, WeaponAttackType attackTy
     AuraList const& auraDamagePCTList = GetAurasByType(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE);
     for (const auto itr : auraDamagePCTList)
         _ApplyWeaponDependentAuraDamageMod(item, attackType, itr, apply);
+
+    AuraList const& auraResistanceList = GetAurasByType(SPELL_AURA_MOD_RESISTANCE);
+    for (const auto itr : auraResistanceList)
+        _ApplyWeaponDependentAuraResistanceMod(item, attackType, itr, apply);
 }
 
 void Player::_ApplyWeaponDependentAuraCritMod(Item *item, WeaponAttackType attackType, Aura* aura, bool apply)
@@ -8551,6 +8558,24 @@ void Player::_ApplyWeaponDependentAuraDamageMod(Item *item, WeaponAttackType att
 
     if (item->IsFitToSpellRequirements(aura->GetSpellProto()))
         HandleStatModifier(unitMod, unitModType, float(modifier->m_amount), apply);
+}
+
+void Player::_ApplyWeaponDependentAuraResistanceMod(Item* item, WeaponAttackType attackType, Aura* aura, bool apply)
+{
+    if (aura->GetSpellProto()->EquippedItemClass == -1)
+        return;
+
+    if (attackType != BASE_ATTACK)
+        return;
+
+    if (aura->IsApplied() == apply)
+        return;
+
+    if (apply && (item->IsBroken() || !CanUseEquippedWeapon(attackType)))
+        return;
+
+    if (item->IsFitToSpellRequirements(aura->GetSpellProto()))
+        aura->ApplyModifier(apply, true);
 }
 
 void Player::ApplyItemEquipSpell(Item *item, bool apply, bool form_change)
@@ -9733,8 +9758,9 @@ uint32 Player::GetXPRestBonus(uint32 xp)
 {
     uint32 rested_bonus = (uint32)GetRestBonus();           // xp for each rested bonus
 
-    if (rested_bonus > xp)                                  // max rested_bonus == xp or (r+x) = 200% xp
-        rested_bonus = xp;
+    uint32 const max_bonus = GetRestedKillBonusForXP(xp);
+    if (rested_bonus > max_bonus)
+        rested_bonus = max_bonus;
 
     SetRestBonus(GetRestBonus() - rested_bonus);
 
@@ -10016,6 +10042,24 @@ float Player::ComputeRest(time_t timePassed, bool offline /*= false*/, bool inRe
     }
 
     return bonus;
+}
+
+float Player::GetRestBonusCap(float visibleRestedLevelFraction) const
+{
+    return GetUInt32Value(PLAYER_NEXT_LEVEL_XP) * visibleRestedLevelFraction * RESTED_XP_CLIENT_RATIO;
+}
+
+uint32 Player::GetRestedKillBonusForXP(uint32 xp) const
+{
+    return xp * RESTED_XP_KILL_BONUS_PCT / 100;
+}
+
+void Player::AddRestBonus(float rest_bonus, float rest_bonus_cap)
+{
+    if (rest_bonus <= 0.0f || GetRestBonus() >= rest_bonus_cap)
+        return;
+
+    SetRestBonus(std::min(GetRestBonus() + rest_bonus, rest_bonus_cap));
 }
 
 void Player::SetBindPoint(ObjectGuid guid) const
@@ -13661,16 +13705,26 @@ void Player::ApplyEnchantment(Item *item, EnchantmentSlot slot, bool apply, bool
                 {
                     if (GetClass() == CLASS_SHAMAN)
                     {
-                        float addValue = 0.0f;
-                        if (item->GetSlot() == EQUIPMENT_SLOT_MAINHAND)
+                        if (enchant_spell_id)
                         {
-                            addValue = float(enchant_amount * item->GetProto()->Delay / 1000.0f);
-                            HandleStatModifier(UNIT_MOD_DAMAGE_MAINHAND, TOTAL_VALUE, addValue, apply);
+                            if (apply)
+                                CastSpell(this, enchant_spell_id, true, item);
+                            else
+                                RemoveAurasDueToItemSpell(item, enchant_spell_id);
                         }
-                        else if (item->GetSlot() == EQUIPMENT_SLOT_OFFHAND)
+                        else
                         {
-                            addValue = float(enchant_amount * item->GetProto()->Delay / 1000.0f);
-                            HandleStatModifier(UNIT_MOD_DAMAGE_OFFHAND, TOTAL_VALUE, addValue, apply);
+                            float addValue = 0.0f;
+                            if (item->GetSlot() == EQUIPMENT_SLOT_MAINHAND)
+                            {
+                                addValue = float(enchant_amount * item->GetProto()->Delay / 1000.0f);
+                                HandleStatModifier(UNIT_MOD_DAMAGE_MAINHAND, TOTAL_VALUE, addValue, apply);
+                            }
+                            else if (item->GetSlot() == EQUIPMENT_SLOT_OFFHAND)
+                            {
+                                addValue = float(enchant_amount * item->GetProto()->Delay / 1000.0f);
+                                HandleStatModifier(UNIT_MOD_DAMAGE_OFFHAND, TOTAL_VALUE, addValue, apply);
+                            }
                         }
                     }
                     break;

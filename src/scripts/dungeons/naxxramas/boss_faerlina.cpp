@@ -406,6 +406,31 @@ CreatureAI* GetAI_mob_faerlina_rp(Creature* pCreature)
     return new mob_faerlina_rp(pCreature);
 }
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_faerlina_poison_bolt_volley : public SpellScript
+{
+    void OnSetTargetMap(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, uint32& /*targetMode*/, float& /*radius*/, uint32& unMaxTargets, bool& /*selectClosestTargets*/) const override
+    {
+        unMaxTargets = 10;
+    }
+};
+}
+
 void AddSC_boss_faerlina()
 {
     Script* NewScript;
@@ -418,4 +443,6 @@ void AddSC_boss_faerlina()
     NewScript->Name = "mob_faerlina_rp";
     NewScript->GetAI = &GetAI_mob_faerlina_rp;
     NewScript->RegisterSelf();
+
+    RegisterSpellScript("spell_faerlina_poison_bolt_volley", &GetSpellScript<spell_faerlina_poison_bolt_volley>);
 }

@@ -23,6 +23,7 @@
 #include "ObjectGuid.h"
 #include "Creature.h"
 #include "Object.h"
+#include "GossipDef.h"
 #include "PoolManager.h"
 #include "Language.h"
 #include "Log.h"
@@ -87,9 +88,6 @@ enum BankCommLimits
 	ADDON_MAX_PACKET_SIZE = 2096,
 };
 
-constexpr uint32 AllianceGuildNpcEntry = 80917;
-constexpr uint32 HordeGuildNpcEntry = 80918;
-
 GuildBank::GuildBank(bool isInfenoBank)
 {
 	b_infernoBank = isInfenoBank;
@@ -120,11 +118,46 @@ void GuildBank::HandleAddonMessages(std::string msg, Player* player)
 {
 	SetPlayer(player);
 
+	Creature* creature = player ? player->GetNPCIfCanInteractWith(player->GetSelectionGuid(), UNIT_NPC_FLAG_NONE) : nullptr;
+	if (!creature)
+		return;
 
-	//Should rather do a full search on all nearby creatures and check their flag for GOSSIP_FLAG_GUILD_BANKER but this works for now..
-	const uint32 findCreatureEntry = player->GetTeamId() == TEAM_HORDE ? HordeGuildNpcEntry : AllianceGuildNpcEntry;
+	bool canUseGuildBank = false;
 
-	if (!player->FindNearestCreature(findCreatureEntry, INTERACTION_DISTANCE))
+	switch (creature->GetEntry())
+	{
+		case 62008: // Faredin, Darnassus
+		case 62009: // Lorien Cogmender, Gnomeregan Exiles
+		case 62010: // Gewana Mosshoof, Thunder Bluff
+		case 62011: // Golgan Maltbrew, Ironforge
+		case 62012: // Arthur Montague, Undercity
+		case 80917: // Teller Plushner, Stormwind
+		case 80918: // Are, Orgrimmar
+			canUseGuildBank = true;
+			break;
+		default:
+			break;
+	}
+
+	if (!canUseGuildBank && creature->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP))
+	{
+		uint32 menuId = creature->GetDefaultGossipMenuId();
+		GossipMenuItemsMapBounds menuItems = sObjectMgr.GetGossipMenuItemsMapBounds(menuId);
+		if (menuItems.first == menuItems.second)
+			menuItems = sObjectMgr.GetGossipMenuItemsMapBounds(0);
+
+		for (GossipMenuItemsMap::const_iterator itr = menuItems.first; itr != menuItems.second; ++itr)
+		{
+			GossipMenuItems const& item = itr->second;
+			if (item.option_id == GOSSIP_OPTION_GUILD_BANKER && (item.npc_option_npcflag & creature->GetUInt32Value(UNIT_NPC_FLAGS)))
+			{
+				canUseGuildBank = true;
+				break;
+			}
+		}
+	}
+
+	if (!canUseGuildBank)
 		return;
 
 	if (b_saveLock)

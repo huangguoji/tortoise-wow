@@ -1,5 +1,71 @@
 #include "scriptPCH.h"
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+template <class T>
+AuraScript* GetAuraScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+void RegisterAuraScript(char const* name, AuraScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetAuraScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_restore_creature_to_life : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex /*effIdx*/) const override
+    {
+        if (Creature* target = ToCreature(spell->GetUnitTarget()))
+            target->SetDeathState(JUST_ALIVED);
+
+        return false;
+    }
+};
+
+struct spell_pawns_advance : public AuraScript
+{
+    void OnAuraInit(Aura* aura) override
+    {
+        aura->SetPeriodicTimer(1000);
+    }
+
+    void OnPeriodicDummy(Aura* aura) override
+    {
+        Creature* creature = aura->GetTarget()->ToCreature();
+        if (!creature)
+            return;
+
+        std::list<Creature*> list;
+        creature->GetCreatureListWithEntryInGrid(list, creature->GetEntry(), 100.0f);
+
+        float multiplier = list.size() < 2 ? 1.0f : (list.size() - 1) * 1.3f;
+        CreatureInfo const* creatureInfo = creature->GetCreatureInfo();
+        creature->SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, creatureInfo->dmg_min * multiplier);
+        creature->SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, creatureInfo->dmg_max * multiplier);
+        creature->UpdateDamagePhysical(BASE_ATTACK);
+    }
+};
+}
+
 enum
 {
     SPELL_SHADOWBOLT_1 = 51212,
@@ -471,4 +537,7 @@ void AddSC_boss_kings_council()
     newscript->Name = "npc_kara_king";
     newscript->GetAI = &GetAI_npc_kara_king;
     newscript->RegisterSelf();
+
+    RegisterSpellScript("spell_restore_creature_to_life", &GetSpellScript<spell_restore_creature_to_life>);
+    RegisterAuraScript("spell_pawns_advance", &GetAuraScript<spell_pawns_advance>);
 }

@@ -782,6 +782,40 @@ CreatureAI* GetAI_npc_sapphironBlizzard(Creature* pCreature)
     return new npc_sapphiron_blizzardAI(pCreature);
 }
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_sapphiron_life_drain : public SpellScript
+{
+    void OnSetTargetMap(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, uint32& /*targetMode*/, float& /*radius*/, uint32& unMaxTargets, bool& /*selectClosestTargets*/) const override
+    {
+        unMaxTargets = urand(7, 10);
+    }
+};
+
+struct spell_sapphiron_ice_block : public SpellScript
+{
+    void OnSummon(Spell* /*spell*/, GameObject* summon) const override
+    {
+        if (summon)
+            summon->SetRespawnTime(30);
+    }
+};
+}
+
 void AddSC_boss_sapphiron()
 {
     Script* NewScript;
@@ -794,4 +828,7 @@ void AddSC_boss_sapphiron()
     NewScript->Name = "npc_sapphiron_blizzard";
     NewScript->GetAI = &GetAI_npc_sapphironBlizzard;
     NewScript->RegisterSelf();
+
+    RegisterSpellScript("spell_sapphiron_life_drain", &GetSpellScript<spell_sapphiron_life_drain>);
+    RegisterSpellScript("spell_sapphiron_ice_block", &GetSpellScript<spell_sapphiron_ice_block>);
 }

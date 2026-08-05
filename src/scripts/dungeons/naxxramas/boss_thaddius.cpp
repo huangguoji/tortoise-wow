@@ -1081,6 +1081,128 @@ CreatureAI* GetAI_boss_thaddius(Creature* pCreature)
     return new boss_thaddiusAI(pCreature);
 }
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+template <class T>
+AuraScript* GetAuraScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+void RegisterAuraScript(char const* name, AuraScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetAuraScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_thaddius_positive_charge : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex effIdx) const override
+    {
+        if (effIdx == EFFECT_INDEX_0)
+            if (Unit* target = spell->GetUnitTarget(); target && target->HasAura(28059))
+                spell->damage = 0;
+
+        return true;
+    }
+};
+
+struct spell_thaddius_negative_charge : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex effIdx) const override
+    {
+        if (effIdx == EFFECT_INDEX_0)
+            if (Unit* target = spell->GetUnitTarget(); target && target->HasAura(28084))
+                spell->damage = 0;
+
+        return true;
+    }
+};
+
+struct spell_thaddius_magnetic_pull : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex effIdx) const override
+    {
+        Unit* target = spell->GetUnitTarget();
+        if (!target)
+            return false;
+
+        float speedXY = float(spell->m_spellInfo->EffectMiscValue[effIdx]) * 0.1f;
+        float speedZ = target->GetDistance(spell->m_caster) / speedXY * 0.5f * 20.0f;
+        target->KnockBackFrom(spell->m_caster, -speedXY, speedZ);
+        return false;
+    }
+};
+
+struct spell_thaddius_charge : public AuraScript
+{
+    explicit spell_thaddius_charge(uint32 chargeAura, uint32 sameChargeBonus) : m_chargeAura(chargeAura), m_sameChargeBonus(sameChargeBonus) {}
+
+    void OnPeriodicTrigger(Aura* aura, Unit* caster, Unit* target, WorldObject* /*targetObject*/, SpellEntry const*& /*spellInfo*/) override
+    {
+        if (!caster || target->GetMap()->GetId() != 533)
+            return;
+
+        int32 numStacks = 0;
+        Map::PlayerList const& playerList = target->GetMap()->GetPlayers();
+        for (const auto& itr : playerList)
+        {
+            Player* player = itr.getSource();
+            if (!player || player->GetObjectGuid() == target->GetObjectGuid() || player->IsDead())
+                continue;
+
+            if (player->HasAura(m_chargeAura) && caster->GetDistance2d(player) < 13.0f)
+                ++numStacks;
+        }
+
+        if (numStacks > 0)
+        {
+            if (!target->HasAura(m_sameChargeBonus))
+                target->AddAura(m_sameChargeBonus);
+            target->GetAura(m_sameChargeBonus, EFFECT_INDEX_0)->GetHolder()->SetStackAmount(numStacks);
+        }
+        else
+            target->RemoveAurasDueToSpell(m_sameChargeBonus);
+    }
+
+    void OnBeforeApply(Aura* aura, bool apply) override
+    {
+        if (!apply)
+            aura->GetTarget()->RemoveAurasDueToSpell(m_sameChargeBonus);
+    }
+
+private:
+    uint32 m_chargeAura;
+    uint32 m_sameChargeBonus;
+};
+
+struct spell_thaddius_positive_charge_aura : public spell_thaddius_charge
+{
+    spell_thaddius_positive_charge_aura() : spell_thaddius_charge(28059, 29659) {}
+};
+
+struct spell_thaddius_negative_charge_aura : public spell_thaddius_charge
+{
+    spell_thaddius_negative_charge_aura() : spell_thaddius_charge(28084, 29660) {}
+};
+}
+
 void AddSC_boss_thaddius()
 {
     Script* pNewScript;
@@ -1104,4 +1226,10 @@ void AddSC_boss_thaddius()
     pNewScript->Name = "npc_tesla_coil";
     pNewScript->GetAI = &GetAI_npc_tesla_coil;
     pNewScript->RegisterSelf();
+
+    RegisterSpellScript("spell_thaddius_positive_charge", &GetSpellScript<spell_thaddius_positive_charge>);
+    RegisterSpellScript("spell_thaddius_negative_charge", &GetSpellScript<spell_thaddius_negative_charge>);
+    RegisterSpellScript("spell_thaddius_magnetic_pull", &GetSpellScript<spell_thaddius_magnetic_pull>);
+    RegisterAuraScript("spell_thaddius_positive_charge_aura", &GetAuraScript<spell_thaddius_positive_charge_aura>);
+    RegisterAuraScript("spell_thaddius_negative_charge_aura", &GetAuraScript<spell_thaddius_negative_charge_aura>);
 }

@@ -16511,7 +16511,7 @@ VALUES
 -- FILE: skill_line_ability.sql
 -- GENERATED: 20260513084003
 -- ==============================================
---Rebuilds the whole table since the IDs are mismatched
+-- Rebuilds the whole table since the IDs are mismatched
 
 DROP TABLE IF EXISTS `skill_line_ability`;
 
@@ -23320,7 +23320,7 @@ VALUES
 -- FILE: taxi_nodes.sql
 -- GENERATED: 20260513084003
 -- ==============================================
---Rebuilds the whole table since the IDs are mismatched
+-- Rebuilds the whole table since the IDs are mismatched
 DROP TABLE IF EXISTS `taxi_nodes`;
 
 CREATE TABLE `taxi_nodes` (

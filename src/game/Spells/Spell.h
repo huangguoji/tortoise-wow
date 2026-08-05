@@ -53,6 +53,7 @@ class Item;
 class GameObject;
 class Group;
 class Aura;
+struct SpellScript;
 
 enum SpellCastFlags
 {
@@ -463,6 +464,8 @@ class Spell
         WorldObject* GetCastingObject() const;
 
         uint32 GetPowerCost() const { return m_powerCost; }
+        void OnSpellCritChanceCalculate(Unit const* victim, float& critChance);
+        void AddHealthLeech(int32 amount) { m_healthLeech += amount; }
 
         void UpdatePointers();                              // must be used at call Spell code after time delay (non triggered spell cast/update spell call/etc)
 
@@ -484,6 +487,7 @@ class Spell
         bool IsTriggeredByAura() const { return m_triggeredByAuraSpell; }
         bool IsTriggeredByProc() const;
         bool IsCastByItem() const { return m_CastItem; }
+        void ForceConsumeCastItem() { m_forceConsumeItem = true; }
         void SetCastItem(Item* item)
         {
             m_CastItem = item;
@@ -503,8 +507,16 @@ class Spell
         // For summoning ritual helpers visual spell
         void SetChannelingVisual(bool value) { m_isChannelingVisual = value; }
         bool IsChannelingVisual() const { return m_isChannelingVisual; }
+        void ClearSelfContainer() { if (m_selfContainer) *m_selfContainer = nullptr; }
 
         int32 GetAbsorbedDamage() const { return m_absorbed; }
+        ObjectGuid GetOriginalCasterGuid() const { return m_originalCasterGUID; }
+
+        WorldObject* const m_caster = nullptr;
+        Unit* const m_casterUnit = nullptr;
+        GameObject* const m_casterGo = nullptr;
+
+        WeaponAttackType m_attackType;                      // For weapon based attack
     protected:
         bool HasGlobalCooldown() const;
         void TriggerGlobalCooldown();
@@ -514,10 +526,6 @@ class Spell
         bool IgnoreItemRequirements() const;                // some item use spells have unexpected reagent data
         void UpdateOriginalCasterPointer();
 
-        WorldObject* const m_caster = nullptr;
-        Unit* const m_casterUnit = nullptr;
-        GameObject* const m_casterGo = nullptr;
-
         ObjectGuid m_originalCasterGUID;                    // real source of cast (aura caster/etc), used for spell targets selection
                                                             // e.g. damage around area spell trigered by victim aura and damage enemies of aura caster
         Unit* m_originalCaster = nullptr; // cached pointer for m_originalCaster, updated at Spell::UpdatePointers()
@@ -525,7 +533,6 @@ class Spell
         Spell** m_selfContainer = nullptr; // pointer to our spell container (if applicable)
 
         //Spell data
-        WeaponAttackType m_attackType;                      // For weapon based attack
         uint32 m_powerCost = 0;                             // Calculated spell cost     initialized only in Spell::prepare
         int32 m_casttime = 0;                               // Calculated spell cast time initialized only in Spell::prepare
         int32 m_duration = 0;
@@ -568,8 +575,15 @@ class Spell
         Corpse* corpseTarget = nullptr;
         GameObject* gameObjTarget = nullptr;
         SpellAuraHolder* m_spellAuraHolder = nullptr;       // spell aura holder for current target, created only if spell has aura applying effect
-        int32 damage = 0;
         bool isReflected = false;
+    public:
+        Unit* GetUnitTarget() const { return unitTarget; }
+        Item* GetItemTarget() const { return itemTarget; }
+        Corpse* GetCorpseTarget() const { return corpseTarget; }
+        GameObject* GetGOTarget() const { return gameObjTarget; }
+        float GetTotalEffectDamage() const { return m_damage; }
+        float damage = 0;
+    protected:
 
         // this is set in Spell Hit, but used in Apply Aura handler
         DiminishingLevels m_diminishLevel;
@@ -579,8 +593,8 @@ class Spell
         GameObject* focusObject = nullptr;
 
         // Damage and healing in effects need just calculate
-        int32 m_damage = 0;                                 // Damage   in effects count here
-        int32 m_healing = 0;                                // Healing in effects count here
+        float m_damage = 0;                                 // Damage   in effects count here
+        float m_healing = 0;                                // Healing in effects count here
         int32 m_healthLeech = 0;                            // Health leech in effects for all targets count here
         int32 m_absorbed = 0;
 
@@ -597,6 +611,7 @@ class Spell
         // Spell target subsystem
         //*****************************************
         // Targets store structures and data
+    public:
         struct TargetInfo
         {
             ObjectGuid targetGUID;
@@ -610,8 +625,6 @@ class Spell
             bool   isCrit:1;
             bool   deleted:1;
         };
-
-        uint8 m_needAliveTargetMask = 0; // Mask req. alive targets
 
         struct GOTargetInfo
         {
@@ -629,10 +642,6 @@ class Spell
             bool   deleted:1;
         };
 
-        bool m_destroyed = false;
-
-        SpellCastResult CheckScriptTargeting(SpellEffectIndex effIndex, uint32 chainTargets, float radius, uint32 targetMode, UnitList& tempUnitList);
-
 #ifndef USE_STANDARD_MALLOC
         typedef tbb::concurrent_vector<TargetInfo>     TargetList;
         typedef tbb::concurrent_vector<GOTargetInfo>   GOTargetList;
@@ -646,6 +655,11 @@ class Spell
         TargetList     m_UniqueTargetInfo;
         GOTargetList   m_UniqueGOTargetInfo;
         ItemTargetList m_UniqueItemInfo;
+
+    protected:
+        uint8 m_needAliveTargetMask = 0; // Mask req. alive targets
+        bool m_destroyed = false;
+        SpellCastResult CheckScriptTargeting(SpellEffectIndex effIndex, uint32 chainTargets, float radius, uint32 targetMode, UnitList& tempUnitList);
 
         void AddUnitTarget(Unit* target, SpellEffectIndex effIndex);
         void CheckAtDelay(TargetInfo* pInf);
@@ -668,9 +682,13 @@ class Spell
         std::vector<SpellEntry const*> m_TriggerSpells;                      // casted by caster to same targets settings in m_targets at success finish of current spell
         std::vector<SpellEntry const*> m_preCastSpells;                      // casted by caster to each target at spell hit before spell effects apply
 
+        SpellScript* m_spellScript = nullptr;
+
         uint32 m_spellState = SPELL_STATE_NULL;
         uint32 m_timer = 0;
+    public:
         uint32 m_triggeredByAuraBasePoints = 0;
+    protected:
 
         float m_castPositionX = 0;
         float m_castPositionY = 0;
@@ -682,7 +700,9 @@ class Spell
         // if need this can be replaced by Aura copy
         // we can't store original aura link to prevent access to deleted auras
         // and in same time need aura data and after aura deleting.
+    public:
         SpellEntry const* m_triggeredByAuraSpell = nullptr;
+    protected:
 
         struct ExecuteLogInfo
         {
@@ -745,6 +765,12 @@ class Spell
         void AddExecuteLogInfo(SpellEffectIndex i, ExecuteLogInfo info)
         {
             m_executeLogInfo[i].push_back(info);
+        }
+
+    public:
+        void AddExecuteLogTarget(SpellEffectIndex i, ObjectGuid targetGuid)
+        {
+            AddExecuteLogInfo(i, ExecuteLogInfo(targetGuid));
         }
 };
 

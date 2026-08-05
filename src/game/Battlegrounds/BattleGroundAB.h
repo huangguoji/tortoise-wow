@@ -165,7 +165,7 @@ const uint32 BG_AB_PerTickHonor[MAX_BATTLEGROUND_BRACKETS] = {10, 10, 10, 41, 68
 const uint32 BG_AB_WinMatchHonor[MAX_BATTLEGROUND_BRACKETS] = {10, 10, 10, 41, 68, 113, 189, 198};
 
 // WorldSafeLocs ids for 5 nodes, and for ally, and horde starting location
-const uint32 BG_AB_GraveyardIds[7] = {895, 894, 893, 897, 896, 898, 899};
+const uint32 BG_AB_GraveyardIds[7] = {119, 118, 117, 121, 120, 122, 123};
 
 // x, y, z, o
 // Nostalrius: Modified to retail 5.4.8 positions.

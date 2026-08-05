@@ -526,7 +526,7 @@ enum ReactiveType
     REACTIVE_DEFENSE = 1,
     REACTIVE_HUNTER_PARRY = 2,
     REACTIVE_CRIT = 3,
-    //REACTIVE_HUNTER_CRIT  = 4,
+    REACTIVE_PET_CRIT = 4,
     REACTIVE_OVERPOWER = 5,
     REACTIVE_ROGUE_DODGE = 6
 };
@@ -597,6 +597,20 @@ enum UnitDismountResult
     DISMOUNTRESULT_NOTMOUNTED   = 1, // You're not mounted!
     DISMOUNTRESULT_NOTYOURPET   = 2, // internal
     DISMOUNTRESULT_OK           = 3  // no error
+};
+
+enum SpellProcEventTriggerCheck
+{
+    SPELL_PROC_TRIGGER_FAILED       = 0,
+    SPELL_PROC_TRIGGER_ROLL_FAILED  = 1,
+    SPELL_PROC_TRIGGER_OK           = 2,
+};
+
+enum SpellAuraProcResult
+{
+    SPELL_AURA_PROC_OK              = 0,                    // proc was processed, will remove charges
+    SPELL_AURA_PROC_FAILED          = 1,                    // proc failed - if at least one aura failed the proc, charges won't be taken
+    SPELL_AURA_PROC_CANT_TRIGGER    = 2                     // aura can't trigger - skip charges taking, move to next aura if exists
 };
 
 #endif

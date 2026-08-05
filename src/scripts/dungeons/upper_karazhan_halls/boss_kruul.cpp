@@ -1,5 +1,57 @@
 #include "scriptPCH.h"
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+template <class T>
+AuraScript* GetAuraScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+void RegisterAuraScript(char const* name, AuraScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetAuraScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_kruul_call_from_twisting_nether : public SpellScript
+{
+    void OnSummon(Spell* /*spell*/, Creature* summon) const override
+    {
+        summon->CastSpell(summon, 22707, true);
+        summon->CastSpell(summon, 51167, true);
+    }
+};
+
+struct spell_mark_of_the_highlord : public AuraScript
+{
+    void OnPeriodicTickEnd(Aura* aura) override
+    {
+        Unit* target = aura->GetTarget();
+        if (!target || target->GetPower(POWER_MANA) == 0)
+            return;
+
+        target->CastSpell(target, 51165, true, nullptr, aura, aura->GetCasterGuid());
+    }
+};
+}
+
 enum
 {
     SPELL_REMORSELESS_STRIKES = 51164,
@@ -161,4 +213,7 @@ void AddSC_boss_kruul()
     newscript->Name = "boss_kruul";
     newscript->GetAI = &GetAI_boss_kruul;
     newscript->RegisterSelf();
+
+    RegisterSpellScript("spell_kruul_call_from_twisting_nether", &GetSpellScript<spell_kruul_call_from_twisting_nether>);
+    RegisterAuraScript("spell_mark_of_the_highlord", &GetAuraScript<spell_mark_of_the_highlord>);
 }

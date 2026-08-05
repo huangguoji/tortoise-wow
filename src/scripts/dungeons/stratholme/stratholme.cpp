@@ -823,6 +823,32 @@ GameObjectAI* GetAIgo_supply_crate(GameObject *pGo)
     return new go_supply_crateAI(pGo);
 }
 
+struct spell_haunting_phantoms : public AuraScript
+{
+    void OnBeforeApply(Aura* aura, bool apply) override
+    {
+        if (apply && aura->GetEffIndex() == EFFECT_INDEX_0)
+            aura->SetPeriodicTimer(urand(30, 90) * IN_MILLISECONDS);
+    }
+
+    void OnPeriodicDummy(Aura* aura) override
+    {
+        Unit* target = aura->GetTarget();
+        if (!target->GetMap()->IsDungeon())
+            return;
+
+        if (urand(0, 1))
+            target->CastSpell(target, 16334, true);
+        else
+            target->CastSpell(target, 16335, true);
+    }
+};
+
+AuraScript* GetScript_HauntingPhantoms(SpellEntry const*)
+{
+    return new spell_haunting_phantoms();
+}
+
 void AddSC_stratholme()
 {
     Script* newscript;
@@ -871,5 +897,10 @@ void AddSC_stratholme()
     newscript = new Script;
     newscript->Name = "go_supply_crate";
     newscript->GOGetAI = &GetAIgo_supply_crate;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "spell_haunting_phantoms";
+    newscript->GetAuraScript = &GetScript_HauntingPhantoms;
     newscript->RegisterSelf();
 }

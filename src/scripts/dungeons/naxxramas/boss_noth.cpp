@@ -451,6 +451,31 @@ CreatureAI* GetAI_boss_noth(Creature* pCreature)
     return new boss_nothAI(pCreature);
 }
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_noth_curse_of_the_plaguebringer : public SpellScript
+{
+    void OnSetTargetMap(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, uint32& /*targetMode*/, float& /*radius*/, uint32& /*unMaxTargets*/, bool& selectClosestTargets) const override
+    {
+        selectClosestTargets = true;
+    }
+};
+}
+
 void AddSC_boss_noth()
 {
     Script* NewScript;
@@ -458,4 +483,6 @@ void AddSC_boss_noth()
     NewScript->Name = "boss_noth";
     NewScript->GetAI = &GetAI_boss_noth;
     NewScript->RegisterSelf();
+
+    RegisterSpellScript("spell_noth_curse_of_the_plaguebringer", &GetSpellScript<spell_noth_curse_of_the_plaguebringer>);
 }

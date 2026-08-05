@@ -32,6 +32,7 @@ class Spell;
 class Unit;
 class WorldObject;
 class SpellEntry;
+struct AuraScript;
 
 namespace Spells
 {
@@ -433,6 +434,7 @@ namespace Spells
             case SPELL_EFFECT_APPLY_AREA_AURA_FRIEND:
             case SPELL_EFFECT_APPLY_AREA_AURA_ENEMY:
             case SPELL_EFFECT_APPLY_AREA_AURA_OWNER:
+            case SPELL_EFFECT_APPLY_AURA_PET:
                 return true;
         }
 
@@ -633,6 +635,7 @@ public:
     uint32 MinTargetLevel = 0;                                 // 162
     uint32 Custom = 0;                                         // 176
     uint32 Internal = 0;                                       // Assigned by the core.
+    uint32 ScriptId = 0;
     std::string ParsedTooltip;
 protected:
     bool _isBinary = false;
@@ -806,6 +809,15 @@ public:
     {
         //Collection of all the seal family flags. No other paladin spell has any of those.
         return IsFitToFamily<SPELLFAMILY_PALADIN, CF_PALADIN_SEAL_OF_THE_CRUSADER, CF_PALADIN_SEAL_OF_COMMAND, CF_PALADIN_SEALS>();
+    }
+
+    inline bool IsJudgementSpell() const
+    {
+        return IsFitToFamily<SPELLFAMILY_PALADIN,
+            CF_PALADIN_JUDGEMENT_OF_RIGHTEOUSNESS,
+            CF_PALADIN_JUDGEMENT_OF_WISDOM_LIGHT,
+            CF_PALADIN_JUDGEMENT_OF_JUSTICE,
+            CF_PALADIN_JUDGEMENT_OF_THE_CRUSADER>();
     }
 
     inline bool IsElementalShield() const
@@ -1097,7 +1109,7 @@ public:
 
     int32 GetDuration() const;
     int32 GetMaxDuration() const;
-    int32 CalculateDuration(WorldObject const* caster = nullptr) const;
+    int32 CalculateDuration(WorldObject const* caster = nullptr, Unit const* target = nullptr, AuraScript* auraScript = nullptr) const;
     uint32 GetCastTime(WorldObject* caster, Spell* spell = nullptr) const;
     char* GetIcon(uint32 ID) const;
     uint32 GetCastTimeForBonus(DamageEffectType damagetype) const;
@@ -1105,6 +1117,7 @@ public:
     WeaponAttackType GetWeaponAttackType() const;
     float CalculateDefaultCoefficient(DamageEffectType const damagetype) const;
     float CalculateCustomCoefficient(WorldObject const* caster, DamageEffectType const damageType, float coeff, Spell* spell, bool donePart) const;
+    bool CanTriggerWeaponProcs() const;
     SpellCastResult GetErrorAtShapeshiftedCast(uint32 form) const;
     bool IsTargetInRange(WorldObject const* pCaster, WorldObject const* pTarget) const; // to be used in scripts for simple pre-cast range checks
     uint32 GetMechanic() const { return Mechanic; }

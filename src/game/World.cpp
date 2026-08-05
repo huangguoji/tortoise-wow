@@ -1916,6 +1916,8 @@ void LoadPlayerEggLoot();
 
     sLog.outString("Loading chat channels...");
     sObjectMgr.LoadChatChannels();
+    sLog.outString("Loading script names...");
+    sScriptMgr.LoadScriptNames();
     sLog.outString("Loading spells...");
     sSpellMgr.LoadSpells();
     sLog.outString("Loading factions...");
@@ -1938,8 +1940,6 @@ void LoadPlayerEggLoot();
     LoadDBCStores(m_dataPath);
     DetectDBCLang();
     sObjectMgr.SetDBCLocaleIndex(GetDefaultDbcLocale());    // Get once for all the locale index of DBC language (console/broadcasts)
-    sLog.outString("Loading script names...");
-    sScriptMgr.LoadScriptNames();
     sLog.outString("Loading map templates...");
     sObjectMgr.LoadMapTemplate();
     sLog.outString("Loading area templates...");

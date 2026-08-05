@@ -641,7 +641,7 @@ enum BuyBackSlots                                           // 12 slots
 enum KeyRingSlots                                           // 32 slots
 {
     KEYRING_SLOT_START          = 81,
-    KEYRING_SLOT_END            = 97
+    KEYRING_SLOT_END            = KEYRING_SLOT_START + 32
 };
 
 struct ItemPosCount
@@ -1343,7 +1343,7 @@ class Player final: public Unit
         void RemoveItemFromBuyBackSlot(uint32 slot, bool del);
         uint32 GetBuyBackItemPrice(uint32 slot) const { return GetUInt32Value(PLAYER_FIELD_BUYBACK_PRICE_1 + slot - BUYBACK_SLOT_START); }
 
-        uint32 GetMaxKeyringSize() const { return GetLevel() < 40 ? 4 : (GetLevel() < 50 ? 8 : 12); }
+        uint32 GetMaxKeyringSize() const { return KEYRING_SLOT_END - KEYRING_SLOT_START; }
 
         void SendEquipError(InventoryResult msg, Item* pItem, Item* pItem2 = nullptr, uint32 itemid = 0) const;
         void SendBuyError(BuyResult msg, Creature* pCreature, uint32 item, uint32 param) const;
@@ -1863,6 +1863,7 @@ class Player final: public Unit
         void _ApplyWeaponDependentAuraMods(Item* item, WeaponAttackType attackType, bool apply);
         void _ApplyWeaponDependentAuraCritMod(Item* item, WeaponAttackType attackType, Aura* aura, bool apply);
         void _ApplyWeaponDependentAuraDamageMod(Item* item, WeaponAttackType attackType, Aura* aura, bool apply);
+        void _ApplyWeaponDependentAuraResistanceMod(Item* item, WeaponAttackType attackType, Aura* aura, bool apply);
 
         void InitDataForForm(bool reapplyMods = false);
         void ApplyItemEquipSpell(Item* item, bool apply, bool form_change = false);
@@ -2236,7 +2237,16 @@ class Player final: public Unit
         * \param: bool inRestPlace  > if it was offline, is the player was in city/tavern/inn?
         * \returns: float
         **/
+        static constexpr float RESTED_XP_TAVERN_CAP = 1.0f;
+        static constexpr float RESTED_XP_TENT_CAP = 0.25f;
+        static constexpr float RESTED_XP_CLIENT_RATIO = 0.5f;
+        static constexpr float RESTED_XP_TENT_RATE = 0.000575f;
+        static constexpr uint32 RESTED_XP_KILL_BONUS_PCT = 50;
+
         float ComputeRest(time_t timePassed, bool offline = false, bool inRestPlace = false);
+        float GetRestBonusCap(float visibleRestedLevelFraction) const;
+        uint32 GetRestedKillBonusForXP(uint32 xp) const;
+        void AddRestBonus(float rest_bonus, float rest_bonus_cap);
         float GetRestBonus() const { return m_rest_bonus; }
         void SetRestBonus(float rest_bonus_new);
         RestType GetRestType() const { return rest_type; }

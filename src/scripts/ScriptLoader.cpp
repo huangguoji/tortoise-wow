@@ -367,6 +367,20 @@ void AddSC_npc_loothelper();
 void AddSC_npc_ptr();
 void AddSC_jewelcrafting();
 
+// Spell and aura scripts
+void AddSC_druid_spell_scripts();
+void AddSC_hunter_spell_scripts();
+void AddSC_item_spell_scripts();
+void AddSC_mage_spell_scripts();
+void AddSC_paladin_spell_scripts();
+void AddSC_priest_spell_scripts();
+void AddSC_rogue_spell_scripts();
+void AddSC_shaman_spell_scripts();
+void AddSC_special_spell_scripts();
+void AddSC_turtle_spell_scripts();
+void AddSC_warlock_spell_scripts();
+void AddSC_warrior_spell_scripts();
+
 void AddScripts()
 {
     //Nostalrius
@@ -693,6 +707,20 @@ void AddScripts()
     AddSC_boss_sanv_tasdal();
     AddSC_boss_ostarius();
     AddSC_CUSTOM_SPELL();
+
+    // Spell and aura scripts
+    AddSC_druid_spell_scripts();
+    AddSC_hunter_spell_scripts();
+    AddSC_item_spell_scripts();
+    AddSC_mage_spell_scripts();
+    AddSC_paladin_spell_scripts();
+    AddSC_priest_spell_scripts();
+    AddSC_rogue_spell_scripts();
+    AddSC_shaman_spell_scripts();
+    AddSC_special_spell_scripts();
+    AddSC_turtle_spell_scripts();
+    AddSC_warlock_spell_scripts();
+    AddSC_warrior_spell_scripts();
 
     AddSC_random_scripts_0();
     AddSC_random_scripts_1();

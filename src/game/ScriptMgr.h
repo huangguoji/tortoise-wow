@@ -24,10 +24,14 @@
 #include "Policies/Singleton.h"
 #include "ObjectGuid.h"
 #include "DBCEnums.h"
+#include "SharedDefines.h"
+#include "UnitDefines.h"
 #include <atomic>
 #include "SpellDefines.h"
 
+#include <list>
 #include <memory>
+#include <optional>
 
 struct AreaTriggerEntry;
 class Aura;
@@ -35,6 +39,8 @@ class Object;
 class Unit;
 class Player;
 class Creature;
+class Pet;
+class Totem;
 class CreatureAI;
 class GameObject;
 class WorldObject;
@@ -43,8 +49,10 @@ class InstanceData;
 class Item;
 class Map;
 class Quest;
+class SpellAuraHolder;
 class SpellCastTargets;
 class SpellEntry;
+class Spell;
 
 // Legend:
 // source - the type of object which executes the command
@@ -1368,6 +1376,71 @@ protected:
     ObjectGuid PlayerGuid;
 };
 
+struct SpellScript
+{
+    virtual ~SpellScript() = default;
+
+    virtual void OnInit(Spell* /*spell*/) {}
+    virtual void OnSuccessfulStart(Spell* /*spell*/) const {}
+    virtual void OnSuccessfulFinish(Spell* /*spell*/) const {}
+    virtual void OnFinish(Spell* /*spell*/, bool /*ok*/) const {}
+    virtual SpellCastResult OnCheckCast(Spell* /*spell*/, bool /*strict*/) const { return SPELL_CAST_OK; }
+    virtual std::optional<uint32> OnCalculatePowerCost(SpellEntry const* /*spellInfo*/, Unit* /*caster*/, Spell* /*spell*/, Item* /*castItem*/) const { return std::nullopt; }
+    virtual bool OnTakePower(Spell* /*spell*/) const { return true; }
+    virtual void OnEffectDamageCalculate(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, float& /*damage*/) const {}
+    virtual void OnSpellCritChanceCalculate(Spell* /*spell*/, Unit const* /*victim*/, float& /*critChance*/) const {}
+    virtual bool OnEffectHealCalculate(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, int32& /*heal*/) const { return true; }
+    virtual bool OnEffectExecute(Spell* /*spell*/, SpellEffectIndex /*effIdx*/) const { return true; }
+    virtual void OnEffectExecuted(Spell* /*spell*/, SpellEffectIndex /*effIdx*/) const {}
+    virtual std::optional<SpellCastResult> OnCheckMount(Spell* /*spell*/) const { return std::nullopt; }
+    virtual void OnSetTargetMap(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, uint32& /*targetMode*/, float& /*radius*/, uint32& /*unMaxTargets*/, bool& /*selectClosestTargets*/) const {}
+    virtual void OnTargetMapFilled(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, uint32 /*targetMode*/, std::list<Unit*>& /*targets*/) const {}
+    virtual bool OnCheckTarget(Spell const* /*spell*/, GameObject* /*target*/, SpellEffectIndex /*eff*/) const { return true; }
+    virtual bool OnCheckTarget(Spell const* /*spell*/, Unit* /*target*/, SpellEffectIndex /*eff*/) const { return true; }
+    virtual void OnCast(Spell* /*spell*/) const {}
+    virtual void OnPrepareProcFlags(Spell* /*spell*/, bool& /*canTrigger*/, uint32& /*procAttacker*/, uint32& /*procVictim*/) const {}
+    virtual void OnBeforeProc(Spell* /*spell*/, Unit* /*target*/, SpellMissInfo /*missInfo*/, uint32& /*procAttacker*/, uint32& /*procVictim*/, uint32& /*procEx*/, bool& /*triggerWeaponProcs*/) const {}
+    virtual void OnHit(Spell* /*spell*/, SpellMissInfo /*missInfo*/) const {}
+    virtual void OnAfterHit(Spell* /*spell*/) const {}
+    virtual bool OnSendLoot(Spell* /*spell*/, GameObject* /*target*/, uint32 /*lootType*/, LockType /*lockType*/) const { return false; }
+    virtual void OnSummonBeforeAdd(Spell* /*spell*/, Pet* /*summon*/, uint32 /*summonIndex*/) const {}
+    virtual void OnSummon(Spell* /*spell*/, Creature* /*summon*/) const {}
+    virtual void OnSummon(Spell* /*spell*/, GameObject* /*summon*/) const {}
+    virtual void OnSuccessfulDispel(Spell* /*spell*/, SpellEffectIndex /*effIdx*/) const {}
+    virtual void OnSuccessfulSpecificDispel(Spell* spell, SpellEffectIndex effIdx, uint32 /*removedAura*/, ObjectGuid const& /*removedAuraCasterGuid*/, uint32 /*dispelCount*/) const { OnSuccessfulDispel(spell, effIdx); }
+    virtual void OnDestroyTotem(Spell* /*spell*/, Totem* /*totem*/) const {}
+};
+
+struct AuraScript
+{
+    virtual ~AuraScript() = default;
+
+    virtual void OnHolderInit(SpellAuraHolder* /*holder*/, WorldObject* /*caster*/) {}
+    virtual void OnAuraInit(Aura* /*aura*/) {}
+    virtual int32 OnAuraValueCalculate(Aura* /*aura*/, Unit* /*caster*/, Unit* /*target*/, SpellEntry const* /*spellProto*/, SpellEffectIndex /*effIdx*/, Item* /*castItem*/, int32 value) { return value; }
+    virtual int32 OnDurationCalculate(WorldObject const* /*caster*/, Unit const* /*target*/, int32 duration) { return duration; }
+    virtual void OnBeforeApply(Aura* /*aura*/, bool /*apply*/) {}
+    virtual void OnAfterApply(Aura* /*aura*/, bool /*apply*/) {}
+    virtual void OnAfterShapeshift(Aura* /*aura*/, ShapeshiftForm /*oldForm*/, ShapeshiftForm /*newForm*/) {}
+    virtual void OnDispel(SpellAuraHolder* /*holder*/, Unit* /*target*/, Spell* /*dispelSpell*/, uint32 /*dispelCount*/) {}
+    virtual std::optional<SpellProcEventTriggerCheck> OnCheckProc(Unit const* /*owner*/, Unit* /*victim*/, SpellAuraHolder* /*holder*/, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procExtra*/, WeaponAttackType /*attType*/, bool /*isVictim*/) { return std::nullopt; }
+    virtual std::optional<SpellAuraProcResult> OnProc(Unit* /*owner*/, Unit* /*victim*/, uint32 /*amount*/, int32 /*originalAmount*/, Aura* /*triggeredByAura*/, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) { return std::nullopt; }
+    virtual void OnAbsorb(Aura* /*aura*/, int32& /*currentAbsorb*/, int32& /*remainingDamage*/, bool& /*dropCharge*/, DamageEffectType /*damageType*/) {}
+    virtual void OnManaAbsorb(Aura* /*aura*/, int32& /*currentAbsorb*/, int32& /*remainingDamage*/) {}
+    virtual void OnPeriodicCalculateAmount(Aura* /*aura*/, float& /*amount*/) {}
+    virtual void OnPeriodicDamageCalculateAmount(Aura* /*aura*/, float& /*amount*/) {}
+    virtual void OnPeriodicHealingBonus(Aura* /*periodicAura*/, Aura* /*modifierAura*/, Unit* /*caster*/, Unit* /*target*/, uint32& /*amount*/) {}
+    virtual void OnSpellHealingBonusTaken(Aura* /*aura*/, WorldObject* /*caster*/, SpellEntry const* /*spellInfo*/, SpellEffectIndex /*effIdx*/, int32 /*healAmount*/, DamageEffectType /*damageType*/, uint32 /*stack*/, Spell* /*spell*/, float& /*takenTotalMod*/) {}
+    virtual void OnManaRegenCalculate(Aura* /*aura*/, float& /*baseRegen*/, float& /*mp5Regen*/) {}
+    virtual void OnAuraChargesChanged(SpellAuraHolder* /*holder*/) {}
+    virtual void OnThreatCalculate(Aura* /*aura*/, SpellEntry const* /*threatSpell*/, SpellSchoolMask /*schoolMask*/, float& /*threat*/) {}
+    virtual void OnPeriodicTick(Aura* /*aura*/) {}
+    virtual void OnPeriodicTrigger(Aura* /*aura*/, Unit* /*caster*/, Unit* /*target*/, WorldObject* /*targetObject*/, SpellEntry const*& /*spellInfo*/) {}
+    virtual void OnPeriodicDummy(Aura* /*aura*/) {}
+    virtual void OnPeriodicTickEnd(Aura* /*aura*/) {}
+    virtual bool OnAreaAuraCheckTarget(Aura const* /*aura*/, Unit* /*target*/) { return true; }
+};
+
 struct Script
 {
     Script() :
@@ -1378,7 +1451,7 @@ struct Script
         pProcessEventId(nullptr), pItemQuestAccept(nullptr), pGOQuestAccept(nullptr),
         pItemUse(nullptr), pItemUseSpell(nullptr), pEffectDummyCreature(nullptr), pEffectDummyGameObj(nullptr),
         pEffectAuraDummy(nullptr), GOOpen(nullptr),
-        GOGetAI(nullptr), GetAI(nullptr), GetQuestInstance(nullptr), GetInstanceData(nullptr)
+        GOGetAI(nullptr), GetAI(nullptr), GetQuestInstance(nullptr), GetInstanceData(nullptr), GetSpellScript(nullptr), GetAuraScript(nullptr)
     {}
 
     std::string Name;
@@ -1416,6 +1489,8 @@ struct Script
     CreatureAI* (*GetAI)(Creature*);
     QuestInstance* (*GetQuestInstance)(ObjectGuid PlayerGuid);
     InstanceData* (*GetInstanceData)(Map*);
+    SpellScript* (*GetSpellScript)(SpellEntry const*);
+    AuraScript* (*GetAuraScript)(SpellEntry const*);
 
     void RegisterSelf(bool reportUnused = true);
 };
@@ -1500,6 +1575,8 @@ class ScriptMgr
         CreatureAI* GetCreatureAI(Creature* pCreature);
         GameObjectAI* GetGameObjectAI(GameObject* pGob);
         InstanceData* CreateInstanceData(Map* pMap);
+        SpellScript* GetSpellScript(SpellEntry const* pSpell);
+        AuraScript* GetAuraScript(SpellEntry const* pSpell);
 
         bool OnGossipHello(Player* pPlayer, Creature* pCreature);
         bool OnGossipHello(Player* pPlayer, GameObject* pGameObject);

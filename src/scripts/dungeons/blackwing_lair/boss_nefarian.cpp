@@ -638,6 +638,51 @@ CreatureAI* GetAI_npc_corrupted_totem(Creature* p_Creature)
     return new npc_corrupted_totemAI(p_Creature);
 }
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_nefarian_corrupted_totems : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex /*effIdx*/) const override
+    {
+        Unit* caster = spell->m_casterUnit;
+        if (!caster)
+            return false;
+
+        switch (urand(0, 3))
+        {
+            case 0:
+                caster->CastSpell(caster, 23419, true);
+                break;
+            case 1:
+                caster->CastSpell(caster, 23420, true);
+                break;
+            case 2:
+                caster->CastSpell(caster, 23423, true);
+                break;
+            case 3:
+                caster->CastSpell(caster, 23422, true);
+                break;
+        }
+
+        return false;
+    }
+};
+}
+
 void AddSC_boss_nefarian()
 {
     Script* p_NewScript;
@@ -651,4 +696,6 @@ void AddSC_boss_nefarian()
     p_NewScript->Name = "npc_corrupted_totem";
     p_NewScript->GetAI = &GetAI_npc_corrupted_totem;
     p_NewScript->RegisterSelf();
+
+    RegisterSpellScript("spell_nefarian_corrupted_totems", &GetSpellScript<spell_nefarian_corrupted_totems>);
 }

@@ -878,6 +878,36 @@ CreatureAI* GetAI_qirajiMindslayer(Creature* pCreature)
     return new AI_QirajiMindslayer(pCreature);
 }
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_aq40_drain_mana : public SpellScript
+{
+    void OnSetTargetMap(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, uint32& /*targetMode*/, float& /*radius*/, uint32& unMaxTargets, bool& /*selectClosestTargets*/) const override
+    {
+        unMaxTargets = 12;
+    }
+
+    bool OnCheckTarget(Spell const* /*spell*/, Unit* target, SpellEffectIndex /*eff*/) const override
+    {
+        return target->GetPowerType() == POWER_MANA && target->GetPowerPercent(POWER_MANA) >= 1.0f;
+    }
+};
+}
+
 void AddSC_instance_temple_of_ahnqiraj()
 {
     Script* pNewScript;
@@ -897,4 +927,5 @@ void AddSC_instance_temple_of_ahnqiraj()
     pNewScript->GetAI = &GetAI_qirajiMindslayer;
     pNewScript->RegisterSelf();
 
+    RegisterSpellScript("spell_aq40_drain_mana", &GetSpellScript<spell_aq40_drain_mana>);
 }

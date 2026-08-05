@@ -25,6 +25,7 @@
 #include "SharedDefines.h"
 #include "SpellAuras.h"
 #include "ObjectMgr.h"
+#include "ScriptMgr.h"
 #include "World.h"
 
 /*#######################################
@@ -658,6 +659,18 @@ void Player::UpdateManaRegen()
 
     // Mana regen from SPELL_AURA_MOD_POWER_REGEN aura
     float power_regen_mp5 = GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_POWER_REGEN, POWER_MANA) / 5.0f;
+
+    SpellAuraHolderMap const& auraHolders = GetSpellAuraHolderMap();
+    for (auto const& holderItr : auraHolders)
+    {
+        SpellAuraHolder* holder = holderItr.second;
+        if (!holder || !holder->GetAuraScript())
+            continue;
+
+        for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+            if (Aura* aura = holder->GetAuraByEffectIndex(SpellEffectIndex(i)))
+                holder->GetAuraScript()->OnManaRegenCalculate(aura, power_regen, power_regen_mp5);
+    }
 
     // Set regen rate in cast state apply only on spirit based regen
     int32 modManaRegenInterrupt = GetTotalAuraModifier(SPELL_AURA_MOD_MANA_REGEN_INTERRUPT);

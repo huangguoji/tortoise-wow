@@ -1080,20 +1080,30 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
     }
 
     // Turtle:: Make raid looted items not appear soul bound.
-    const auto CheckSoulboundException = [this](Player* player, const LootItem& lootItem, Item* newitem, Creature* creature)
+    const auto CheckSoulboundException = [this](Player* player, const LootItem& lootItem, Item* newitem, Creature* creature, bool isGameObjectLoot)
     {
         auto itemProto = newitem->GetProto();
-        if (player->GetMap()->IsRaid() && creature && itemProto && (creature->IsWorldBoss() || itemProto->Quality >= ITEM_QUALITY_RARE))
+        if (player->GetMap()->IsRaid() && itemProto)
         {
-            if (!lootItem.freeforall && itemProto->Stackable <= 1)
+            bool canBeTemporarilyTraded = isGameObjectLoot && itemProto->Quality >= ITEM_QUALITY_RARE;
+            canBeTemporarilyTraded |= creature && (creature->IsWorldBoss() || itemProto->Quality >= ITEM_QUALITY_RARE);
+
+            if (canBeTemporarilyTraded && !lootItem.freeforall && itemProto->Stackable <= 1)
             {
                 newitem->SetCanTradeWithRaidUntil(sWorld.GetGameTime() + 10 * MINUTE, player->GetMapId());
                 for (GroupReference* itr = GetFirstMember(); itr != nullptr; itr = itr->next())
                 {
                     if (Player* pMember = itr->getSource())
                     {
-                        if (pMember->GetMapId() == player->GetMapId() && creature->WasPlayerPresentAtDeath(pMember))
+                        if (creature)
+                        {
+                            if (pMember->GetMapId() == player->GetMapId() && creature->WasPlayerPresentAtDeath(pMember))
+                                newitem->AddPlayerToAllowedTradeList(pMember->GetObjectGuid());
+                        }
+                        else if (pMember->GetMapId() == player->GetMapId() && pMember->GetInstanceId() == player->GetInstanceId())
+                        {
                             newitem->AddPlayerToAllowedTradeList(pMember->GetObjectGuid());
+                        }
                     }
                 }
                 //force refresh of soulbound-ness since we don't hook into CreateItem anymore.
@@ -1158,7 +1168,7 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
 
                     if (Item* newItem = player->StoreNewItem(dest, roll->itemid, true, item->randomPropertyId))
                     {
-                        CheckSoulboundException(player, *item, newItem, roll->lootedTargetGUID.IsCreature() ? player->GetMap()->GetCreature(roll->lootedTargetGUID) : nullptr);
+                        CheckSoulboundException(player, *item, newItem, roll->lootedTargetGUID.IsCreature() ? player->GetMap()->GetCreature(roll->lootedTargetGUID) : nullptr, roll->lootedTargetGUID.IsGameObject());
                         player->OnReceivedItem(newItem);
                     }
                 }
@@ -1228,7 +1238,7 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
 
                     if (Item* newItem = player->StoreNewItem(dest, roll->itemid, true, item->randomPropertyId))
                     {
-                        CheckSoulboundException(player, *item, newItem, roll->lootedTargetGUID.IsCreature() ? player->GetMap()->GetCreature(roll->lootedTargetGUID) : nullptr);
+                        CheckSoulboundException(player, *item, newItem, roll->lootedTargetGUID.IsCreature() ? player->GetMap()->GetCreature(roll->lootedTargetGUID) : nullptr, roll->lootedTargetGUID.IsGameObject());
                         player->OnReceivedItem(newItem);
                     }
                 }

@@ -46,7 +46,7 @@ option(USE_ADDRESS_SANITIZER "Enable clang address sanitizer - debug feature tha
 option(ENABLE_PROFILING "(Windows only) Enable Optick integration, which allows to profile CPU and Memory. Also disabling some async code" OFF)
 option(ENABLE_LSAN "Enables Leak Sanitizer" OFF)
 # Allow enabling official Turtle addon support
-option(ALLOW_TURTLE_ADDONS "Allow Turtle addons" OFF)
+option(ALLOW_TURTLE_ADDONS "Allow Turtle addons" ON)
 
 
 if(UNIX)
@@ -396,7 +396,7 @@ if(ALLOW_TURTLE_ADDONS)
   message(STATUS "Allow Turtle Addons   : Yes")
   set(DEFINITIONS ${DEFINITIONS} ALLOW_TURTLE_ADDONS)
 else()
-  message(STATUS "Allow Turtle Addons   : No (default)")
+  message(STATUS "Allow Turtle Addons   : No")
 endif()
 
 

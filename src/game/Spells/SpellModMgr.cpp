@@ -110,7 +110,7 @@ void SpellModMgr::LoadSpellMods()
 
             uint32 const customFlags = fields[3].GetUInt32();
             if (customFlags)
-                spell->Custom = customFlags;
+                spell->Custom |= customFlags;
 
             // 5         6                 7            8            9             10
             // Category, CastingTimeIndex, StackAmount, SpellIconID, activeIconID, manaCost

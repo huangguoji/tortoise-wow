@@ -7,7 +7,7 @@ ConfVersion=2010062001
 
 #   Database connection settings for the realm server.
 
-LoginDatabaseInfo = ""
+LoginDatabaseInfo = "127.0.0.1;3306;mangos;mangos;tw_logon"
 
 #   Logs directory setting.
 

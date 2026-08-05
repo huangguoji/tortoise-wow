@@ -1458,7 +1458,7 @@ WorldSafeLocsEntry const* BattleGroundAV::GetClosestGraveYard(Player *plr)
     // repop players at the entrance GY if BG is not started yet
     if (GetStatus() != STATUS_IN_PROGRESS && !plr->IsGameMaster())
     {
-        if (WorldSafeLocsEntry const* gEntry = sWorldSafeLocsStore.LookupEntry(plr->GetTeam() == ALLIANCE ? 611 : 610))
+        if (WorldSafeLocsEntry const* gEntry = sWorldSafeLocsStore.LookupEntry(plr->GetTeam() == ALLIANCE ? BG_AV_GRAVE_MAIN_ALLIANCE : BG_AV_GRAVE_MAIN_HORDE))
             return gEntry;
     }
 

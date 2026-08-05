@@ -263,12 +263,12 @@ enum SpellEffects
     SPELL_EFFECT_APPLY_AREA_AURA_PET       = 119,
     SPELL_EFFECT_TELEPORT_GRAVEYARD        = 120,
     SPELL_EFFECT_NORMALIZED_WEAPON_DMG     = 121,
-    SPELL_EFFECT_122                       = 122,
+    SPELL_EFFECT_REPUTATION_QUEST_REWARD   = 122,
     SPELL_EFFECT_SEND_TAXI                 = 123,
     SPELL_EFFECT_PLAYER_PULL               = 124,
     SPELL_EFFECT_MODIFY_THREAT_PERCENT     = 125,
-    SPELL_EFFECT_126                       = 126,
-    SPELL_EFFECT_127                       = 127,
+    SPELL_EFFECT_STEAL_BENEFICIAL_BUFF     = 126,
+    SPELL_EFFECT_PROSPECTING               = 127,
     // Effets "backportes" depuis MaNGOS BC+.
     SPELL_EFFECT_APPLY_AREA_AURA_FRIEND    = 128,
     SPELL_EFFECT_APPLY_AREA_AURA_ENEMY     = 129,
@@ -277,7 +277,8 @@ enum SpellEffects
     SPELL_EFFECT_NOSTALRIUS                = 131,
     SPELL_EFFECT_APPLY_AREA_AURA_RAID      = 132,
     SPELL_EFFECT_APPLY_AREA_AURA_OWNER     = 133,
-    TOTAL_SPELL_EFFECTS                    = 134
+    SPELL_EFFECT_APPLY_AURA_PET            = 134,
+    TOTAL_SPELL_EFFECTS                    = 135
 };
 
 enum SpellCastResult
@@ -515,8 +516,13 @@ enum SpellModOp
     SPELLMOD_DOT                    = 22,
     SPELLMOD_HASTE                  = 23,
     SPELLMOD_SPELL_BONUS_DAMAGE     = 24,
+    SPELLMOD_PROC_CHANCE            = 26,
     SPELLMOD_MULTIPLE_VALUE         = 27,
     SPELLMOD_RESIST_DISPEL_CHANCE   = 28,
+    SPELLMOD_PROC_COOLDOWN          = 29,
+    SPELLMOD_POWER_GAIN             = 30,
+    SPELLMOD_CUSTOM_VALUE_1         = 31,
+    SPELLMOD_CUSTOM_VALUE_2         = 32,
     SPELLMOD_CHANCE_TO_NOT_CONSUME  = 33,
     MAX_SPELLMOD                    = 34,
 };
@@ -529,7 +535,7 @@ enum AuraState
     AURA_STATE_BERSERKING                   = 3,            // C   |
     AURA_STATE_FROZEN                       = 4,            //     | frozen target (but not used for any spells in 1.12.1 at client side)
     AURA_STATE_JUDGEMENT                    = 5,            // C   |
-    //AURA_STATE_UNKNOWN6                   = 6,            //     | not used
+    AURA_STATE_CRIT                         = 6,            // C   | caster recently critically hit
     AURA_STATE_HUNTER_PARRY                 = 7,            // C   |
     AURA_STATE_ROGUE_ATTACK_FROM_STEALTH    = 8,            // C   | FIX ME: not implemented yet!
     // Custom aura states - not based on spell data:
@@ -539,6 +545,8 @@ enum AuraState
     AURA_STATE_HEALTHLESS_35_PERCENT        = 12, // custom
     AURA_STATE_SPELL_RESISTED               = 13, // custom: recently had a spell resist
     AURA_STATE_TARGET_DODGED                = 14, // custom: target recently dodged caster attack
+    AURA_STATE_PET_CRIT                     = 15, // custom: caster's pet recently critically hit
+    AURA_STATE_SHAPESHIFTED                 = 16, // custom: shapeshift form active
 };
 
 // Spell mechanics
@@ -888,6 +896,15 @@ enum SpellAttributesCustom
     SPELL_CUSTOM_PERSISTENT_NO_STACK        = 0x1000,    // Makes persistent area auras not stack between casters
     SPELL_CUSTOM_DEATH_DUNGEON_PERSISTENT   = 0x2000,
     SPELL_CUSTOM_STACK_WITH_SPELL_SPECIFIC  = 0x4000,    // Stacks with other auras from caster with same spell specific type
+    SPELL_CUSTOM_TRIGGER_WEAPON_PROCS       = 0x8000,    // Can trigger weapon enchants and on hit effects
+    SPELL_CUSTOM_AURA_NON_EXCLUSIVE         = 0x10000,   // Aura stacks with normally exclusive auras
+    SPELL_CUSTOM_AURA_EXCLUSIVE             = 0x20000,   // Aura is always treated as exclusive
+    SPELL_CUSTOM_MOUNT_SPEED_100            = 0x40000,   // Mount aura is always normalized to 100% speed
+    SPELL_CUSTOM_IGNORE_RIDING_SKILL_MOUNT_SPEED = 0x80000, // Mount aura keeps DBC speed amount
+    SPELL_CUSTOM_TEMPORARY_HEALTH_BONUS     = 0x100000,  // Increases max health and current health together
+    SPELL_CUSTOM_AURA_STACKS_WITH_EXCLUSIVE = 0x200000,  // Aura stacks with normally exclusive aura categories
+    SPELL_CUSTOM_AURA_EFFECT0_STACKS_WITH_EXCLUSIVE = 0x400000, // Effect 0 stacks with normally exclusive aura categories
+    SPELL_CUSTOM_BONUS_COEFF_USES_AP        = 0x800000,  // Uses attack power instead of spell power for effectBonusCoefficient
 };
 
 // Custom flags assigned by the core based on spell template data

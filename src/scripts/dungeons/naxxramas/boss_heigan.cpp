@@ -516,6 +516,31 @@ CreatureAI* GetAI_mob_plagueCloud(Creature* pCreature)
     return new mob_plague_cloudAI(pCreature);
 }
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_heigan_mana_burn : public SpellScript
+{
+    void OnSetTargetMap(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, uint32& /*targetMode*/, float& radius, uint32& /*unMaxTargets*/, bool& /*selectClosestTargets*/) const override
+    {
+        radius = 28.0f;
+    }
+};
+}
+
 void AddSC_boss_heigan()
 {
     Script* NewScript;
@@ -528,4 +553,6 @@ void AddSC_boss_heigan()
     NewScript->Name = "mob_plague_cloud";
     NewScript->GetAI = &GetAI_mob_plagueCloud;
     NewScript->RegisterSelf();
+
+    RegisterSpellScript("spell_heigan_mana_burn", &GetSpellScript<spell_heigan_mana_burn>);
 }

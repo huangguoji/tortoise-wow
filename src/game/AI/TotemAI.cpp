@@ -23,6 +23,7 @@
 #include "Totem.h"
 #include "Creature.h"
 #include "DBCStores.h"
+#include "Player.h"
 #include "SpellMgr.h"
 
 #include "GridNotifiers.h"
@@ -62,6 +63,14 @@ TotemAI::TotemAI(Creature *pCreature) : CreatureAI(pCreature)
     }
 }
 
+void TotemAI::AttackStart(Unit* target)
+{
+    if (m_totemType != TOTEM_ACTIVE || !target || !target->IsAlive() || !m_creature->IsValidAttackTarget(target))
+        return;
+
+    m_victimGuid = target->GetObjectGuid();
+}
+
 void TotemAI::UpdateAI(const uint32 /*diff*/)
 {
     if (m_totemType != TOTEM_ACTIVE)
@@ -79,6 +88,8 @@ void TotemAI::UpdateAI(const uint32 /*diff*/)
 
     Unit* victim = m_creature->GetMap()->GetUnit(m_victimGuid);
     Unit* owner = m_creature->GetCharmerOrOwner();
+    if (Player* modOwner = m_creature->GetSpellModOwner())
+        modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_RANGE, max_range, nullptr);
 
     // Check owner's attackers for targets.
     if (!victim && owner)

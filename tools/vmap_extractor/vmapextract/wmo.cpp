@@ -399,7 +399,8 @@ int WMOGroup::ConvertToVMAPGroupWmo(FILE* output, WMORoot* rootWMO, bool pPrecis
         fwrite(MobaEx, 4, k, output);
         delete [] MobaEx;
 
-        uint32 nIdexes = nTriangles * 3 + doodadsTriangleIndicesCount;
+        uint32 nBaseIndexes = nTriangles * 3;
+        uint32 nIdexes = nBaseIndexes + doodadsTriangleIndicesCount;
 
         if (fwrite("INDX", 4, 1, output) != 1)
         {
@@ -417,28 +418,30 @@ int WMOGroup::ConvertToVMAPGroupWmo(FILE* output, WMORoot* rootWMO, bool pPrecis
             printf("Error while writing file nIndexes");
             exit(0);
         }
-        if (nIdexes > 0)
+        if (nBaseIndexes > 0)
         {
-            if (fwrite(MOVI, sizeof(unsigned short), nIdexes, output) != nIdexes)
+            if (fwrite(MOVI, sizeof(unsigned short), nBaseIndexes, output) != nBaseIndexes)
             {
                 printf("Error while writing file indexarray");
                 exit(0);
             }
-            WriteDoodadsTriangles(output, nTriangles);
         }
+        if (doodadsTriangleIndicesCount > 0)
+            WriteDoodadsTriangles(output, nVertices);
 
         if (fwrite("VERT", 4, 1, output) != 1)
         {
             printf("Error while writing file nbraches ID");
             exit(0);
         }
-        wsize = sizeof(int) + sizeof(float) * 3 * (nVertices + doodadsVerticesCount);
+        int nVectors = nVertices + doodadsVerticesCount;
+        wsize = sizeof(int) + sizeof(float) * 3 * nVectors;
         if (fwrite(&wsize, sizeof(int), 1, output) != 1)
         {
             printf("Error while writing file wsize");
             exit(0);
         }
-        if (fwrite(&nVertices, sizeof(int), 1, output) != 1)
+        if (fwrite(&nVectors, sizeof(int), 1, output) != 1)
         {
             printf("Error while writing file nVertices");
             exit(0);
@@ -450,8 +453,9 @@ int WMOGroup::ConvertToVMAPGroupWmo(FILE* output, WMORoot* rootWMO, bool pPrecis
                 printf("Error while writing file vectors");
                 exit(0);
             }
-            WriteDoodadsVertices(output);
         }
+        if (doodadsVerticesCount > 0)
+            WriteDoodadsVertices(output);
 
         nColTriangles = nTriangles + doodadsTriangleIndicesCount/3;
     }
@@ -740,4 +744,3 @@ void WMOModelInstance::init(std::string fname, MPQFile &f)
         model = NULL;
     }
 }
-

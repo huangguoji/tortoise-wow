@@ -1284,6 +1284,35 @@ void instance_naxxramas::OnKTAreaTrigger(const AreaTriggerEntry* pAT)
     }
 }
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_kelthuzad_void_blast : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex effIdx) const override
+    {
+        if (effIdx == EFFECT_INDEX_0)
+            if (Unit* target = spell->GetUnitTarget(); target && target->HasAura(28410))
+                spell->damage = 0;
+
+        return true;
+    }
+};
+}
+
 void AddSC_boss_kelthuzad()
 {
     Script* NewScript;
@@ -1317,4 +1346,6 @@ void AddSC_boss_kelthuzad()
     NewScript->Name = "mob_shadow_fissure";
     NewScript->GetAI = &GetAI_mob_shadow_fissure;
     NewScript->RegisterSelf();
+
+    RegisterSpellScript("spell_kelthuzad_void_blast", &GetSpellScript<spell_kelthuzad_void_blast>);
 }

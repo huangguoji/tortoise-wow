@@ -333,6 +333,19 @@ miscellaneous/random_scripts_3.cpp
 miscellaneous/custom_exploration_triggers.cpp
 miscellaneous/jewelcrafting.cpp
 
+spells/spell_druid.cpp
+spells/spell_hunter.cpp
+spells/spell_item.cpp
+spells/spell_mage.cpp
+spells/spell_paladin.cpp
+spells/spell_priest.cpp
+spells/spell_rogue.cpp
+spells/spell_shaman.cpp
+spells/spell_special.cpp
+spells/spells_turtle.cpp
+spells/spell_warlock.cpp
+spells/spell_warrior.cpp
+
 world/alterac_mountains.cpp
 world/arathi_highlands.cpp
 world/ashenvale.cpp

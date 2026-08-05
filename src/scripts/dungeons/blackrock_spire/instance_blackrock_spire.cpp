@@ -981,6 +981,29 @@ bool AreaTrigger_at_ubrs_the_beast(Player* pPlayer, AreaTriggerEntry const* pAt)
     return false;
 }
 
+struct spell_ubrs_freeze_rookery_egg : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex effIdx) const override
+    {
+        if (effIdx != EFFECT_INDEX_0)
+            return true;
+
+        GameObject* go = spell->GetGOTarget();
+        if (!go)
+            return false;
+
+        if (go->getLootState() == GO_READY)
+            go->UseDoorOrButton(0, true);
+
+        return false;
+    }
+};
+
+SpellScript* GetScript_UBRSFreezeRookeryEgg(SpellEntry const*)
+{
+    return new spell_ubrs_freeze_rookery_egg();
+}
+
 void AddSC_instance_blackrock_spire()
 {
     Script* pNewScript;
@@ -1002,5 +1025,10 @@ void AddSC_instance_blackrock_spire()
     pNewScript = new Script;
     pNewScript->Name = "at_ubrs_the_beast";
     pNewScript->pAreaTrigger = &AreaTrigger_at_ubrs_the_beast;
+    pNewScript->RegisterSelf();
+
+    pNewScript = new Script;
+    pNewScript->Name = "spell_ubrs_freeze_rookery_egg";
+    pNewScript->GetSpellScript = &GetScript_UBRSFreezeRookeryEgg;
     pNewScript->RegisterSelf();
 }

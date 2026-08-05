@@ -49,6 +49,12 @@ enum StableResultCode
     STABLE_SUCCESS_BUY_SLOT = 0x0A,                         // buy slot success
 };
 
+enum StablePetListSlotFlag
+{
+    STABLE_PET_LIST_SLOT_CURRENT = 0x01,
+    STABLE_PET_LIST_SLOT_STABLE  = 0x02,
+};
+
 void WorldSession::HandleTabardVendorActivateOpcode(WorldPacket & recv_data)
 {
     ObjectGuid guid;
@@ -587,7 +593,7 @@ void WorldSession::SendStablePet(ObjectGuid guid)
         data << uint32(pet->GetLevel());
         data << pet->GetName();                             // petname
         data << uint32(pet->GetLoyaltyLevel());             // loyalty
-        data << uint8(0x01);                                // client slot 1 == current pet (0)
+        data << uint8(STABLE_PET_LIST_SLOT_CURRENT);
         ++num;
     }
     // Pet may be despawned if owner went far away from pet for example.
@@ -598,7 +604,7 @@ void WorldSession::SendStablePet(ObjectGuid guid)
         data << uint32(currentPetData->level);
         data << currentPetData->name;                           // petname
         data << uint32(currentPetData->loyalty);                // loyalty
-        data << uint8(0x01);                                    // client slot 1 == current pet (0)
+        data << uint8(STABLE_PET_LIST_SLOT_CURRENT);
         ++num;
     }
     CharPetMap const& pets = sCharacterDatabaseCache.GetCharPetsMap();
@@ -614,7 +620,7 @@ void WorldSession::SendStablePet(ObjectGuid guid)
                 data << uint32(it->level);              // level
                 data << it->name;                       // name
                 data << uint32(it->loyalty);            // loyalty
-                data << uint8(it->slot + 1);            // slot
+                data << uint8(STABLE_PET_LIST_SLOT_STABLE);
                 ++num;
             }
         }
@@ -779,20 +785,28 @@ void WorldSession::HandleBuyStableSlot(WorldPacket & recv_data)
 
     GetPlayer()->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_TALK); // Removes stealth, feign death ...
 
-    if (GetPlayer()->m_stableSlots < MAX_PET_STABLES)
+    uint32 nextSlot = GetPlayer()->m_stableSlots + 1;
+    if (nextSlot >= MAX_PET_STABLES)
     {
-        StableSlotPricesEntry const *SlotPrice = sStableSlotPricesStore.LookupEntry(GetPlayer()->m_stableSlots + 1);
-        if (_player->GetMoney() >= SlotPrice->Price)
-        {
-            ++GetPlayer()->m_stableSlots;
-            _player->ModifyMoney(-int32(SlotPrice->Price));
-            SendStableResult(STABLE_SUCCESS_BUY_SLOT);
-        }
-        else
-            SendStableResult(STABLE_ERR_MONEY);
+        SendStableResult(STABLE_ERR_STABLE);
+        return;
+    }
+
+    StableSlotPricesEntry const* slotPrice = sStableSlotPricesStore.LookupEntry(nextSlot);
+    if (!slotPrice)
+    {
+        SendStableResult(STABLE_ERR_STABLE);
+        return;
+    }
+
+    if (_player->GetMoney() >= slotPrice->Price)
+    {
+        ++GetPlayer()->m_stableSlots;
+        _player->ModifyMoney(-int32(slotPrice->Price));
+        SendStableResult(STABLE_SUCCESS_BUY_SLOT);
     }
     else
-        SendStableResult(STABLE_ERR_STABLE);
+        SendStableResult(STABLE_ERR_MONEY);
 }
 
 void WorldSession::HandleStableRevivePet(WorldPacket &/* recv_data */)

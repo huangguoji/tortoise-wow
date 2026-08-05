@@ -476,6 +476,58 @@ CreatureAI* GetAI_boss_maexxna(Creature* pCreature)
     return new boss_maexxnaAI(pCreature);
 }
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_maexxna_web_spray : public SpellScript
+{
+    bool OnCheckTarget(Spell const* /*spell*/, Unit* target, SpellEffectIndex /*eff*/) const override
+    {
+        return !target->HasAura(17624) && !target->HasAura(28622);
+    }
+};
+
+struct spell_maexxna_spider_web : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex /*effIdx*/) const override
+    {
+        Unit* target = spell->GetUnitTarget();
+        if (!target)
+            return false;
+
+        float dx = target->GetPositionX() - spell->m_caster->GetPositionX();
+        float dy = target->GetPositionY() - spell->m_caster->GetPositionY();
+        float dist = sqrt((dx * dx) + (dy * dy));
+        float yDist = spell->m_caster->GetPositionZ() - target->GetPositionZ();
+        float horizontalSpeed = dist / 1.5f;
+        float verticalSpeed = 12.0f + (yDist * 0.5f);
+        float angle = target->GetAngle(spell->m_caster->GetPositionX(), spell->m_caster->GetPositionY());
+
+        if (Player* player = target->ToPlayer())
+        {
+            player->SetLaunched(true);
+            player->SetXYSpeed(horizontalSpeed);
+        }
+
+        target->KnockBack(angle, horizontalSpeed, verticalSpeed);
+        return false;
+    }
+};
+}
+
 void AddSC_boss_maexxna()
 {
     Script* NewScript;
@@ -489,4 +541,7 @@ void AddSC_boss_maexxna()
     NewScript->Name = "mob_webwrap";
     NewScript->GetAI = &GetAI_mob_webwrap;
     NewScript->RegisterSelf();
+
+    RegisterSpellScript("spell_maexxna_web_spray", &GetSpellScript<spell_maexxna_web_spray>);
+    RegisterSpellScript("spell_maexxna_spider_web", &GetSpellScript<spell_maexxna_spider_web>);
 }

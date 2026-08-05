@@ -102,6 +102,7 @@ public:
     void Stop()
     {
         m_Reactor->end_reactor_event_loop();
+        m_Reactor->notify();
     }
 
     int Start(int interval)

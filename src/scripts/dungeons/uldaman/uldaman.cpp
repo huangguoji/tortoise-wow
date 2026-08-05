@@ -281,6 +281,19 @@ enum
 
 };
 
+struct spell_uldaman_awaken_vault_warder : public SpellScript
+{
+    void OnSetTargetMap(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, uint32& /*targetMode*/, float& /*radius*/, uint32& unMaxTargets, bool& /*selectClosestTargets*/) const override
+    {
+        unMaxTargets = 2;
+    }
+};
+
+SpellScript* GetScript_UldamanAwakenVaultWarder(SpellEntry const*)
+{
+    return new spell_uldaman_awaken_vault_warder();
+}
+
 void AddSC_uldaman()
 {
     Script *newscript;
@@ -309,5 +322,10 @@ void AddSC_uldaman()
     newscript = new Script;
     newscript->Name = "event_awaken_stone_keeper";
     newscript->pProcessEventId = &ProcessEventId_event_awaken_stone_keeper;
+    newscript->RegisterSelf();
+
+    newscript = new Script;
+    newscript->Name = "spell_uldaman_awaken_vault_warder";
+    newscript->GetSpellScript = &GetScript_UldamanAwakenVaultWarder;
     newscript->RegisterSelf();
 }

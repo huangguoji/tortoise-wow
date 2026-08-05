@@ -31,6 +31,8 @@
 #include "CreatureGroups.h"
 #include "InstanceData.h"
 
+#include <algorithm>
+
 typedef std::vector<Script*> ScriptVector;
 int num_sc_scripts;
 ScriptVector m_NPC_scripts;
@@ -1406,18 +1408,6 @@ void ScriptMgr::LoadSpellScripts()
 {
     LoadScripts(sSpellScripts, "spell_scripts");
 
-    std::set<uint32> scriptSpells;
-    std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT `entry` FROM `spell_template` WHERE 77 IN (`effect1`, `effect2`, `effect3`)"));
-    if (result)
-    {
-        do
-        {
-            Field* fields = result->Fetch();
-            uint32 spellId = fields[0].GetUInt32();
-            scriptSpells.insert(spellId);
-        } while (result->NextRow());
-    }
-
     // check ids
     for (const auto& itr : sSpellScripts)
     {
@@ -1444,9 +1434,6 @@ void ScriptMgr::LoadSpellScripts()
                 break;
             }
         }
-
-        if (scriptSpells.find(itr.first) != scriptSpells.cend())
-            found = true;
 
         if (!found)
             sLog.outErrorDb("Table `spell_scripts` has unsupported spell (Id: %u) without SPELL_EFFECT_SCRIPT_EFFECT (%u) spell effect", itr.first, SPELL_EFFECT_SCRIPT_EFFECT);
@@ -1667,32 +1654,35 @@ void ScriptMgr::LoadEventIdScripts()
 void ScriptMgr::LoadScriptNames()
 {
     m_scriptNames.emplace_back("");
-    QueryResult *result = WorldDatabase.Query(
-                              "SELECT DISTINCT(script_name) FROM creature_template WHERE script_name <> '' "
-                              "UNION "
-                              "SELECT DISTINCT(script_name) FROM gameobject_template WHERE script_name <> '' "
-                              "UNION "
-                              "SELECT DISTINCT(script_name) FROM item_template WHERE script_name <> '' "
-                              "UNION "
-                              "SELECT DISTINCT(script_name) FROM scripted_areatrigger WHERE script_name <> '' "
-                              "UNION "
-                              "SELECT DISTINCT(script_name) FROM scripted_event_id WHERE script_name <> '' "
-                              "UNION "
-                              "SELECT DISTINCT(script_name) FROM map_template WHERE script_name <> ''");
 
-    if (!result)
+    char const* tableNames[] =
     {
-        return;
-    }
+        "creature_template",
+        "gameobject_template",
+        "item_template",
+        "spell_template",
+        "scripted_areatrigger",
+        "scripted_event_id",
+        "map_template",
+    };
 
-    do
+    for (char const* tableName : tableNames)
     {
-        m_scriptNames.emplace_back((*result)[0].GetString());
+        QueryResult* result = WorldDatabase.PQuery("SELECT DISTINCT(script_name) FROM %s WHERE script_name <> ''", tableName);
+        if (!result)
+            continue;
+
+        do
+        {
+            m_scriptNames.emplace_back((*result)[0].GetString());
+        }
+        while (result->NextRow());
+
+        delete result;
     }
-    while (result->NextRow());
-    delete result;
 
     std::sort(m_scriptNames.begin(), m_scriptNames.end());
+    m_scriptNames.erase(std::unique(m_scriptNames.begin(), m_scriptNames.end()), m_scriptNames.end());
 }
 
 uint32 ScriptMgr::GetScriptId(const char *name) const
@@ -1757,6 +1747,32 @@ InstanceData* ScriptMgr::CreateInstanceData(Map* pMap)
         return nullptr;
 
     return pTempScript->GetInstanceData(pMap);
+}
+
+SpellScript* ScriptMgr::GetSpellScript(SpellEntry const* pSpell)
+{
+    if (!pSpell->ScriptId || pSpell->ScriptId >= m_NPC_scripts.size())
+        return nullptr;
+
+    Script* pTempScript = m_NPC_scripts[pSpell->ScriptId];
+
+    if (!pTempScript || !pTempScript->GetSpellScript)
+        return nullptr;
+
+    return pTempScript->GetSpellScript(pSpell);
+}
+
+AuraScript* ScriptMgr::GetAuraScript(SpellEntry const* pSpell)
+{
+    if (!pSpell->ScriptId || pSpell->ScriptId >= m_NPC_scripts.size())
+        return nullptr;
+
+    Script* pTempScript = m_NPC_scripts[pSpell->ScriptId];
+
+    if (!pTempScript || !pTempScript->GetAuraScript)
+        return nullptr;
+
+    return pTempScript->GetAuraScript(pSpell);
 }
 
 bool ScriptMgr::OnGossipHello(Player* pPlayer, Creature* pCreature)
@@ -2460,23 +2476,6 @@ void ScriptMgr::CollectPossibleEventIds(std::set<uint32>& eventIds)
             if (data11)
                 eventIds.insert(data11);
         } while (result->NextRow());
-    }
-
-    // Load all possible script entries from spells.
-    for (uint32 i = 1; i < 4; ++i)
-    {
-        result.reset(WorldDatabase.PQuery("SELECT `effectMiscValue%u` FROM `spell_template` WHERE `effect%u`=61", i, i));
-
-        if (result)
-        {
-            do
-            {
-                fields = result->Fetch();
-                uint32 eventId = fields[0].GetUInt32();
-                if (eventId)
-                    eventIds.insert(eventId);
-            } while (result->NextRow());
-        }
     }
 
     // Load all possible script entries from spells.

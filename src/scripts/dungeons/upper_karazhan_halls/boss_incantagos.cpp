@@ -1,5 +1,54 @@
 #include "scriptPCH.h"
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_ley_line_disturbance : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex /*effIdx*/) const override
+    {
+        Creature* caster = ToCreature(spell->m_caster);
+        if (!caster)
+            return false;
+
+        Position const& home = caster->GetHomePosition();
+        static uint32 const affinities[] = { 59987, 59986, 59985, 59984, 59983, 59982 };
+        if (Creature* affinity = spell->m_caster->SummonCreature(affinities[urand(0, 5)], home.x, home.y, home.z, M_PI_F, TEMPSUMMON_DEAD_DESPAWN, 30000))
+        {
+            affinity->m_Events.AddLambdaEventAtOffset([affinity, guid = caster->GetObjectGuid()]()
+            {
+                if (!affinity->IsAlive())
+                    return;
+
+                if (Creature* summoner = affinity->GetMap()->GetCreature(guid))
+                {
+                    summoner->CastSpell(summoner, 26662, true);
+                    summoner->PMonsterEmote(2384, summoner);
+                }
+
+                affinity->SendSpellGo(affinity, 1449);
+                affinity->DoKillUnit();
+            }, 15000);
+        }
+
+        return false;
+    }
+};
+}
+
 enum
 {
     NPC_LEY_SEEKER             = 59989,
@@ -285,4 +334,6 @@ void AddSC_boss_incantagos()
     newscript->Name = "boss_incantagos";
     newscript->GetAI = &GetAI_boss_incantagos;
     newscript->RegisterSelf();
+
+    RegisterSpellScript("spell_ley_line_disturbance", &GetSpellScript<spell_ley_line_disturbance>);
 }

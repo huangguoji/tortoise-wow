@@ -1,5 +1,30 @@
 #include "scriptPCH.h"
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_incindis_quaking_stomp : public SpellScript
+{
+    void OnSetTargetMap(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, uint32& /*targetMode*/, float& /*radius*/, uint32& unMaxTargets, bool& /*selectClosestTargets*/) const override
+    {
+        unMaxTargets = 1;
+    }
+};
+}
+
 enum
 {
     NPC_SMALL_INCENDIC_EGG = 52146,
@@ -165,4 +190,6 @@ void AddSC_boss_incindis()
     pNewScript->Name = "npc_incendic_egg";
     pNewScript->GetAI = &GetAI_npc_incendic_egg;
     pNewScript->RegisterSelf();
+
+    RegisterSpellScript("spell_incindis_quaking_stomp", &GetSpellScript<spell_incindis_quaking_stomp>);
 }

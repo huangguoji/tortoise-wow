@@ -633,7 +633,7 @@ struct go_survival_tent : public GameObjectAI
                 for (Player* pPlayer : players)
                 {
                     pPlayer->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING);
-                    pPlayer->SetRestBonus(static_cast<float>(pPlayer->GetRestBonus() + (sObjectMgr.GetXPForLevel(pPlayer->GetLevel()) * 0.000575)));
+                    pPlayer->AddRestBonus(sObjectMgr.GetXPForLevel(pPlayer->GetLevel()) * Player::RESTED_XP_TENT_RATE, pPlayer->GetRestBonusCap(Player::RESTED_XP_TENT_CAP));
                 }
                 m_uiUpdateTimer = 1000;
             }
@@ -1775,9 +1775,9 @@ bool GossipSelect_npc_flying_machine(Player* player, Creature* creature, uint32 
         return true;
 
     if (uiAction == GOSSIP_ACTION_INFO_DEF + 1)
-        player->ActivateTaxiPathTo(1619, 0, true); // Weeeee!
+        player->ActivateTaxiPathTo(311, 0, true); // Weeeee!
     if (uiAction == GOSSIP_ACTION_INFO_DEF + 2)
-        player->ActivateTaxiPathTo(1633, 0, true); // Weeeee!
+        player->ActivateTaxiPathTo(322, 0, true); // Weeeee!
     player->CLOSE_GOSSIP_MENU();
     return true;
 }
@@ -2777,7 +2777,7 @@ bool GOSelect_go_fm_acquisition(Player* pPlayer, GameObject* pGo, uint32 sender,
             pPlayer->DestroyItemCount(6948, 1, true);
             pPlayer->SaveInventoryAndGoldToDB();
         }
-        pPlayer->ActivateTaxiPathTo(1619, 0, true); // Weeeee!
+        pPlayer->ActivateTaxiPathTo(311, 0, true); // Weeeee!
     }
     return true;
 }

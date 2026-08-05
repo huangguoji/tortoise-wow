@@ -39,7 +39,7 @@ HardcoreModeLogFile = "hardcore.log"
 
 LoginDatabase.Info = "127.0.0.1;3306;mangos;mangos;tw_logon"
 WorldDatabase.Info = "127.0.0.1;3306;mangos;mangos;tw_world"
-CharacterDatabase.Info = "127.0.0.1;3306;mangos;mangos;tw_chars"
+CharacterDatabase.Info = "127.0.0.1;3306;mangos;mangos;tw_char"
 LogsDatabase.Info = "127.0.0.1;3306;mangos;mangos;tw_logs"
 
 # DB Auto-updater

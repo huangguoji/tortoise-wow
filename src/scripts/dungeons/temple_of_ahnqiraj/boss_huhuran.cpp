@@ -167,6 +167,31 @@ CreatureAI* GetAI_boss_huhuran(Creature* pCreature)
     return new boss_huhuranAI(pCreature);
 }
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_huhuran_poison_bolt_volley : public SpellScript
+{
+    void OnSetTargetMap(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, uint32& /*targetMode*/, float& /*radius*/, uint32& /*unMaxTargets*/, bool& selectClosestTargets) const override
+    {
+        selectClosestTargets = true;
+    }
+};
+}
+
 void AddSC_boss_huhuran()
 {
     Script *newscript;
@@ -174,4 +199,6 @@ void AddSC_boss_huhuran()
     newscript->Name = "boss_huhuran";
     newscript->GetAI = &GetAI_boss_huhuran;
     newscript->RegisterSelf();
+
+    RegisterSpellScript("spell_huhuran_poison_bolt_volley", &GetSpellScript<spell_huhuran_poison_bolt_volley>);
 }

@@ -6332,7 +6332,7 @@ bool ChatHandler::HandleUnstuckCommand(char* /*args*/)
         WorldSafeLocsEntry const* ClosestGrave = sObjectMgr.GetClosestGraveYard(pPlayer->GetPositionX(), pPlayer->GetPositionY(), pPlayer->GetPositionZ(), pPlayer->GetMapId(), pPlayer->GetTeam());
 
         if (!ClosestGrave) //No nearby graveyards (stuck in void?). Send ally to Westfall, Horde to Barrens.
-            ClosestGrave = pPlayer->GetTeamId() ? sWorldSafeLocsStore.LookupEntry(10) : sWorldSafeLocsStore.LookupEntry(4);
+            ClosestGrave = pPlayer->GetTeamId() ? sWorldSafeLocsStore.LookupEntry(9) : sWorldSafeLocsStore.LookupEntry(4);
 
         if (ClosestGrave)
             pPlayer->TeleportTo(ClosestGrave->map_id, ClosestGrave->x, ClosestGrave->y, ClosestGrave->z, sObjectMgr.GetWorldSafeLocFacing(ClosestGrave->ID), 0);
@@ -16247,7 +16247,18 @@ bool ChatHandler::HandleCartographerCommand(char* args)
     {
         PSendSysMessage("You have %u areas left to explore.", count);
         if (AreaEntry const* pAreaEntry = sObjectMgr.GetAreaEntryByExploreFlag(lastUnexploredFlag))
+        {
+            if (pAreaEntry->ZoneId)
+            {
+                if (AreaEntry const* pZoneEntry = AreaEntry::GetById(pAreaEntry->ZoneId))
+                {
+                    PSendSysMessage("Next: %s (%s)", pAreaEntry->Name, pZoneEntry->Name);
+                    return true;
+                }
+            }
+
             PSendSysMessage("Next: %s", pAreaEntry->Name);
+        }
     }
     else
         SendSysMessage("You have explored all areas.");

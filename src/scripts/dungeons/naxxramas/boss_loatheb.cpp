@@ -541,6 +541,55 @@ CreatureAI* GetAI_mob_eyeStalk(Creature* pCreature)
     return new mob_eyeStalkAI(pCreature);
 }
 
+namespace
+{
+template <class T>
+SpellScript* GetSpellScript(SpellEntry const*)
+{
+    return new T();
+}
+
+void RegisterSpellScript(char const* name, SpellScript* (*getter)(SpellEntry const*))
+{
+    Script* script = new Script;
+    script->Name = name;
+    script->GetSpellScript = getter;
+    script->RegisterSelf();
+}
+
+struct spell_loatheb_corrupted_mind : public SpellScript
+{
+    bool OnEffectExecute(Spell* spell, SpellEffectIndex /*effIdx*/) const override
+    {
+        Unit* target = spell->GetUnitTarget();
+        if (!target)
+            return false;
+
+        uint32 spellId = 0;
+        switch (target->GetClass())
+        {
+            case CLASS_PRIEST:
+            case CLASS_DRUID:
+                spellId = 29194;
+                break;
+            case CLASS_PALADIN:
+                spellId = 29196;
+                break;
+            case CLASS_SHAMAN:
+                spellId = 29198;
+                break;
+            default:
+                break;
+        }
+
+        if (spellId)
+            spell->m_caster->CastSpell(target, spellId, true);
+
+        return false;
+    }
+};
+}
+
 void AddSC_boss_loatheb()
 {
     Script* NewScript;
@@ -563,4 +612,6 @@ void AddSC_boss_loatheb()
     NewScript->Name = "mob_eye_stalk";
     NewScript->GetAI = &GetAI_mob_eyeStalk;
     NewScript->RegisterSelf();
+
+    RegisterSpellScript("spell_loatheb_corrupted_mind", &GetSpellScript<spell_loatheb_corrupted_mind>);
 }

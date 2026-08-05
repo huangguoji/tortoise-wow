@@ -45,6 +45,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket & recv_data)
     Loot    *loot;
     uint8    lootSlot;
     Item* pItem = nullptr;
+    Creature* lootCreature = nullptr;
 
     recv_data >> lootSlot;
 
@@ -91,6 +92,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket & recv_data)
         case HIGHGUID_UNIT:
         {
             Creature* pCreature = GetPlayer()->GetMap()->GetCreature(lguid);
+            lootCreature = pCreature;
 
             bool ok_loot = pCreature && pCreature->IsAlive() == (player->GetClass() == CLASS_ROGUE && pCreature->lootForPickPocketed);
 
@@ -183,11 +185,14 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket & recv_data)
         // Turtle:: Make raid looted items not appear soul bound.
         // Restrict to non-stackable and non party-loot.
 
-        if (_player->GetMap()->IsRaid() && lguid.IsGameObject())
+        if (_player->GetMap()->IsRaid())
         {
             if (auto itemProto = newitem->GetProto())
             {
-                if (!item->freeforall && itemProto->Stackable <= 1)
+                bool canBeTemporarilyTraded = lguid.IsGameObject() && itemProto->Quality >= ITEM_QUALITY_RARE;
+                canBeTemporarilyTraded |= lootCreature && !lootCreature->IsAlive() && (lootCreature->IsWorldBoss() || itemProto->Quality >= ITEM_QUALITY_RARE);
+
+                if (canBeTemporarilyTraded && !item->freeforall && itemProto->Stackable <= 1)
                 {
                     if (Group* pGroup = (Group*)_player->GetGroup())
                     {
@@ -196,8 +201,15 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket & recv_data)
                         {
                             if (Player* pMember = itr->getSource())
                             {
-                                if (pMember->GetMapId() == _player->GetMapId() && pMember->GetInstanceId() == _player->GetInstanceId())
+                                if (lootCreature)
+                                {
+                                    if (pMember->GetMapId() == _player->GetMapId() && lootCreature->WasPlayerPresentAtDeath(pMember))
+                                        newitem->AddPlayerToAllowedTradeList(pMember->GetObjectGuid());
+                                }
+                                else if (pMember->GetMapId() == _player->GetMapId() && pMember->GetInstanceId() == _player->GetInstanceId())
+                                {
                                     newitem->AddPlayerToAllowedTradeList(pMember->GetObjectGuid());
+                                }
                             }
                         }
                     }
@@ -793,9 +805,12 @@ void WorldSession::HandleLootMasterGiveOpcode(WorldPacket & recv_data)
         // Restrict to non-stackable and non party-loot.
 
         auto itemProto = newitem->GetProto();
-        if (_player->GetMap()->IsRaid() && creature && itemProto && (creature->IsWorldBoss() || itemProto->Quality >= ITEM_QUALITY_RARE))
+        if (_player->GetMap()->IsRaid() && itemProto)
         {
-            if (!item.freeforall && itemProto->Stackable <= 1)
+            bool canBeTemporarilyTraded = lootGuid.IsGameObject() && itemProto->Quality >= ITEM_QUALITY_RARE;
+            canBeTemporarilyTraded |= creature && (creature->IsWorldBoss() || itemProto->Quality >= ITEM_QUALITY_RARE);
+
+            if (canBeTemporarilyTraded && !item.freeforall && itemProto->Stackable <= 1)
             {
                 if (Group* pGroup = (Group*)_player->GetGroup())
                 {
@@ -804,8 +819,15 @@ void WorldSession::HandleLootMasterGiveOpcode(WorldPacket & recv_data)
                     {
                         if (Player* pMember = itr->getSource())
                         {
-                            if (pMember->GetMapId() == _player->GetMapId() && creature->WasPlayerPresentAtDeath(pMember))
+                            if (creature)
+                            {
+                                if (pMember->GetMapId() == _player->GetMapId() && creature->WasPlayerPresentAtDeath(pMember))
+                                    newitem->AddPlayerToAllowedTradeList(pMember->GetObjectGuid());
+                            }
+                            else if (pMember->GetMapId() == _player->GetMapId() && pMember->GetInstanceId() == _player->GetInstanceId())
+                            {
                                 newitem->AddPlayerToAllowedTradeList(pMember->GetObjectGuid());
+                            }
                         }
                     }
                 }
