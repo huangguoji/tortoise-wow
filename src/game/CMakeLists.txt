@@ -22,6 +22,7 @@ set (game_SRCS
     Camera.cpp
     Conditions.cpp
     CreatureGroups.cpp
+    CustomMerchantMgr.cpp
     DynamicVisibilityMgr.cpp
     DynamicVisibilityMgr.h
     DailyQuestHandler.cpp
@@ -42,6 +43,7 @@ set (game_SRCS
     PlayerDump.cpp
     QuestDef.cpp
     ReputationMgr.cpp
+    ScriptObjects.h
     ScriptMgr.cpp
     SocialMgr.cpp
     StatSystem.cpp
@@ -73,7 +75,6 @@ set (game_SRCS
     AI/ScriptedPetAI.cpp
     AI/TotemAI.cpp
 	Analysis/AccountAnalyser.cpp
-    Autoscaling/AutoScaler.cpp
     AuctionHouse/AuctionHouseMgr.cpp
     Battlegrounds/BattleGround.cpp
     Battlegrounds/BattleGroundAB.cpp
@@ -226,6 +227,7 @@ set (game_SRCS
     Camera.h
     Conditions.h
     CreatureGroups.h
+    CustomMerchantMgr.h
     Formulas.h
     GuidObjectScaling.h
     GameEventMgr.h
@@ -658,5 +660,13 @@ else()
       ObjectMgr.h
       ScriptMgr.h
       )
+  endif()
+endif()
+
+if(NOT USE_PCH)
+  if(MSVC)
+    target_compile_options(game PRIVATE "/FI${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h")
+  else()
+    target_compile_options(game PRIVATE "-include${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h")
   endif()
 endif()

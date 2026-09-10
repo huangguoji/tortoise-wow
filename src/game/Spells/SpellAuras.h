@@ -3,6 +3,7 @@
  * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
  * Copyright (C) 2011-2016 Nostalrius <https://nostalrius.org>
  * Copyright (C) 2016-2017 Elysium Project <https://github.com/elysium-project>
+ * Copyright (C) vMaNGOS contributors <https://github.com/vmangos/core>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +26,7 @@
 #include "SpellAuraDefines.h"
 #include "DBCEnums.h"
 #include "ObjectGuid.h"
+#include "UnitDefines.h"
 #include <vector>
 
 /**
@@ -77,6 +79,8 @@ struct HeartBeatData
 class Unit;
 class Item;
 class WorldObject;
+class Player;
+class DynamicObject;
 class SpellEntry;
 struct AuraScript;
 struct SpellModifier;
@@ -231,7 +235,7 @@ class SpellAuraHolder
 
         void UpdateAuraDuration() const;
 
-        void SetAura(uint32 slot, bool remove) { m_target->SetUInt32Value(UNIT_FIELD_AURA + slot, remove ? 0 : GetId()); }
+        void SetAura(uint32 slot, bool remove);
         void SetAuraFlag(uint32 slot, bool add);
         void SetAuraLevel(uint32 slot, uint32 level);
 
@@ -400,6 +404,7 @@ class Aura
         void HandleChannelDeathItem(bool Apply, bool Real);
         void HandlePeriodicDamagePCT(bool Apply, bool Real);
         void HandleAuraModAttackPower(bool Apply, bool Real);
+        void HandleAuraModAttackPowerArea(bool Apply, bool Real);
         void HandleAuraTransform(bool Apply, bool Real);
         void HandleModSpellCritChance(bool Apply, bool Real);
         void HandleAuraModIncreaseSwimSpeed(bool Apply, bool Real);
@@ -430,6 +435,7 @@ class Aura
         void HandleAuraModPacify(bool Apply, bool Real);
         void HandleAuraGhost(bool Apply, bool Real);
         void HandleAuraModAttackPowerPercent(bool apply, bool Real);
+        void HandleAuraModAttackPowerPercentArea(bool apply, bool Real);
         void HandleAuraModRangedAttackPowerPercent(bool apply, bool Real);
         void HandleSpiritOfRedemption(bool apply, bool Real);
         void HandleAuraAoeCharm(bool apply, bool real);

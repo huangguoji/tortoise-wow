@@ -640,6 +640,23 @@ CREATE TABLE `character_pet` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `character_pvp_currency`
+--
+
+DROP TABLE IF EXISTS `character_pvp_currency`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `character_pvp_currency` (
+  `guid` int(10) unsigned NOT NULL DEFAULT 0,
+  `honor` int(10) unsigned NOT NULL DEFAULT 0,
+  `conquest` int(10) unsigned NOT NULL DEFAULT 0,
+  `weekly_honor` int(10) unsigned NOT NULL DEFAULT 0,
+  `week_begin_day` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`guid`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=DYNAMIC;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `character_queststatus`
 --
 
@@ -5342,6 +5359,26 @@ CREATE TABLE `custom_graveyards` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `custom_merchant`
+--
+
+DROP TABLE IF EXISTS `custom_merchant`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `custom_merchant` (
+  `id` int(10) unsigned NOT NULL DEFAULT 0,
+  `entry` mediumint(8) unsigned NOT NULL DEFAULT 0,
+  `slot` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `item` mediumint(8) unsigned NOT NULL DEFAULT 0,
+  `count` int(10) unsigned NOT NULL DEFAULT 1,
+  `extendedcost` int(10) unsigned NOT NULL DEFAULT 0,
+  `condition_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `entry_slot` (`entry`,`slot`) USING BTREE
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci ROW_FORMAT=FIXED COMMENT='Npc System';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `daily_quest_timer`
 --
 
@@ -6202,7 +6239,7 @@ DROP TABLE IF EXISTS `gossip_menu`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `gossip_menu` (
-  `entry` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `entry` mediumint(8) unsigned NOT NULL DEFAULT 0,
   `text_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
   `script_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
   `condition_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
@@ -6218,7 +6255,7 @@ DROP TABLE IF EXISTS `gossip_menu_option`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `gossip_menu_option` (
-  `menu_id` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `menu_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
   `id` smallint(5) unsigned NOT NULL DEFAULT 0,
   `option_icon` mediumint(8) unsigned NOT NULL DEFAULT 0,
   `option_text` text CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
@@ -7277,7 +7314,7 @@ DROP TABLE IF EXISTS `locales_gossip_menu_option`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `locales_gossip_menu_option` (
-  `menu_id` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `menu_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
   `id` smallint(5) unsigned NOT NULL DEFAULT 0,
   `option_text_loc0` text DEFAULT NULL,
   `option_text_loc1` text DEFAULT NULL,
@@ -9266,6 +9303,25 @@ CREATE TABLE `skillraceclassinfo` (
   `MinLevel` int(10) unsigned NOT NULL DEFAULT 0,
   `SkillTierId` int(10) unsigned NOT NULL DEFAULT 0,
   `SkillCostIndex` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`Id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8;
+
+--
+-- Table structure for table `skill_race_class_info_mod`
+--
+
+DROP TABLE IF EXISTS `skill_race_class_info_mod`;
+
+CREATE TABLE `skill_race_class_info_mod` (
+  `Id` int(10) unsigned NOT NULL DEFAULT 0,
+  `SkillLineDbcRecord` int(11) NOT NULL DEFAULT -1,
+  `RaceMask` int(11) NOT NULL DEFAULT -1,
+  `ClassMask` int(11) NOT NULL DEFAULT -1,
+  `Flags` int(11) NOT NULL DEFAULT -1,
+  `MinLevel` int(11) NOT NULL DEFAULT -1,
+  `SkillTierId` int(11) NOT NULL DEFAULT -1,
+  `SkillCostIndex` int(11) NOT NULL DEFAULT -1,
+  `Comment` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8;
 /*!40101 SET character_set_client = @saved_cs_client */;

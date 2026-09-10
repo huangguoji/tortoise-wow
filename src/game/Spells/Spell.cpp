@@ -3,6 +3,7 @@
  * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
  * Copyright (C) 2011-2016 Nostalrius <https://nostalrius.org>
  * Copyright (C) 2016-2017 Elysium Project <https://github.com/elysium-project>
+ * Copyright (C) vMaNGOS contributors <https://github.com/vmangos/core>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,6 +56,7 @@
 #include "Unit.h"
 #include "MountManager.hpp"
 #include "CompanionManager.hpp"
+#include "ScriptObjects.h"
 
 #include <memory>
 
@@ -1445,6 +1447,8 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
         }
 
         int32 gain = pCaster->DealHeal(unitTarget, addhealth, m_spellInfo, crit);
+        if (m_spellScript)
+            m_spellScript->OnAfterHeal(this, unitTarget, addhealth, gain, crit);
 
         float classThreatModifier = pRealUnitCaster && pRealUnitCaster->GetClass() == CLASS_PALADIN ? 0.25f : 0.5f;
 
@@ -3868,6 +3872,14 @@ void Spell::cast(bool skipCheck)
     if (m_spellScript)
         m_spellScript->OnCast(this);
 
+    if (Player* playerCaster = m_caster->ToPlayer())
+    {
+        ScriptRegistry<PlayerScript>::ForEachEnabledHook(PLAYERHOOK_ON_SPELL_CAST, [&](PlayerScript* script)
+        {
+            script->OnSpellCast(playerCaster, this, skipCheck);
+        });
+    }
+
     // CAST SPELL
     // Remove any remaining invis auras on cast completion, should only be gnomish cloaking device
     if (!m_IsTriggeredSpell  && !m_spellInfo->HasAttribute(SPELL_ATTR_EX_NOT_BREAK_STEALTH) && m_casterUnit)
@@ -4502,7 +4514,14 @@ void Spell::finish(bool ok)
             }
         }
         if (needDrop)
-            ((Player*)m_caster)->ClearComboPoints();
+        {
+            Player* player = (Player*)m_caster;
+            uint8 const comboPoints = player->GetComboPoints();
+            if (comboPoints && m_spellScript)
+                m_spellScript->OnComboPointsSpent(this, comboPoints);
+
+            player->ClearComboPoints();
+        }
     }
 
     // call triggered spell only at successful cast (after clear combo points -> for add some if need)
@@ -5329,6 +5348,9 @@ void Spell::TakeAmmo()
     if (!pCaster)
         return;
 
+    if (m_spellScript && !m_spellScript->OnTakeAmmo(this))
+        return;
+
     // Some ranged attacks dont take any ammo
     switch (m_spellInfo->Id)
     {
@@ -5336,6 +5358,7 @@ void Spell::TakeAmmo()
         case 13099: // Net-o-Matic
         case 13119: // Net-o-Matic
         case 23577: // Expose Weakness
+        case 51514: // Piercing Shots
             return;
     }
             
@@ -5509,7 +5532,8 @@ SpellCastResult Spell::CheckCast(bool strict)
         return SPELL_CAST_OK;
 
     // Prevent casting while sitting unless the spell allows it
-    if (!m_IsTriggeredSpell && m_casterUnit && !m_casterUnit->IsStandingUp() && !(m_spellInfo->Attributes & SPELL_ATTR_CASTABLE_WHILE_SITTING))
+    if (!m_IsTriggeredSpell && m_casterUnit && !m_casterUnit->IsStandingUp() &&
+            !(m_spellInfo->Attributes & SPELL_ATTR_CASTABLE_WHILE_SITTING) && !m_spellInfo->HasEffect(SPELL_EFFECT_LEARN_SPELL))
         return SPELL_FAILED_NOT_STANDING;
     
     /*  Check cooldowns to prevent cheating (ignore passive spells, that client side visual only)
@@ -5574,7 +5598,8 @@ SpellCastResult Spell::CheckCast(bool strict)
 
         if (strict && m_casterUnit)
         {
-            if (m_casterUnit && m_casterUnit->IsInCombat() && m_spellInfo->IsNonCombatSpell())
+            if (m_casterUnit && m_casterUnit->IsInCombat() && m_spellInfo->IsNonCombatSpell() &&
+                    (!m_spellScript || !m_spellScript->OnCanCastNonCombatSpellInCombat(this)))
                 return SPELL_FAILED_AFFECTING_COMBAT;
 
             // only check at first call, Stealth auras are already removed at second call
@@ -5617,16 +5642,6 @@ SpellCastResult Spell::CheckCast(bool strict)
             if ((!m_caster->m_movementInfo.HasMovementFlag(MOVEFLAG_FALLINGFAR) || m_spellInfo->Effect[EFFECT_INDEX_0] != SPELL_EFFECT_STUCK) &&
                     (IsAutoRepeat() || m_spellInfo->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED))
                 return SPELL_FAILED_MOVING;
-        }
-
-        //CUSTOM Aspect of the wolf can not use ranged attacks.
-        if (m_caster->ToPlayer()->HasAura(45650))
-        {
-            if (m_spellInfo->IsAutoRepeatRangedSpell() || (m_spellInfo->Attributes & SPELL_ATTR_RANGED))
-            {
-                m_caster->ToPlayer()->GetSession()->SendNotification("Can\'t use that in this Aspect.");
-                return SPELL_FAILED_DONT_REPORT;
-            }
         }
 
         if (!m_IsTriggeredSpell && m_spellInfo->NeedsComboPoints() && Spells::IsExplicitlySelectedUnitTarget(m_spellInfo->EffectImplicitTargetA[0]) &&

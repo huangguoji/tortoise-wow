@@ -1005,6 +1005,7 @@ enum ProcFlagsEx
     PROC_EX_NO_PERIODIC         = 0x0020000,                // Will never proc if periodic proc flag present
     PROC_EX_PERIODIC_POSITIVE   = 0x0040000,                // For periodic heal
     PROC_EX_CAST_END            = 0x0080000,                // Procs on end of cast only
+    PROC_EX_PARTIAL_RESIST      = 0x0100000,
 };
 
 #define PROX_EX_NO_DAMAGE_MASK (PROC_EX_MISS    | \

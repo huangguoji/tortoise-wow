@@ -351,6 +351,7 @@ world/arathi_highlands.cpp
 world/ashenvale.cpp
 world/alahthalas.cpp
 world/azshara.cpp
+world/balor.cpp
 world/blasted_lands.cpp
 world/boss_omen.cpp
 world/boss_omen.h
@@ -558,5 +559,13 @@ else()
       target_precompile_headers(${LIBRARY_NAME} PRIVATE
           ${PCHS}
           )
+  endif()
+endif()
+
+if(NOT USE_PCH)
+  if(MSVC)
+    target_compile_options(${LIBRARY_NAME} PRIVATE "/FI${CMAKE_CURRENT_SOURCE_DIR}/scriptPCH.h")
+  else()
+    target_compile_options(${LIBRARY_NAME} PRIVATE "-include${CMAKE_CURRENT_SOURCE_DIR}/scriptPCH.h")
   endif()
 endif()

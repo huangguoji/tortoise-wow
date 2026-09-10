@@ -32,6 +32,7 @@
 #include "Creature.h"
 #include "Spell.h"
 #include "ScriptMgr.h"
+#include "ScriptObjects.h"
 #include "Group.h"
 #include "SpellAuras.h"
 #include "SpellEntry.h"
@@ -65,8 +66,6 @@
 #include "CreatureLinkingMgr.h"
 #include "MovementPacketSender.h"
 #include "TWDebuff/TWDebuff.hpp"
-
-#include "Autoscaling/AutoScaler.hpp"
 
 #include <math.h>
 #include <optional>
@@ -255,6 +254,11 @@ void Unit::Update(uint32 update_diff, uint32 p_time)
 {
     if (!IsInWorld())
         return;
+
+    ScriptRegistry<UnitScript>::ForEachEnabledHook(UNITHOOK_ON_UNIT_UPDATE, [&](UnitScript* script)
+    {
+        script->OnUnitUpdate(this, update_diff);
+    });
 
     CheckPendingVisibilityAndViewUpdate();
 
@@ -715,6 +719,14 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
     if (pVictim && pVictim->IsPlayer() && pVictim->ToPlayer()->m_disableGeneralDamage == true)
         return 0;
 
+    if (pVictim)
+    {
+        ScriptRegistry<UnitScript>::ForEachEnabledHook(UNITHOOK_ON_DAMAGE, [&](UnitScript* script)
+        {
+            script->OnDamage(this, pVictim, damage);
+        });
+    }
+
     // remove affects from attacker at any non-DoT damage (including 0 damage)
     if (damagetype != DOT)
     {
@@ -865,19 +877,6 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
     {
         if (spellProto && (spellProto->IsAreaOfEffectSpell() || spellProto->HasAreaAuraEffect()))
             damage *= 0.5f;
-    }
-
-    if (damage > 0 && sWorld.getConfig(CONFIG_BOOL_LEECH_ENABLE))
-    {
-        Unit* owner = GetOwner();
-        bool isPetHit = owner && owner->GetTypeId() == TYPEID_PLAYER;
-        Player* player = isPetHit ? owner->ToPlayer() : ToPlayer();
-        if (player)
-        {
-            float leechAmount = sWorld.getConfig(CONFIG_FLOAT_LEECH_AMOUNT);
-            int32 bp1 = int32(leechAmount * float(damage));
-            player->CastCustomSpell(this /*attacker*/, 18984, &bp1, nullptr, nullptr, true);
-        }
     }
 
     if (health <= damage && pVictim->GetInvincibilityHpThreshold() == 0)
@@ -1208,10 +1207,7 @@ void Unit::Kill(Unit* pVictim, SpellEntry const *spellProto, bool durabilityLoss
                     loot->FillLoot(lootid, LootTemplates_Creature, looter, false, false, pCreatureVictim);
                 }
             }
-            if (pCreatureVictim->GetMap()->IsDungeon())
-                sAutoScaler->GenerateScaledMoneyLoot(pCreatureVictim, loot);
-            else
-                loot->GenerateMoneyLoot(pCreatureVictim->GetGoldMin(), pCreatureVictim->GetGoldMax());
+            loot->GenerateMoneyLoot(pCreatureVictim->GetGoldMin(), pCreatureVictim->GetGoldMax());
         }
 
         if (pGroupTap)
@@ -1321,6 +1317,18 @@ void Unit::Kill(Unit* pVictim, SpellEntry const *spellProto, bool durabilityLoss
         pVictim->SetHealth(0);
         DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "SET JUST_DIED");
         pVictim->SetDeathState(JUST_DIED);
+        ScriptRegistry<UnitScript>::ForEachEnabledHook(UNITHOOK_ON_UNIT_DEATH, [&](UnitScript* script)
+        {
+            script->OnUnitDeath(pVictim, this);
+        });
+
+        if (Player* playerVictim = pVictim->ToPlayer())
+        {
+            ScriptRegistry<PlayerScript>::ForEachEnabledHook(PLAYERHOOK_ON_PLAYER_JUST_DIED, [&](PlayerScript* script)
+            {
+                script->OnPlayerJustDied(playerVictim);
+            });
+        }
 
         if (pPlayerVictim && pVictim->GetUInt32Value(PLAYER_SELF_RES_SPELL))
             pVictim->DirectSendPublicValueUpdate(PLAYER_SELF_RES_SPELL);
@@ -2127,28 +2135,6 @@ void Unit::CalculateDamageAbsorbAndResist(WorldObject *pCaster, SpellSchoolMask 
         if (mod->m_amount <= 0)
             existExpired = true;
 
-        // CUSTOM priest talent Reflective Shields
-        if (aura->GetSpellProto()->IsFitToFamily<SPELLFAMILY_PRIEST, CF_PRIEST_POWER_WORD_SHIELD>())
-        {
-            if (const auto caster = aura->GetCaster(); caster && caster->HasAura(45560))
-            {
-                // 20% of currentAbsorb
-                int32_t const reflect_damage = currentAbsorb * 0.2f;
-                if (reflect_damage)
-                {
-                    m_Events.AddLambdaEventAtOffset([this, victimGuid = pCaster->GetObjectGuid(), reflect_damage]()
-                        {
-                            if (Map* map = FindMap())
-                            {
-                                if (Unit* victim = map->GetUnit(victimGuid))
-                                {
-                                    CastCustomSpell(victim, 45561, &reflect_damage, nullptr, nullptr, true);
-                                }
-                            }
-                        }, 1);
-                }
-            }
-        }
     }
 
     // Remove all expired absorb auras
@@ -4377,39 +4363,6 @@ void Unit::RemoveSpellAuraHolder(SpellAuraHolder *holder, AuraRemoveMode mode)
         sLog.outInfo("[Crash/Auras] Removing aura holder *not* in holders map ! Aura %u on %s", holder->GetId(), GetName());
     holder->SetRemoveMode(mode);
 
-    // Resurgent Shield
-    if (mode == AURA_REMOVE_BY_SHIELD_BREAK &&
-        holder->GetSpellProto()->IsFitToFamily<SPELLFAMILY_PRIEST, CF_PRIEST_POWER_WORD_SHIELD>())
-    {
-        if (Unit* caster = holder->GetCaster())
-            if (caster->HasAura(45560))
-            {
-                // Determine initial absorb amount from the shield aura.
-                int32 totalAbsorb = 0;
-                for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
-                {
-                    if (Aura* aura = holder->GetAuraByEffectIndex(SpellEffectIndex(i)))
-                    {
-                        if (aura->GetModifier()->m_auraname == SPELL_AURA_SCHOOL_ABSORB)
-                        {
-                            totalAbsorb = aura->GetInitialAbsorbAmount();
-                            break;
-                        }
-                    }
-                }
-
-                // Fallback if no snapshot was found.
-                if (totalAbsorb <= 0)
-                    totalAbsorb = 0;
-
-                int32 base1 = totalAbsorb / 10;
-                int32 base2 = totalAbsorb / 10;
-                int32 base3 = static_cast<int32>(holder->GetSpellProto()->manaCost);
-
-                caster->CastCustomSpell(caster, 51477, &base1, &base2, &base3, true);
-            }
-    }
-
     holder->UnregisterSingleCastHolder();
     holder->HandleCastOnAuraRemoval();
 
@@ -5791,7 +5744,16 @@ uint32 Unit::SpellDamageBonusTaken(WorldObject* pCaster, SpellEntry const* spell
         takenFlatMod = -float(pdamage / 2);
     // use float as more appropriate for negative values and percent applying
     float tmpDamage = (pdamage + takenFlatMod) * takenTotalMod;
-    return tmpDamage > 0 ? uint32(roundf(tmpDamage)) : 0;
+    int32 damage = tmpDamage > 0 ? int32(roundf(tmpDamage)) : 0;
+    if (Unit* attacker = pCaster->ToUnit())
+    {
+        ScriptRegistry<UnitScript>::ForEachEnabledHook(UNITHOOK_MODIFY_SPELL_DAMAGE_TAKEN, [&](UnitScript* script)
+        {
+            script->ModifySpellDamageTaken(const_cast<Unit*>(this), attacker, damage, spellProto);
+        });
+    }
+
+    return damage > 0 ? uint32(damage) : 0;
 }
 
 int32 Unit::SpellBaseDamageBonusTaken(SpellSchoolMask schoolMask) const
@@ -5900,19 +5862,12 @@ bool Unit::IsSpellCrit(Unit const* pVictim, SpellEntry const* spellProto, SpellS
                     {
                         // Shatter
                         case 849:
-                            if (pVictim->IsFrozen()) crit_chance += 10.0f;
-                            break;
                         case 910:
-                            if (pVictim->IsFrozen()) crit_chance += 20.0f;
-                            break;
                         case 911:
-                            if (pVictim->IsFrozen()) crit_chance += 30.0f;
-                            break;
                         case 912:
-                            if (pVictim->IsFrozen()) crit_chance += 40.0f;
-                            break;
                         case 913:
-                            if (pVictim->IsFrozen()) crit_chance += 50.0f;
+                            if (pVictim->IsFrozen())
+                                crit_chance += i->GetModifier()->m_amount;
                             break;
                         default:
                             break;
@@ -6011,7 +5966,16 @@ uint32 Unit::SpellHealingBonusTaken(WorldObject* pCaster, SpellEntry const* spel
 
     // use float as more appropriate for negative values and percent applying
     float heal = (healamount + takenFlatMod) * takenTotalMod;
-    return heal < 0 ? 0 : uint32(roundf(heal));
+    uint32 finalHeal = heal < 0 ? 0 : uint32(roundf(heal));
+    if (Unit* healer = pCaster ? pCaster->ToUnit() : nullptr)
+    {
+        ScriptRegistry<UnitScript>::ForEachEnabledHook(UNITHOOK_MODIFY_HEAL_RECEIVED, [&](UnitScript* script)
+        {
+            script->ModifyHealReceived(const_cast<Unit*>(this), healer, finalHeal, spellProto);
+        });
+    }
+
+    return finalHeal;
 }
 
 int32 Unit::SpellBaseHealingBonusTaken(SpellSchoolMask schoolMask) const
@@ -6352,7 +6316,16 @@ uint32 Unit::MeleeDamageBonusTaken(WorldObject* pCaster, uint32 pdamage, WeaponA
     float tmpDamage = float(int32(pdamage) + TakenFlat * int32(stack)) * TakenPercent;
 
     // bonus result can be negative
-    return tmpDamage > 0 ? uint32(tmpDamage) : 0;
+    uint32 damage = tmpDamage > 0 ? uint32(tmpDamage) : 0;
+    if (Unit* attacker = pCaster->ToUnit())
+    {
+        ScriptRegistry<UnitScript>::ForEachEnabledHook(UNITHOOK_MODIFY_MELEE_DAMAGE, [&](UnitScript* script)
+        {
+            script->ModifyMeleeDamage(this, attacker, damage);
+        });
+    }
+
+    return damage;
 }
 
 void Unit::ApplySpellImmune(uint32 spellId, uint32 op, uint32 type, bool apply)
@@ -6596,6 +6569,14 @@ void Unit::SetInCombatState(uint32 combatTimer, Unit* pEnemy)
 
     SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT);
 
+    if (!wasInCombat)
+    {
+        ScriptRegistry<UnitScript>::ForEachEnabledHook(UNITHOOK_ON_UNIT_ENTER_COMBAT, [&](UnitScript* script)
+        {
+            script->OnUnitEnterCombat(this, pEnemy);
+        });
+    }
+
     if (IsCharmed() || (IsCreature() && ((Creature*)this)->IsPet()))
         SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_IN_COMBAT);
 
@@ -6764,6 +6745,8 @@ void Unit::SetInCombatWithVictim(Unit* pVictim, bool touchOnly/* = false*/, uint
 
 void Unit::ClearInCombat()
 {
+    bool wasInCombat = IsInCombat();
+
     m_combatTimer = 0;
     RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT);
     RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_IN_COMBAT);
@@ -6772,6 +6755,14 @@ void Unit::ClearInCombat()
     {
         static_cast<Player*>(this)->pvpInfo.inPvPCombat = false;
         static_cast<Player*>(this)->ClearTemporaryWarWithFactions();
+    }
+
+    if (wasInCombat)
+    {
+        ScriptRegistry<UnitScript>::ForEachEnabledHook(UNITHOOK_ON_UNIT_EXIT_COMBAT, [&](UnitScript* script)
+        {
+            script->OnUnitExitCombat(this);
+        });
     }
 }
 
@@ -6849,6 +6840,18 @@ int32 Unit::ModifyPower(Powers power, int32 dVal)
 {
     if (dVal == 0)
         return 0;
+
+    if (power == POWER_MANA && dVal > 0)
+    {
+        int32 const manaGainMod = GetTotalAuraModifier(SPELL_AURA_MOD_MANA_GAIN_PERCENT);
+        if (manaGainMod)
+        {
+            float const multiplier = std::max(0.0f, (100.0f + manaGainMod) / 100.0f);
+            dVal = int32(float(dVal) * multiplier);
+            if (dVal <= 0)
+                return 0;
+        }
+    }
 
     int32 gain = 0;
     int32 curPower = (int32)GetPower(power);
@@ -9414,6 +9417,9 @@ uint32 CreateProcExtendMask(SpellNonMeleeDamage* damageInfo, SpellMissInfo missC
                 // On absorb
                 if (damageInfo->absorb)
                     procEx |= PROC_EX_ABSORB;
+                // On partial resist
+                if (damageInfo->resist > 0 && damageInfo->damage > 0)
+                    procEx |= PROC_EX_PARTIAL_RESIST;
                 // On crit
                 if (damageInfo->HitInfo & SPELL_HIT_TYPE_CRIT)
                     procEx |= PROC_EX_CRITICAL_HIT;
@@ -10344,18 +10350,134 @@ void Unit::UpdateAuraForGroup(uint8 slot)
     }
 }
 
+bool Unit::IsWarlockEnslavedDemon(Unit const* demon) const
+{
+    if (!IsPlayer() || GetClass() != CLASS_WARLOCK || !demon || GetCharm() != demon)
+        return false;
+
+    Creature const* creature = demon->ToCreature();
+    CreatureInfo const* creatureInfo = creature ? creature->GetCreatureInfo() : nullptr;
+    return creature && creature->IsAlive() && creatureInfo && creatureInfo->type == CREATURE_TYPE_DEMON;
+}
+
+void Unit::CastPetAuraOnUnit(PetAura const* petAura, Unit* target) const
+{
+    uint32 auraId = petAura->GetAura(target->GetEntry());
+    if (!auraId)
+        return;
+
+    if (auraId == 35696)                                      // Demonic Knowledge
+    {
+        int32 basePoints = int32(petAura->GetDamage() * (target->GetStat(STAT_STAMINA) + target->GetStat(STAT_INTELLECT)) / 100);
+        target->CastCustomSpell(target, auraId, &basePoints, nullptr, nullptr, true);
+    }
+    else
+        target->CastSpell(target, auraId, true);
+}
+
+void Unit::UpdateEnslavedDemonPetStats()
+{
+    Unit* demon = GetCharm();
+    if (!IsWarlockEnslavedDemon(demon))
+        return;
+
+    Player* player = ToPlayer();
+    if (!player)
+        return;
+
+    for (Stats stat : { STAT_STAMINA, STAT_INTELLECT })
+    {
+        float bonusValue = 0.0f;
+        float value = demon->GetTotalStatValue(stat);
+
+        AuraList const& demonPetStatAuras = demon->GetAurasByType(SPELL_AURA_MOD_PET_STAT_PERCENT_OF_OWNER);
+        for (Aura const* aura : demonPetStatAuras)
+            if (aura->GetModifier()->m_miscvalue == int32(stat))
+                bonusValue += player->GetStat(stat) * aura->GetModifier()->m_amount / 100.0f;
+
+        AuraList const& ownerPetStatAuras = player->GetAurasByType(SPELL_AURA_MOD_PET_STAT_PERCENT_OF_OWNER);
+        for (Aura const* aura : ownerPetStatAuras)
+            if (aura->GetModifier()->m_miscvalue == int32(stat))
+                bonusValue += player->GetStat(stat) * aura->GetModifier()->m_amount / 100.0f;
+
+        value += bonusValue;
+
+        demon->SetStat(stat, int32(value));
+
+        switch (stat)
+        {
+            case STAT_STAMINA:
+            {
+                UnitMods unitMod = UNIT_MOD_HEALTH;
+                float health = demon->GetTotalAuraModValue(unitMod) + bonusValue * 10.0f;
+                demon->SetMaxHealth(std::max(1, int(health)));
+                break;
+            }
+            case STAT_INTELLECT:
+            {
+                UnitMods unitMod = UnitMods(UNIT_MOD_POWER_START + POWER_MANA);
+                float mana = demon->GetTotalAuraModValue(unitMod) + bonusValue * 15.0f;
+                demon->SetMaxPower(POWER_MANA, uint32(mana));
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    if (demon->GetMaxPower(POWER_MANA))
+        demon->UpdateManaRegen();
+}
+
 void Unit::AddPetAura(PetAura const* petSpell)
 {
     m_petAuras.insert(petSpell);
     if (Pet* pet = GetPet())
         pet->CastPetAura(petSpell);
+
+    Unit* demon = GetCharm();
+    if (IsWarlockEnslavedDemon(demon))
+        CastPetAuraOnUnit(petSpell, demon);
 }
 
 void Unit::RemovePetAura(PetAura const* petSpell)
 {
-    m_petAuras.erase(petSpell);
     if (Pet* pet = GetPet())
         pet->RemoveAurasDueToSpell(petSpell->GetAura(pet->GetEntry()));
+
+    Unit* demon = GetCharm();
+    if (IsWarlockEnslavedDemon(demon))
+        if (uint32 auraId = petSpell->GetAura(demon->GetEntry()))
+            demon->RemoveAurasDueToSpell(auraId);
+
+    m_petAuras.erase(petSpell);
+}
+
+void Unit::CastEnslavedDemonPetAuras()
+{
+    Unit* demon = GetCharm();
+    if (!IsWarlockEnslavedDemon(demon))
+        return;
+
+    for (PetAura const* petAura : m_petAuras)
+    {
+        uint32 auraId = petAura->GetAura(demon->GetEntry());
+        if (!auraId)
+            continue;
+
+        CastPetAuraOnUnit(petAura, demon);
+    }
+}
+
+void Unit::RemoveEnslavedDemonPetAuras()
+{
+    Unit* demon = GetCharm();
+    if (!IsWarlockEnslavedDemon(demon))
+        return;
+
+    for (PetAura const* petAura : m_petAuras)
+        if (uint32 auraId = petAura->GetAura(demon->GetEntry()))
+            demon->RemoveAurasDueToSpell(auraId);
 }
 
 void Unit::RemoveAurasAtMechanicImmunity(uint32 mechMask, uint32 exceptSpellId, bool non_positive /*= false*/)

@@ -23,6 +23,9 @@
 
 #include "SharedDefines.h"
 
+class Map;
+class WorldObject;
+
 enum ConditionType
 {
     //                                                      // Legend:
@@ -255,6 +258,9 @@ enum ConditionType
     CONDITION_STAND_STATE           = 60,                   // Checks the stand state of the target Unit.
                                                             // Requirement: Unit Target
                                                             // Value1: stand_state
+    CONDITION_LUNATIC               = 61,                   // Checks the player's Level One Lunatic challenge mode.
+                                                            // Requirement: Player Target
+                                                            // Value1: 0 = target player, 1 = target player and reward-distance group members
 };
 
 enum ConditionFlags
